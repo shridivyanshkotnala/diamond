@@ -1,0 +1,254 @@
+{
+	"info": {
+		"_postman_id": "017eecce-844a-4467-8c31-7e828d8212e3",
+		"name": "Jewellery Tag Intelligence Platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Scans",
+			"item": [
+				{
+					"name": "Create Scan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jewelleryType\": \"DIAMOND\",\n    \"scanType\": \"SINGLE_SIDE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans"
+							]
+						}
+					}
+				},
+				{
+					"name": "Upload Front Image",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans/:scanId/front-image",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans",
+								":scanId",
+								"front-image"
+							],
+							"variable": [
+								{
+									"key": "scanId",
+									"value": "your-scan-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Analyze Scan",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans/:scanId/analyze",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans",
+								":scanId",
+								"analyze"
+							],
+							"variable": [
+								{
+									"key": "scanId",
+									"value": "your-scan-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Clarification",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans/:scanId/clarification",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans",
+								":scanId",
+								"clarification"
+							],
+							"variable": [
+								{
+									"key": "scanId",
+									"value": "your-scan-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Submit Clarification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"confirmedMappings\": [\n        {\n            \"abbreviation\": \"CSWt\",\n            \"mappedField\": \"other\",\n            \"description\": \"Colored Stone Weight\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans/:scanId/clarification",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans",
+								":scanId",
+								"clarification"
+							],
+							"variable": [
+								{
+									"key": "scanId",
+									"value": "your-scan-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Review",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans/:scanId/review",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans",
+								":scanId",
+								"review"
+							],
+							"variable": [
+								{
+									"key": "scanId",
+									"value": "your-scan-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Submit Review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"grossWeight\": \"3.280\",\n    \"netWeight\": \"3.232\",\n    \"purity\": \"14K\",\n    \"diamondWeight\": \"0.24\",\n    \"diamondPieces\": \"16\",\n    \"diamondQuality\": \"IJ VSSI\",\n    \"labour\": \"71\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/scans/:scanId/review",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"scans",
+								":scanId",
+								"review"
+							],
+							"variable": [
+								{
+									"key": "scanId",
+									"value": "your-scan-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Get Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"health"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000"
+		}
+	]
+}
