@@ -1,5 +1,6 @@
 import { isDemoScanMode } from '@/constants/scanMode';
 import { apiRequest } from '@/utils/apiClient';
+import { flattenStructuredData, unwrapApiData } from '@/utils/apiResponse';
 import * as mockScanApi from '@/utils/mockScanApi';
 import { prepareImageForUpload } from '@/utils/imagePicker';
 import type {
@@ -24,16 +25,43 @@ type WrappedCreateScanResponse = {
 };
 
 function unwrapCreateScanResponse(response: WrappedCreateScanResponse): CreateScanResponse {
-  if (response.data?.scanId) {
-    return response.data;
-  }
-  if (response.scanId) {
+  const unwrapped = unwrapApiData(response);
+  if (unwrapped.scanId) {
     return {
-      scanId: response.scanId,
-      status: response.status ?? 'WAITING_FOR_SCAN',
+      scanId: unwrapped.scanId,
+      status: unwrapped.status ?? 'WAITING_FOR_SCAN',
     };
   }
   throw new Error('Invalid scan session response from server');
+}
+
+function unwrapImageUploadResponse(
+  response: ImageUploadResponse & { data?: ImageUploadResponse },
+): ImageUploadResponse {
+  const unwrapped = unwrapApiData(response);
+  if (unwrapped.status) {
+    return { status: unwrapped.status };
+  }
+  throw new Error('Invalid image upload response from server');
+}
+
+function normalizeAnalyzeResponse(raw: AnalyzeScanResponse): AnalyzeScanResponse {
+  const unwrapped = unwrapApiData(raw);
+  return {
+    scanId: unwrapped.scanId,
+    status: unwrapped.status,
+    structuredData: flattenStructuredData(unwrapped.structuredData),
+    unknownFields: unwrapped.unknownFields ?? [],
+  };
+}
+
+function normalizeReviewResponse(raw: ReviewResponse): ReviewResponse {
+  const unwrapped = unwrapApiData(raw);
+  return {
+    scanId: unwrapped.scanId,
+    status: unwrapped.status,
+    structuredData: flattenStructuredData(unwrapped.structuredData),
+  };
 }
 
 export async function createScan(
@@ -70,10 +98,11 @@ export async function uploadFrontImage(
     name: 'front.jpg',
   } as unknown as Blob);
 
-  return apiRequest<ImageUploadResponse>(`/scans/${scanId}/front-image`, {
+  const response = await apiRequest<ImageUploadResponse>(`/scans/${scanId}/front-image`, {
     method: 'POST',
     body: formData,
   });
+  return unwrapImageUploadResponse(response);
 }
 
 export async function uploadBackImage(
@@ -92,10 +121,11 @@ export async function uploadBackImage(
     name: 'back.jpg',
   } as unknown as Blob);
 
-  return apiRequest<ImageUploadResponse>(`/scans/${scanId}/back-image`, {
+  const response = await apiRequest<ImageUploadResponse>(`/scans/${scanId}/back-image`, {
     method: 'POST',
     body: formData,
   });
+  return unwrapImageUploadResponse(response);
 }
 
 export async function completeDemoCapture(
@@ -110,10 +140,11 @@ export async function analyzeScan(scanId: string): Promise<AnalyzeScanResponse> 
     return mockScanApi.mockAnalyzeScan(scanId);
   }
 
-  return apiRequest<AnalyzeScanResponse>(`/scans/${scanId}/analyze`, {
+  const response = await apiRequest<AnalyzeScanResponse>(`/scans/${scanId}/analyze`, {
     method: 'POST',
     body: null,
   });
+  return normalizeAnalyzeResponse(response);
 }
 
 export async function getClarification(scanId: string): Promise<ClarificationResponse> {
@@ -121,7 +152,8 @@ export async function getClarification(scanId: string): Promise<ClarificationRes
     return mockScanApi.mockGetClarification(scanId);
   }
 
-  return apiRequest<ClarificationResponse>(`/scans/${scanId}/clarification`);
+  const response = await apiRequest<ClarificationResponse>(`/scans/${scanId}/clarification`);
+  return unwrapApiData(response);
 }
 
 export async function submitClarification(
@@ -134,7 +166,7 @@ export async function submitClarification(
 
   return apiRequest<SubmitClarificationResponse>(`/scans/${scanId}/clarification`, {
     method: 'POST',
-    body: payload as Record<string, unknown>,
+    body: payload as unknown as Record<string, unknown>,
   });
 }
 
@@ -143,7 +175,8 @@ export async function getReview(scanId: string): Promise<ReviewResponse> {
     return mockScanApi.mockGetReview(scanId);
   }
 
-  return apiRequest<ReviewResponse>(`/scans/${scanId}/review`);
+  const response = await apiRequest<ReviewResponse>(`/scans/${scanId}/review`);
+  return normalizeReviewResponse(response);
 }
 
 export async function submitReview(

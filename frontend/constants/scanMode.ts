@@ -1,9 +1,8 @@
 /**
- * Demo/mock scan mode — no imports from other app modules (avoids require cycles).
- * Real API is used only when EXPO_PUBLIC_API_URL is set to a non-empty URL.
+ * Mock/static scan data is opt-in only.
+ * Set EXPO_PUBLIC_USE_MOCK_SCAN=true in frontend/.env for offline demo.
+ * Otherwise all scan screens call the real backend + Gemini APIs.
  */
 export function isDemoScanMode(): boolean {
-  const url = process.env.EXPO_PUBLIC_API_URL;
-  if (url == null) return true;
-  return url.trim().length === 0;
+  return process.env.EXPO_PUBLIC_USE_MOCK_SCAN === 'true';
 }

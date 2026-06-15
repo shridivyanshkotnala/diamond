@@ -38,9 +38,10 @@ export default function ProcessingScreen() {
     try {
       const result = await analyzeScan(scanId);
 
-      if (result.structuredData) {
-        setStructuredData(result.structuredData);
-        updateScanData(structuredDataToScanItem(result.structuredData));
+      const flatData = result.structuredData ?? {};
+      if (Object.keys(flatData).length > 0) {
+        setStructuredData(flatData);
+        updateScanData(structuredDataToScanItem(flatData));
       }
 
       if (result.unknownFields?.length > 0) {

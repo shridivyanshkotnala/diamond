@@ -33,16 +33,17 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "cross-env": "^10.1.0",
     "typescript": "~5.9.2"
   },
   "scripts": {
-    "start": "expo start --lan",
-    "start:clean": "expo start --lan --clear",
-    "start:web": "expo start --web --lan",
+    "start": "cross-env EXPO_OFFLINE=1 expo start --lan",
+    "start:clean": "cross-env EXPO_OFFLINE=1 expo start --lan --clear",
+    "start:web": "cross-env EXPO_OFFLINE=1 expo start --web --lan",
     "start:tunnel": "expo start --tunnel",
-    "android": "expo start --android --lan",
-    "ios": "expo start --ios",
-    "web": "expo start --web --lan"
+    "android": "cross-env EXPO_OFFLINE=1 expo start --android --lan",
+    "ios": "cross-env EXPO_OFFLINE=1 expo start --ios",
+    "web": "cross-env EXPO_OFFLINE=1 expo start --web --lan"
   },
   "private": true
 }

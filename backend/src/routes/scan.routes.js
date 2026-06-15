@@ -6,8 +6,8 @@ const { validate } = require('../middleware/validation.middleware');
 const joi = require('joi');
 
 const createScanSchema = joi.object({
-  jewelleryType: joi.string().valid('DIAMOND', 'GOLD', 'SILVER').required(),
-  scanType: joi.string().valid('SINGLE_SIDE', 'DOUBLE_SIDE').required()
+  jewelleryType: joi.string().valid('DIAMOND', 'GOLD', 'SILVER', 'COLOUR_STONE').required(),
+  scanType: joi.string().valid('SINGLE_SIDE', 'BOTH_SIDES', 'DOUBLE_SIDE').required()
 });
 
 const clarificationSchema = joi.object({
@@ -15,7 +15,7 @@ const clarificationSchema = joi.object({
     joi.object({
       abbreviation: joi.string().required(),
       mappedField: joi.string().required(),
-      description: joi.string().required()
+      description: joi.string().optional().allow('')
     })
   ).required()
 });

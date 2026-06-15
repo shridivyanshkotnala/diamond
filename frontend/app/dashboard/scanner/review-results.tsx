@@ -46,6 +46,11 @@ export default function ReviewResultsScreen() {
       setStructuredData(data.structuredData);
       updateScanData(structuredDataToScanItem(data.structuredData));
     } catch (error) {
+      const existing = useScannerStore.getState().structuredData;
+      if (Object.keys(existing).length > 0) {
+        updateScanData(structuredDataToScanItem(existing));
+        return;
+      }
       if (isDemoScanMode()) {
         updateScanData({
           grossWt: MOCK_REVIEW_RESULTS.grossWt || '42.500',
