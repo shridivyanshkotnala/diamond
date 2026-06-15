@@ -1,0 +1,34 @@
+export type LoginMethod = 'email' | 'phone';
+
+export interface RegistrationData {
+  gstNumber: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginCredentials {
+  email?: string;
+  phone?: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+export interface OtpState {
+  phoneOtp: string;
+  emailOtp: string;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+export interface MarketItem {
+  id: string;
+  title: string;
+  changePercent: number;
+  basePrice: number;
+  totalPrice: number;
+}
