@@ -67,6 +67,9 @@ const sendPhoneOtp = async (businessId, phone) => {
     expiresAt
   });
 
+  // Temporary log for testing/debugging
+  console.log(`[DEV OTP] Generated Phone OTP: ${otp} for ${phone}`);
+
   // MSG91 API Integration
   try {
     const options = {
