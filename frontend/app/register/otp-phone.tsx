@@ -19,7 +19,7 @@ import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { DUMMY } from '@/constants/dummyData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-import { sendOtp, verifyOtp } from '@/utils/mockApi';
+import { submitBusinessContactDetails, verifyBusinessPhoneOtp } from '@/utils/authApi';
 import { maskPhone, validateOtp } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
@@ -28,7 +28,10 @@ const OTP_LENGTH = 6;
 
 export default function OtpPhoneScreen() {
   const router = useRouter();
-  const phone = useAuthStore((s) => s.registration.phone ?? DUMMY.phone);
+  const registration = useAuthStore((s) => s.registration);
+  const phone = registration.phone ?? DUMMY.phone;
+  const email = registration.email ?? DUMMY.email;
+  const businessId = registration.businessId;
   const inputRef = useRef<TextInput>(null);
 
   const [otp, setOtp] = useState(DUMMY.otp);
@@ -50,7 +53,11 @@ export default function OtpPhoneScreen() {
 
     setLoading(true);
     try {
-      const result = await verifyOtp(otp);
+      if (!businessId) {
+        setOtpError('Missing business id. Please restart registration.');
+        return;
+      }
+      const result = await verifyBusinessPhoneOtp(businessId, otp);
       if (result.success) {
         router.push('/register/otp-email');
       } else {
@@ -64,9 +71,15 @@ export default function OtpPhoneScreen() {
   const handleResend = async () => {
     setResendLoading(true);
     try {
-      await sendOtp(phone, 'phone');
+      if (!businessId) {
+        setOtpError('Missing business id. Please restart registration.');
+        return;
+      }
+      await submitBusinessContactDetails({ businessId, phone, email });
       setOtp('');
       setOtpError(null);
+    } catch (error) {
+      setOtpError(error instanceof Error ? error.message : 'Failed to resend OTP.');
     } finally {
       setResendLoading(false);
     }

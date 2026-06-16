@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-import { registerAccount } from '@/utils/mockApi';
+import { createBusinessPassword } from '@/utils/authApi';
 import { validateConfirmPassword, validatePassword } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
@@ -29,7 +29,6 @@ export default function CreatePasswordScreen() {
   const router = useRouter();
   const registration = useAuthStore((s) => s.registration);
   const updateRegistration = useAuthStore((s) => s.updateRegistration);
-  const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
   const resetRegistration = useAuthStore((s) => s.resetRegistration);
 
   const [password, setPassword] = useState(DEMO_PASSWORD);
@@ -50,19 +49,21 @@ export default function CreatePasswordScreen() {
 
     setLoading(true);
     try {
-      const result = await registerAccount({
-        gstNumber: registration.gstNumber ?? '',
-        businessName: registration.businessName ?? '',
-        phone: registration.phone ?? '',
-        email: registration.email ?? '',
+      if (!registration.businessId) {
+        setFormError('Missing business id. Please restart registration.');
+        return;
+      }
+
+      const result = await createBusinessPassword({
+        businessId: registration.businessId,
         password,
+        confirmPassword,
       });
 
       if (result.success) {
         updateRegistration({ password });
-        setAuthenticated(true);
         resetRegistration();
-        router.replace('/dashboard');
+        router.replace('/login');
       } else {
         setFormError(result.error ?? 'Registration failed');
       }

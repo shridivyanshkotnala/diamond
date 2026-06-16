@@ -1,0 +1,231 @@
+import { apiRequest, ApiError } from '@/utils/apiClient';
+import { unwrapApiData } from '@/utils/apiResponse';
+import type { BusinessLoginResponse } from '@/types/auth';
+
+type ApiEnvelope<T extends Record<string, unknown>> = T & {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  data?: T;
+};
+
+function readString(source: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+function unwrapEnvelope<T extends Record<string, unknown>>(response: ApiEnvelope<T>): T {
+  return unwrapApiData(response) as T;
+}
+
+function isSuccessfulResponse(
+  response: ApiEnvelope<Record<string, unknown>>,
+  unwrapped: Record<string, unknown>,
+): boolean {
+  const unwrappedSuccess = unwrapped.success;
+  if (typeof unwrappedSuccess === 'boolean') return unwrappedSuccess;
+  if (typeof response.success === 'boolean') return response.success;
+  return true;
+}
+
+function resolveApiMessage(
+  response: ApiEnvelope<Record<string, unknown>>,
+  unwrapped: Record<string, unknown>,
+  fallback: string,
+): string {
+  return (
+    readString(unwrapped, ['message', 'error']) ??
+    readString(response as Record<string, unknown>, ['message', 'error']) ??
+    fallback
+  );
+}
+
+export async function verifyBusinessGst(gstNumber: string): Promise<{
+  success: boolean;
+  businessName?: string;
+  error?: string;
+}> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>(
+      '/auth/business/gst/verify',
+      {
+        method: 'POST',
+        body: { gstNumber: gstNumber.trim().toUpperCase() },
+      },
+    );
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'GST verification failed.'),
+      };
+    }
+    const businessName = readString(unwrapped, [
+      'businessName',
+      'legalName',
+      'tradeName',
+      'name',
+    ]);
+    return { success: true, businessName };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'GST verification failed.',
+    };
+  }
+}
+
+export async function confirmBusinessGst(gstNumber: string): Promise<{
+  businessId: string;
+}> {
+  const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>(
+    '/auth/business/gst/confirm',
+    {
+      method: 'POST',
+      body: { gstNumber: gstNumber.trim().toUpperCase() },
+    },
+  );
+
+  const unwrapped = unwrapEnvelope(response);
+  if (!isSuccessfulResponse(response, unwrapped)) {
+    throw new Error(resolveApiMessage(response, unwrapped, 'Failed to confirm GST details.'));
+  }
+  const businessId = readString(unwrapped, ['businessId', 'id']);
+  if (!businessId) {
+    throw new Error('businessId missing in GST confirm response.');
+  }
+  return { businessId };
+}
+
+export async function submitBusinessContactDetails(payload: {
+  businessId: string;
+  phone: string;
+  email: string;
+}): Promise<void> {
+  const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/auth/business/contact-details', {
+    method: 'POST',
+    body: {
+      businessId: payload.businessId,
+      phone: payload.phone.replace(/\D/g, ''),
+      email: payload.email.trim().toLowerCase(),
+    },
+  });
+  const unwrapped = unwrapEnvelope(response);
+  if (!isSuccessfulResponse(response, unwrapped)) {
+    throw new Error(resolveApiMessage(response, unwrapped, 'Failed to submit contact details.'));
+  }
+}
+
+export async function verifyBusinessPhoneOtp(
+  businessId: string,
+  otp: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/auth/business/verify-phone-otp', {
+      method: 'POST',
+      body: { businessId, otp: otp.trim() },
+    });
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Phone OTP verification failed.'),
+      };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Phone OTP verification failed.',
+    };
+  }
+}
+
+export async function verifyBusinessEmailOtp(
+  businessId: string,
+  otp: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/auth/business/verify-email-otp', {
+      method: 'POST',
+      body: { businessId, otp: otp.trim() },
+    });
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Email OTP verification failed.'),
+      };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Email OTP verification failed.',
+    };
+  }
+}
+
+export async function createBusinessPassword(payload: {
+  businessId: string;
+  password: string;
+  confirmPassword: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/auth/business/create-password', {
+      method: 'POST',
+      body: payload,
+    });
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Failed to create business password.'),
+      };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Failed to create business password.',
+    };
+  }
+}
+
+export async function loginBusiness(email: string, password: string): Promise<{
+  success: boolean;
+  data?: BusinessLoginResponse;
+  error?: string;
+}> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/auth/business/login', {
+      method: 'POST',
+      body: { email: email.trim().toLowerCase(), password },
+    });
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Login failed.'),
+      };
+    }
+    const accessToken = readString(unwrapped, ['accessToken', 'token']);
+    const refreshToken = readString(unwrapped, ['refreshToken']);
+
+    if (!accessToken) {
+      return { success: false, error: 'Login response missing access token.' };
+    }
+
+    return { success: true, data: { accessToken, refreshToken } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Login failed.',
+    };
+  }
+}

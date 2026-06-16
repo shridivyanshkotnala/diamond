@@ -19,7 +19,7 @@ import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { DUMMY } from '@/constants/dummyData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-import { sendOtp } from '@/utils/mockApi';
+import { submitBusinessContactDetails } from '@/utils/authApi';
 import { validateEmail, validatePhone } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
@@ -27,6 +27,7 @@ const BUTTON_GREEN = '#1E2F28';
 
 export default function ContactDetailsScreen() {
   const router = useRouter();
+  const registration = useAuthStore((s) => s.registration);
   const updateRegistration = useAuthStore((s) => s.updateRegistration);
 
   const [phone, setPhone] = useState(DUMMY.phone);
@@ -44,9 +45,20 @@ export default function ContactDetailsScreen() {
 
     setLoading(true);
     try {
+      if (!registration.businessId) {
+        setEmailError('Please verify GST details again before continuing.');
+        return;
+      }
+
       updateRegistration({ phone, email: email.trim() });
-      await sendOtp(phone, 'phone');
+      await submitBusinessContactDetails({
+        businessId: registration.businessId,
+        phone,
+        email: email.trim(),
+      });
       router.push('/register/otp-phone');
+    } catch (error) {
+      setEmailError(error instanceof Error ? error.message : 'Failed to send OTP.');
     } finally {
       setLoading(false);
     }

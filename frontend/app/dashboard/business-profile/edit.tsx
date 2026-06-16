@@ -20,7 +20,7 @@ import { BottomNav } from '@/components/dashboard/BottomNav';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { getEditableBusinessProfile } from '@/utils/businessProfile';
-import { verifyGst } from '@/utils/mockApi';
+import { verifyBusinessGst } from '@/utils/authApi';
 import { validateEmail, validateGst, validatePhone } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
@@ -52,7 +52,7 @@ export default function EditBusinessProfileScreen() {
 
     setVerifyLoading(true);
     try {
-      const result = await verifyGst(gstNumber);
+      const result = await verifyBusinessGst(gstNumber);
       if (result.success && result.businessName) {
         setBusinessName(result.businessName);
         setIsGstVerified(true);

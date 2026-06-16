@@ -19,7 +19,7 @@ import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { DUMMY } from '@/constants/dummyData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-import { verifyGst } from '@/utils/mockApi';
+import { confirmBusinessGst, verifyBusinessGst } from '@/utils/authApi';
 import { validateGst } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
@@ -31,8 +31,8 @@ export default function GstVerificationScreen() {
   const updateRegistration = useAuthStore((s) => s.updateRegistration);
 
   const [gstNumber, setGstNumber] = useState(DUMMY.gstNumber);
-  const [businessName, setBusinessName] = useState(DUMMY.businessName);
-  const [isVerified, setIsVerified] = useState(true);
+  const [businessName, setBusinessName] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
   const [gstError, setGstError] = useState<string | null>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -44,9 +44,13 @@ export default function GstVerificationScreen() {
 
     setVerifyLoading(true);
     try {
-      const result = await verifyGst(gstNumber);
+      const result = await verifyBusinessGst(gstNumber);
       if (result.success && result.businessName) {
         setBusinessName(result.businessName);
+        setIsVerified(true);
+        setGstError(null);
+      } else if (result.success) {
+        setBusinessName(DUMMY.businessName);
         setIsVerified(true);
         setGstError(null);
       } else {
@@ -67,8 +71,15 @@ export default function GstVerificationScreen() {
 
     setConfirmLoading(true);
     try {
-      updateRegistration({ gstNumber: gstNumber.trim().toUpperCase(), businessName });
+      const confirmed = await confirmBusinessGst(gstNumber);
+      updateRegistration({
+        businessId: confirmed.businessId,
+        gstNumber: gstNumber.trim().toUpperCase(),
+        businessName,
+      });
       router.push('/register/contact');
+    } catch (error) {
+      setGstError(error instanceof Error ? error.message : 'Failed to confirm GST details.');
     } finally {
       setConfirmLoading(false);
     }

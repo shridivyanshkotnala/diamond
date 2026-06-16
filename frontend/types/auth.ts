@@ -1,12 +1,18 @@
 export type LoginMethod = 'email' | 'phone';
 
 export interface RegistrationData {
+  businessId: string;
   gstNumber: string;
   businessName: string;
   phone: string;
   email: string;
   address: string;
   password: string;
+}
+
+export interface BusinessLoginResponse {
+  accessToken: string;
+  refreshToken?: string;
 }
 
 export interface LoginCredentials {

@@ -19,7 +19,7 @@ import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { DUMMY } from '@/constants/dummyData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
-import { loginWithCredentials } from '@/utils/mockApi';
+import { loginBusiness } from '@/utils/authApi';
 import { validatePassword, validatePhone } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
@@ -30,7 +30,16 @@ type EmployeeLoginMethod = 'employeeId' | 'contact';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { rememberMe, setRememberMe, savedPhone, setAuthenticated } = useAuthStore();
+  const {
+    rememberMe,
+    setRememberMe,
+    savedPhone,
+    savedEmail,
+    registration,
+    setAuthenticated,
+    setAuthToken,
+    setSavedCredentials,
+  } = useAuthStore();
 
   const [method, setMethod] = useState<EmployeeLoginMethod>('employeeId');
   const [employeeId, setEmployeeId] = useState('EMP265656');
@@ -48,30 +57,34 @@ export default function LoginScreen() {
     const pErr = validatePassword(password);
     setPasswordError(pErr);
 
-    let identifier = '';
-    let loginMethod: 'email' | 'phone' = 'email';
+    const businessEmail = (registration.email ?? savedEmail ?? DUMMY.email).trim();
 
     if (method === 'employeeId') {
       const idErr = employeeId.trim().length < 4 ? 'Enter a valid Employee ID' : null;
       setEmployeeIdError(idErr);
       setContactError(null);
       if (idErr || pErr) return;
-      identifier = DUMMY.email;
-      loginMethod = 'email';
     } else {
       const phErr = validatePhone(contact);
       setContactError(phErr);
       setEmployeeIdError(null);
       if (phErr || pErr) return;
-      identifier = contact;
-      loginMethod = 'phone';
+    }
+
+    if (!businessEmail) {
+      setFormError('Business email not found. Complete registration first.');
+      return;
     }
 
     setLoading(true);
     try {
-      const result = await loginWithCredentials(identifier, password, loginMethod);
-      if (result.success) {
+      const result = await loginBusiness(businessEmail, password);
+      if (result.success && result.data) {
+        setAuthToken(result.data.accessToken);
         setAuthenticated(true);
+        if (rememberMe) {
+          setSavedCredentials(businessEmail, contact);
+        }
         router.replace('/dashboard');
       } else {
         setFormError(result.error ?? 'Login failed');
