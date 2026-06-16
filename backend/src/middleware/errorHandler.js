@@ -14,7 +14,8 @@ const errorHandler = (err, req, res, next) => {
     'PHONE_ALREADY_EXISTS': { status: 409, msg: 'This phone number is already associated with an account.' },
     'UNAUTHORIZED': { status: 401, msg: 'Missing or invalid authentication token.' },
     'FORBIDDEN': { status: 403, msg: 'You do not have permission to access this resource.' },
-    'INVALID_CREDENTIALS': { status: 401, msg: 'Invalid email or password.' }
+    'INVALID_CREDENTIALS': { status: 401, msg: 'Invalid email or password.' },
+    'INVALID_PHONE_CREDENTIALS': { status: 401, msg: 'Invalid phone number or password.' }
   };
 
   let statusCode = err.statusCode || 500;

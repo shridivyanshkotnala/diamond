@@ -35,11 +35,17 @@ const loginSchema = Joi.object({
   password: Joi.string().required()
 });
 
+const employeeLoginSchema = Joi.object({
+  phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
+  password: Joi.string().required(),
+});
+
 module.exports = {
   gstVerifySchema,
   gstConfirmSchema,
   contactDetailsSchema,
   verifyOtpSchema,
   createPasswordSchema,
-  loginSchema
+  loginSchema,
+  employeeLoginSchema,
 };

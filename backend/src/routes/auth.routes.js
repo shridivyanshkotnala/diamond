@@ -7,7 +7,8 @@ const {
   contactDetailsSchema,
   verifyOtpSchema,
   createPasswordSchema,
-  loginSchema
+  loginSchema,
+  employeeLoginSchema,
 } = require('../validators/auth.validator');
 const { gstRateLimiter } = require('../middleware/rateLimiter');
 
@@ -20,5 +21,6 @@ router.post('/business/verify-phone-otp', validate(verifyOtpSchema), authControl
 router.post('/business/verify-email-otp', validate(verifyOtpSchema), authController.verifyEmailOtp);
 router.post('/business/create-password', validate(createPasswordSchema), authController.createPassword);
 router.post('/business/login', validate(loginSchema), authController.login);
+router.post('/employee/login', validate(employeeLoginSchema), authController.loginEmployee);
 
 module.exports = router;

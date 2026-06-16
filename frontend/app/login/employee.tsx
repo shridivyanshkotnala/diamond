@@ -19,6 +19,7 @@ import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useEmployeeStore } from '@/store/employeeStore';
+import { loginEmployeeByPhone } from '@/utils/authApi';
 import { authenticateEmployee } from '@/utils/employeeAuth';
 import { validatePassword, validatePhone } from '@/utils/validation';
 
@@ -73,8 +74,38 @@ export default function EmployeeLoginScreen() {
 
     setLoading(true);
     try {
-      const identifier = method === 'employeeId' ? employeeId : contact;
-      const result = authenticateEmployee(employees, method, identifier, password);
+      if (method === 'contact') {
+        const apiResult = await loginEmployeeByPhone(contact, password);
+        if (apiResult.success && apiResult.data) {
+          setAuthToken(apiResult.data.accessToken);
+          setUserRole(apiResult.data.role === 'EMP' ? 'employee' : 'business');
+          setLoggedInEmployee(null);
+          setAuthenticated(true);
+          if (rememberMe) {
+            setSavedEmployeeContact('', contact.replace(/\D/g, '').slice(-10));
+          }
+          router.replace('/dashboard');
+          return;
+        }
+
+        const localResult = authenticateEmployee(employees, method, contact, password);
+        if (localResult.success) {
+          setAuthToken(`employee-${localResult.employee.id}`);
+          setUserRole('employee');
+          setLoggedInEmployee(localResult.employee.id);
+          setAuthenticated(true);
+          if (rememberMe) {
+            setSavedEmployeeContact(localResult.employee.employeeId, localResult.employee.phone);
+          }
+          router.replace('/dashboard');
+          return;
+        }
+
+        setFormError(apiResult.error ?? localResult.error);
+        return;
+      }
+
+      const result = authenticateEmployee(employees, method, employeeId, password);
 
       if (result.success) {
         setAuthToken(`employee-${result.employee.id}`);

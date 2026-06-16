@@ -155,8 +155,12 @@ const createPassword = async (businessId, password) => {
   }
 };
 
+function normalizePhone(phone) {
+  return String(phone || '').replace(/\D/g, '').slice(-10);
+}
+
 const login = async (email, password) => {
-  const user = await BusinessUser.findOne({ email });
+  const user = await BusinessUser.findOne({ email: String(email || '').trim().toLowerCase() });
   if (!user || !user.isActive) {
     throw new Error('INVALID_CREDENTIALS');
   }
@@ -166,7 +170,6 @@ const login = async (email, password) => {
     throw new Error('INVALID_CREDENTIALS');
   }
 
-  // Update last login
   user.lastLoginAt = new Date();
   await user.save();
 
@@ -176,7 +179,34 @@ const login = async (email, password) => {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     businessId: user.businessId.toString(),
-    userId: user._id.toString()
+    userId: user._id.toString(),
+    role: user.role,
+  };
+};
+
+const loginWithPhone = async (phone, password) => {
+  const normalizedPhone = normalizePhone(phone);
+  const user = await BusinessUser.findOne({ phone: normalizedPhone });
+  if (!user || !user.isActive) {
+    throw new Error('INVALID_PHONE_CREDENTIALS');
+  }
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) {
+    throw new Error('INVALID_PHONE_CREDENTIALS');
+  }
+
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  const tokens = authService.generateTokens(user.businessId.toString(), user._id.toString(), user.role);
+
+  return {
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    businessId: user.businessId.toString(),
+    userId: user._id.toString(),
+    role: user.role,
   };
 };
 
@@ -186,5 +216,6 @@ module.exports = {
   verifyPhoneOtp,
   verifyEmailOtp,
   createPassword,
-  login
+  login,
+  loginWithPhone,
 };

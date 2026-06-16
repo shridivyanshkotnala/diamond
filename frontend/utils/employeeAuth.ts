@@ -12,7 +12,7 @@ export function authenticateEmployee(
   const employee =
     method === 'employeeId'
       ? employees.find((entry) => entry.employeeId.toUpperCase() === normalizedId)
-      : employees.find((entry) => entry.phone === normalizedPhone);
+      : employees.find((entry) => entry.phone.replace(/\D/g, '').slice(-10) === normalizedPhone);
 
   if (!employee) {
     return {
@@ -24,7 +24,7 @@ export function authenticateEmployee(
     };
   }
 
-  if (employee.password !== password) {
+  if (employee.password.toLowerCase() !== password.toLowerCase()) {
     return { success: false, error: 'Invalid password. Please try again.' };
   }
 

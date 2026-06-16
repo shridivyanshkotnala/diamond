@@ -77,6 +77,16 @@ const login = async (req, res, next) => {
   }
 };
 
+const loginEmployee = async (req, res, next) => {
+  try {
+    const { phone, password } = req.body;
+    const data = await registrationService.loginWithPhone(phone, password);
+    sendSuccess(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   verifyGst,
   confirmGst,
@@ -84,5 +94,6 @@ module.exports = {
   verifyPhoneOtp,
   verifyEmailOtp,
   createPassword,
-  login
+  login,
+  loginEmployee,
 };
