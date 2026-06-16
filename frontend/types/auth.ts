@@ -5,6 +5,7 @@ export interface RegistrationData {
   businessName: string;
   phone: string;
   email: string;
+  address: string;
   password: string;
 }
 

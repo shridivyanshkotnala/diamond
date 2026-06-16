@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { ChevronLeft, LogOut } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -64,8 +64,8 @@ export default function SettingsScreen() {
             }
 
             const Icon = item.icon;
-            return (
-              <View key={item.id} style={styles.menuCard}>
+            const content = (
+              <>
                 <View style={styles.iconWrap}>
                   <Icon size={20} color={Colors.textPrimary} />
                 </View>
@@ -75,6 +75,25 @@ export default function SettingsScreen() {
                     <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
                   ) : null}
                 </View>
+              </>
+            );
+
+            if (item.route) {
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.9}
+                  style={styles.menuCard}
+                  onPress={() => router.push(item.route as Href)}
+                >
+                  {content}
+                </TouchableOpacity>
+              );
+            }
+
+            return (
+              <View key={item.id} style={styles.menuCard}>
+                {content}
               </View>
             );
           })}

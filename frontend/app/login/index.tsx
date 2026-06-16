@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronDown, ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
+import { ChevronDown, ChevronLeft, EyeOff } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
@@ -20,39 +20,28 @@ import { DUMMY } from '@/constants/dummyData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { loginWithCredentials } from '@/utils/mockApi';
-import { validateEmail, validatePassword, validatePhone } from '@/utils/validation';
+import { validatePassword, validatePhone } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
 const BUTTON_GREEN = '#1E2F28';
 const TAB_BG = '#F2F2F7';
 
+type EmployeeLoginMethod = 'employeeId' | 'contact';
+
 export default function LoginScreen() {
   const router = useRouter();
-  const {
-    loginMethod,
-    setLoginMethod,
-    rememberMe,
-    setRememberMe,
-    savedEmail,
-    savedPhone,
-    setSavedCredentials,
-    setAuthenticated,
-  } = useAuthStore();
+  const { rememberMe, setRememberMe, savedPhone, setAuthenticated } = useAuthStore();
 
-  const [email, setEmail] = useState(savedEmail || DUMMY.email);
-  const [phone, setPhone] = useState(savedPhone || DUMMY.phone);
+  const [method, setMethod] = useState<EmployeeLoginMethod>('employeeId');
+  const [employeeId, setEmployeeId] = useState('EMP265656');
+  const [contact, setContact] = useState(savedPhone || DUMMY.phone);
   const [password, setPassword] = useState(DUMMY.password);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [employeeIdError, setEmployeeIdError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (savedEmail) setEmail(savedEmail);
-    if (savedPhone) setPhone(savedPhone);
-  }, [savedEmail, savedPhone]);
 
   const handleLogin = async () => {
     setFormError(null);
@@ -60,30 +49,28 @@ export default function LoginScreen() {
     setPasswordError(pErr);
 
     let identifier = '';
-    if (loginMethod === 'email') {
-      const eErr = validateEmail(email);
-      setEmailError(eErr);
-      setPhoneError(null);
-      if (eErr || pErr) return;
-      identifier = email.trim();
+    let loginMethod: 'email' | 'phone' = 'email';
+
+    if (method === 'employeeId') {
+      const idErr = employeeId.trim().length < 4 ? 'Enter a valid Employee ID' : null;
+      setEmployeeIdError(idErr);
+      setContactError(null);
+      if (idErr || pErr) return;
+      identifier = DUMMY.email;
+      loginMethod = 'email';
     } else {
-      const phErr = validatePhone(phone);
-      setPhoneError(phErr);
-      setEmailError(null);
+      const phErr = validatePhone(contact);
+      setContactError(phErr);
+      setEmployeeIdError(null);
       if (phErr || pErr) return;
-      identifier = phone;
+      identifier = contact;
+      loginMethod = 'phone';
     }
 
     setLoading(true);
     try {
       const result = await loginWithCredentials(identifier, password, loginMethod);
       if (result.success) {
-        if (rememberMe) {
-          setSavedCredentials(
-            loginMethod === 'email' ? email.trim() : savedEmail,
-            loginMethod === 'phone' ? phone : savedPhone
-          );
-        }
         setAuthenticated(true);
         router.replace('/dashboard');
       } else {
@@ -108,12 +95,12 @@ export default function LoginScreen() {
               <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
             </Pressable>
 
-            <Text style={styles.headerTitle}>Login as a Buisness</Text>
+            <Text style={styles.headerTitle}>Login as a Employee</Text>
 
             <View style={styles.headerSubtitleRow}>
               <Text style={styles.headerSubtitle}>Don&apos;t have an account? </Text>
-              <Pressable onPress={() => router.replace('/register/gst')}>
-                <Text style={styles.headerLink}>Sign Up</Text>
+              <Pressable>
+                <Text style={styles.headerLink}>Contact Admin</Text>
               </Pressable>
             </View>
           </View>
@@ -126,55 +113,54 @@ export default function LoginScreen() {
             >
               <View style={styles.tabRow}>
                 <Pressable
-                  onPress={() => setLoginMethod('email')}
-                  style={[styles.tab, loginMethod === 'email' && styles.tabActive]}
+                  onPress={() => setMethod('employeeId')}
+                  style={[styles.tab, method === 'employeeId' && styles.tabActive]}
                 >
-                  <Text style={[styles.tabText, loginMethod === 'email' && styles.tabTextActive]}>
-                    Use Email
+                  <Text style={[styles.tabText, method === 'employeeId' && styles.tabTextActive]}>
+                    Use Employee ID
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setLoginMethod('phone')}
-                  style={[styles.tab, loginMethod === 'phone' && styles.tabActive]}
+                  onPress={() => setMethod('contact')}
+                  style={[styles.tab, method === 'contact' && styles.tabActive]}
                 >
-                  <Text style={[styles.tabText, loginMethod === 'phone' && styles.tabTextActive]}>
-                    Use Phone Number
+                  <Text style={[styles.tabText, method === 'contact' && styles.tabTextActive]}>
+                    Use Contact Details
                   </Text>
                 </Pressable>
               </View>
 
-              {loginMethod === 'email' ? (
+              {method === 'employeeId' ? (
                 <>
-                  <Text style={styles.inputLabel}>Email</Text>
-                  <View style={[styles.inputRow, emailError ? styles.inputError : null]}>
+                  <Text style={styles.inputLabel}>EmployeeID</Text>
+                  <View style={[styles.inputRow, employeeIdError ? styles.inputError : null]}>
                     <TextInput
-                      value={email}
+                      value={employeeId}
                       onChangeText={(text) => {
-                        setEmail(text);
-                        setEmailError(null);
+                        setEmployeeId(text.toUpperCase());
+                        setEmployeeIdError(null);
                       }}
-                      placeholder="Loisbecket@gmail.com"
+                      placeholder="EMP265656"
                       placeholderTextColor={Colors.textMuted}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
+                      autoCapitalize="characters"
                       style={styles.textInput}
                     />
                   </View>
-                  {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+                  {employeeIdError ? <Text style={styles.errorText}>{employeeIdError}</Text> : null}
                 </>
               ) : (
                 <>
-                  <Text style={styles.inputLabel}>Phone Number</Text>
-                  <View style={[styles.phoneRow, phoneError ? styles.inputError : null]}>
+                  <Text style={styles.inputLabel}>Contact Number</Text>
+                  <View style={[styles.phoneRow, contactError ? styles.inputError : null]}>
                     <View style={styles.countryCode}>
                       <Text style={styles.countryCodeText}>+91</Text>
                       <ChevronDown size={14} color={Colors.textMuted} />
                     </View>
                     <TextInput
-                      value={phone}
+                      value={contact}
                       onChangeText={(text) => {
-                        setPhone(text.replace(/\D/g, '').slice(0, 10));
-                        setPhoneError(null);
+                        setContact(text.replace(/\D/g, '').slice(0, 10));
+                        setContactError(null);
                       }}
                       placeholder="9999999999"
                       placeholderTextColor={Colors.textMuted}
@@ -182,7 +168,7 @@ export default function LoginScreen() {
                       style={styles.phoneInput}
                     />
                   </View>
-                  {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+                  {contactError ? <Text style={styles.errorText}>{contactError}</Text> : null}
                 </>
               )}
 
@@ -203,11 +189,7 @@ export default function LoginScreen() {
                   hitSlop={8}
                   style={styles.eyeBtn}
                 >
-                  {showPassword ? (
-                    <Eye size={20} color={Colors.textMuted} />
-                  ) : (
-                    <EyeOff size={20} color={Colors.textMuted} />
-                  )}
+                  <EyeOff size={20} color={Colors.textMuted} />
                 </Pressable>
               </View>
               {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
@@ -221,10 +203,6 @@ export default function LoginScreen() {
                     {rememberMe ? <Text style={styles.checkmark}>✓</Text> : null}
                   </View>
                   <Text style={styles.checkboxLabel}>Remember me</Text>
-                </Pressable>
-
-                <Pressable onPress={() => router.push('/login/forgot-password')}>
-                  <Text style={styles.forgotLink}>Forgot Password?</Text>
                 </Pressable>
               </View>
 
@@ -242,10 +220,6 @@ export default function LoginScreen() {
                   <Text style={styles.loginBtnText}>Login</Text>
                 )}
               </TouchableOpacity>
-
-              <Pressable onPress={() => router.push('/login/otp')} style={styles.vendorLinkWrap}>
-                <Text style={styles.vendorLink}>Login as a Vendor using OTP</Text>
-              </Pressable>
             </ScrollView>
           </View>
         </View>
@@ -274,10 +248,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 42,
     fontWeight: '700',
     color: Colors.textPrimary,
-    lineHeight: 34,
+    lineHeight: 45,
   },
   headerSubtitleRow: {
     flexDirection: 'row',
@@ -286,11 +260,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: Colors.textSecondary,
   },
   headerLink: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: ACCENT_TAN,
     textDecorationLine: 'underline',
@@ -312,30 +286,27 @@ const styles = StyleSheet.create({
   cardScroll: {
     paddingHorizontal: Spacing.cardPadding,
     paddingTop: 24,
-    paddingBottom: 32,
+    paddingBottom: 20,
   },
   tabRow: {
     flexDirection: 'row',
     backgroundColor: TAB_BG,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
+    borderRadius: 8,
+    padding: 3,
+    marginBottom: 20,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   tabActive: {
     backgroundColor: Colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   tabText: {
     fontSize: 13,
@@ -362,7 +333,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.input,
     backgroundColor: Colors.white,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   textInput: {
     flex: 1,
@@ -417,20 +388,18 @@ const styles = StyleSheet.create({
   optionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    marginBottom: 4,
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'flex-start',
+    marginTop: 12,
+    marginBottom: 8,
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
+    width: 15,
+    height: 15,
+    borderRadius: 3,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
@@ -443,17 +412,13 @@ const styles = StyleSheet.create({
     backgroundColor: BUTTON_GREEN,
   },
   checkmark: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: Colors.white,
   },
   checkboxLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textMuted,
-  },
-  forgotLink: {
-    fontSize: 14,
-    color: ACCENT_TAN,
   },
   loginBtn: {
     height: Spacing.buttonHeight,
@@ -462,7 +427,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.button,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 12,
   },
   loginBtnDisabled: {
     opacity: 0.7,
@@ -471,15 +436,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.white,
-  },
-  vendorLinkWrap: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  vendorLink: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: ACCENT_TAN,
-    textAlign: 'center',
   },
 });
