@@ -7,12 +7,12 @@ const gstRateLimiter = async (req, res, next) => {
     const dayKey = `gst_limit_day:${ip}`;
 
     let hrCount = await redisClient.get(hrKey);
-    if (hrCount && parseInt(hrCount) >= 6) {
-      return res.status(429).json({ success: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Maximum 6 GST verifications per hour allowed.' });
+    if (hrCount && parseInt(hrCount) >= 20) {
+      return res.status(429).json({ success: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Maximum 20 GST verifications per hour allowed.' });
     }
 
     let dayCount = await redisClient.get(dayKey);
-    if (dayCount && parseInt(dayCount) >= 10) {
+    if (dayCount && parseInt(dayCount) >= 60) {
       return res.status(429).json({ success: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Maximum 10 GST verifications per 24 hours allowed.' });
     }
 
