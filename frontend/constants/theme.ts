@@ -14,6 +14,7 @@ export const Colors = {
   textPrimary: '#000000',
   textSecondary: '#757575',
   textMuted: '#8E8E8E',
+  placeholder: '#C4C4C4',
   textLabel: '#717171',
   inputBg: '#F4F5F7',
   successBg: '#E6F4EA',

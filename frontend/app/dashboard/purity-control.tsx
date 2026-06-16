@@ -131,7 +131,7 @@ export default function PurityControlScreen() {
               onChangeText={setDraftValue}
               keyboardType="decimal-pad"
               placeholder="99.60"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={Colors.placeholder}
               style={styles.modalInput}
             />
             <TouchableOpacity activeOpacity={0.9} onPress={handleSave} style={styles.modalSaveBtn}>

@@ -1,6 +1,8 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { Pencil } from 'lucide-react-native';
 
+import { Colors } from '@/constants/theme';
+
 interface ReviewFieldRowProps {
   label: string;
   value: string;
@@ -33,7 +35,7 @@ function ReviewFieldRow({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#B0B0B0"
+          placeholderTextColor={Colors.placeholder}
           className="flex-1 text-sm text-text-primary"
         />
         {!missing ? <Pencil size={14} color="#757575" /> : null}

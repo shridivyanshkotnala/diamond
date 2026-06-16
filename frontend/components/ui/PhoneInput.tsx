@@ -35,7 +35,7 @@ export function PhoneInput({
           value={value}
           onChangeText={(text) => onChangeText(text.replace(/\D/g, '').slice(0, 10))}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={Colors.placeholder}
           keyboardType="phone-pad"
           editable={editable}
           className="min-w-0 flex-1 px-3 text-base text-text-primary"

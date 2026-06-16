@@ -3,6 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
 import { getApiFieldLabel } from '@/utils/scanMappers';
+import { Colors } from '@/constants/theme';
 import { useScannerStore } from '@/store/scannerStore';
 import type { ClarificationField } from '@/types/scanner';
 
@@ -91,7 +92,7 @@ export function ClarificationFieldRow({
           value={description}
           onChangeText={onDescriptionChange}
           placeholder="Describe this field (e.g. Colored Stone Weight)"
-          placeholderTextColor="#B0B0B0"
+          placeholderTextColor={Colors.placeholder}
           className="mt-3 rounded-input border border-border px-3 py-2.5 text-sm text-text-primary"
         />
       ) : null}

@@ -111,7 +111,7 @@ export default function ContactDetailsScreen() {
                     setPhoneError(null);
                   }}
                   placeholder="9999999999"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   keyboardType="phone-pad"
                   style={styles.phoneInput}
                 />
@@ -127,7 +127,7 @@ export default function ContactDetailsScreen() {
                     setEmailError(null);
                   }}
                   placeholder="you@business.com"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   style={styles.emailInput}

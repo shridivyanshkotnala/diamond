@@ -127,7 +127,7 @@ export default function CreatePasswordScreen() {
                     setPasswordError(null);
                   }}
                   placeholder="Enter password"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}

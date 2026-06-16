@@ -33,7 +33,7 @@ export function PasswordField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={Colors.placeholder}
           secureTextEntry={!visible}
           autoCapitalize="none"
           className="flex-1 text-base text-text-primary"

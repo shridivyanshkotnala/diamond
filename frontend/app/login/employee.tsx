@@ -153,7 +153,7 @@ export default function EmployeeLoginScreen() {
                         setEmployeeIdError(null);
                       }}
                       placeholder="EMP-INT-001"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={Colors.placeholder}
                       autoCapitalize="characters"
                       style={styles.textInput}
                     />
@@ -175,7 +175,7 @@ export default function EmployeeLoginScreen() {
                         setContactError(null);
                       }}
                       placeholder="9999999999"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={Colors.placeholder}
                       keyboardType="phone-pad"
                       style={styles.phoneInput}
                     />
@@ -193,7 +193,7 @@ export default function EmployeeLoginScreen() {
                     setPasswordError(null);
                   }}
                   placeholder="Enter your password"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   style={styles.textInput}

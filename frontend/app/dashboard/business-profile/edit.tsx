@@ -125,7 +125,7 @@ export default function EditBusinessProfileScreen() {
                   setPhoneError(null);
                 }}
                 placeholder="9999999999"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={Colors.placeholder}
                 keyboardType="phone-pad"
                 style={styles.phoneInput}
               />
@@ -140,7 +140,7 @@ export default function EditBusinessProfileScreen() {
                 setEmailError(null);
               }}
               placeholder="email@example.com"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={Colors.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
               style={[styles.textInput, emailError ? styles.textInputError : null]}
@@ -157,7 +157,7 @@ export default function EditBusinessProfileScreen() {
                   setGstError(null);
                 }}
                 placeholder="GSTNXXXXXXXXXXXX"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={Colors.placeholder}
                 autoCapitalize="characters"
                 editable={!verifyLoading}
                 style={styles.gstInput}

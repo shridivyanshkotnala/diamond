@@ -16,7 +16,7 @@ export function EmployeeSearchBar({ value, onChangeText }: EmployeeSearchBarProp
         value={value}
         onChangeText={onChangeText}
         placeholder="Search Employee"
-        placeholderTextColor={Colors.textMuted}
+        placeholderTextColor={Colors.placeholder}
         style={styles.input}
       />
       <SlidersHorizontal size={18} color={Colors.textPrimary} />

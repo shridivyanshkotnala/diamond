@@ -114,7 +114,7 @@ export default function BusinessLoginScreen() {
                     setEmailError(null);
                   }}
                   placeholder="you@business.com"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -132,7 +132,7 @@ export default function BusinessLoginScreen() {
                     setPasswordError(null);
                   }}
                   placeholder="Enter your password"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   style={styles.textInput}

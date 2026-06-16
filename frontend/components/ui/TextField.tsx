@@ -38,7 +38,7 @@ export function TextField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={Colors.placeholder}
           autoCapitalize={autoCapitalize}
           keyboardType={keyboardType}
           editable={editable}

@@ -110,7 +110,7 @@ export default function CreateEmployeePasswordScreen() {
                 value={draft.password}
                 onChangeText={(text) => updateDraft({ password: text })}
                 placeholder="PASSWORD"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={Colors.placeholder}
                 secureTextEntry={!showPassword}
                 autoCapitalize="characters"
                 style={styles.input}
@@ -131,7 +131,7 @@ export default function CreateEmployeePasswordScreen() {
                 value={draft.confirmPassword}
                 onChangeText={(text) => updateDraft({ confirmPassword: text })}
                 placeholder="••••••••"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={Colors.placeholder}
                 secureTextEntry={!showConfirm}
                 autoCapitalize="none"
                 style={styles.input}

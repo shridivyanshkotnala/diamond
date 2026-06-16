@@ -32,6 +32,7 @@ module.exports = {
           primary: '#000000',
           secondary: '#757575',
           muted: '#8E8E8E',
+          placeholder: '#C4C4C4',
           label: '#717171',
         },
         success: {

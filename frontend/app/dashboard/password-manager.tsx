@@ -67,7 +67,7 @@ export default function PasswordManagerScreen() {
               value={oldPassword}
               onChangeText={setOldPassword}
               placeholder="Old Password"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={Colors.placeholder}
               secureTextEntry={false}
               autoCapitalize="none"
               style={styles.input}
@@ -81,7 +81,7 @@ export default function PasswordManagerScreen() {
               value={newPassword}
               onChangeText={setNewPassword}
               placeholder="New Password"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={Colors.placeholder}
               secureTextEntry={false}
               autoCapitalize="none"
               style={styles.input}
@@ -93,7 +93,7 @@ export default function PasswordManagerScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="••••••••"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={Colors.placeholder}
                 secureTextEntry={!showConfirm}
                 autoCapitalize="none"
                 style={styles.inputField}

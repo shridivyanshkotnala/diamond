@@ -132,7 +132,7 @@ export default function GstVerificationScreen() {
                     setGstError(null);
                   }}
                   placeholder="26ABCDE1234F1Z5"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={Colors.placeholder}
                   autoCapitalize="characters"
                   editable={!loading}
                   style={styles.textInput}

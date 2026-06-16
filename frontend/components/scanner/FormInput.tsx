@@ -1,5 +1,7 @@
 import { Text, TextInput, View } from 'react-native';
 
+import { Colors } from '@/constants/theme';
+
 interface FormInputProps {
   label: string;
   value: string;
@@ -25,7 +27,7 @@ export function FormInput({
         onChangeText={onChangeText}
         placeholder={placeholder}
         editable={editable}
-        placeholderTextColor="#8E8E8E"
+        placeholderTextColor={Colors.placeholder}
         className="rounded-input border border-border bg-[#F4F5F7] px-4 py-3.5 text-base text-text-primary"
       />
     </View>
