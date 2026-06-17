@@ -6,6 +6,7 @@ import { BottomNav } from '@/components/dashboard/BottomNav';
 import { EmployeeScreenHeader } from '@/components/employees/EmployeeScreenHeader';
 import { MatrixCheckboxRow } from '@/components/settings/MatrixCheckboxRow';
 import { SILVER_MATRIX_SECTION, WEIGHT_ACCESS_ROWS } from '@/constants/dashboardMatrices';
+import { SETTINGS_PERMISSION_ROWS } from '@/constants/settingsPermissions';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useEmployeeDraftStore } from '@/store/employeeDraftStore';
 import { useEmployeeStore } from '@/store/employeeStore';
@@ -133,6 +134,14 @@ export default function EmployeePermissionsExtraScreen() {
             onToggle={togglePermission}
           />
         ))}
+
+        <PermissionCard
+          title="Settings Access"
+          subtitle="Optional settings screens this employee can open"
+          rows={SETTINGS_PERMISSION_ROWS}
+          permissions={permissions}
+          onToggle={togglePermission}
+        />
 
         <TouchableOpacity activeOpacity={0.9} onPress={handleContinue} style={styles.continueBtn}>
           <Text style={styles.continueText}>Continue</Text>

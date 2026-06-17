@@ -18,6 +18,7 @@ import { BottomNav } from '@/components/dashboard/BottomNav';
 import type { PurityItem } from '@/constants/purityData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { usePurityStore } from '@/store/purityStore';
+import { useRequireSettingsAccess } from '@/hooks/useSettingsAccess';
 
 const BUTTON_GREEN = '#1B3022';
 
@@ -67,12 +68,15 @@ function PurityCard({ title, items, onEdit }: PurityCardProps) {
 }
 
 export default function PurityControlScreen() {
+  const allowed = useRequireSettingsAccess('tunch');
   const router = useRouter();
   const items = usePurityStore((s) => s.items);
   const updateValue = usePurityStore((s) => s.updateValue);
 
   const [editingItem, setEditingItem] = useState<PurityItem | null>(null);
   const [draftValue, setDraftValue] = useState('');
+
+  if (!allowed) return null;
 
   const goldItems = items.filter((item) => item.metal === 'gold');
   const silverItems = items.filter((item) => item.metal === 'silver');

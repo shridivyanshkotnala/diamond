@@ -5,8 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
-import { SETTINGS_MENU_ITEMS } from '@/constants/settingsData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { useSettingsAccess } from '@/hooks/useSettingsAccess';
 import { useAuthStore } from '@/store/authStore';
 
 const PROFILE_GREEN = '#1B3022';
@@ -16,6 +16,7 @@ const LOGOUT_RED = '#EA4335';
 export default function SettingsScreen() {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
+  const { visibleMenuItems } = useSettingsAccess();
 
   const handleLogout = () => {
     logout();
@@ -46,7 +47,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.menuList}>
-          {SETTINGS_MENU_ITEMS.map((item) => {
+          {visibleMenuItems.map((item) => {
             if (item.isLogout) {
               return (
                 <TouchableOpacity

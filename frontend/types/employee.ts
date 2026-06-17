@@ -2,13 +2,19 @@ import type { MatrixKey } from '@/constants/dashboardMatrices';
 
 export type EmployeeGender = 'Male' | 'Female' | 'Other';
 
+export type SettingsPermissionKey =
+  | 'settings_formulae'
+  | 'settings_inventory'
+  | 'settings_purity'
+  | 'settings_invoice';
+
 export type ExtraPermissionKey =
   | 'upload_new_items'
   | 'delete_stock_items'
   | 'edit_formulae'
   | 'revoke_access';
 
-export type EmployeePermissionKey = MatrixKey | ExtraPermissionKey;
+export type EmployeePermissionKey = MatrixKey | ExtraPermissionKey | SettingsPermissionKey;
 
 export type EmployeePermissions = Record<EmployeePermissionKey, boolean>;
 

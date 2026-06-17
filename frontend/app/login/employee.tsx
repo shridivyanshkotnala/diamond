@@ -77,9 +77,14 @@ export default function EmployeeLoginScreen() {
       if (method === 'contact') {
         const apiResult = await loginEmployeeByPhone(contact, password);
         if (apiResult.success && apiResult.data) {
+          const normalizedContact = contact.replace(/\D/g, '').slice(-10);
+          const matchedEmployee = employees.find(
+            (employee) => employee.phone.replace(/\D/g, '').slice(-10) === normalizedContact,
+          );
+
           setAuthToken(apiResult.data.accessToken);
           setUserRole(apiResult.data.role === 'EMP' ? 'employee' : 'business');
-          setLoggedInEmployee(null);
+          setLoggedInEmployee(matchedEmployee?.id ?? null);
           setAuthenticated(true);
           if (rememberMe) {
             setSavedEmployeeContact('', contact.replace(/\D/g, '').slice(-10));

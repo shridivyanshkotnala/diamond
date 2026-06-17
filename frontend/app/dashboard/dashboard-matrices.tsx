@@ -23,17 +23,21 @@ import {
 } from '@/constants/dashboardMatrices';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useMatricesStore } from '@/store/matricesStore';
+import { useRequireSettingsAccess } from '@/hooks/useSettingsAccess';
 
 const ACCENT_GOLD = '#C5A059';
 const BUTTON_GREEN = '#1B2E26';
 
 export default function DashboardMatricesScreen() {
+  const allowed = useRequireSettingsAccess('matrices');
   const router = useRouter();
   const storedValues = useMatricesStore((s) => s.values);
   const applyValues = useMatricesStore((s) => s.applyValues);
 
   const [draft, setDraft] = useState(storedValues);
   const [saving, setSaving] = useState(false);
+
+  if (!allowed) return null;
 
   const toggle = (key: MatrixKey) => {
     setDraft((prev) => ({ ...prev, [key]: !prev[key] }));
