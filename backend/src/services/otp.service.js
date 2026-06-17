@@ -1,14 +1,18 @@
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const { Resend } = require('resend');
 const OtpVerification = require('../models/otpVerification.model');
 const redisClient = require('../redis/redisClient');
 const config = require('../config/env');
 
 const resend = new Resend(config.resend.apiKey);
+const isDevelopment = config.env === 'development';
 
 const generateOtp = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const logDevOtp = (type, otp, destination) => {
+  console.log(`[DEV OTP] ${type} OTP: ${otp} for ${destination}`);
 };
 
 // Rate limiting and Resend logic
@@ -17,31 +21,27 @@ const checkOtpRateLimits = async (businessId, type) => {
   const shortLimitKey = `otp_count_short:${businessId}:${type}`;
   const dayKey = `otp_count_day:${businessId}:${type}`;
 
-  // Check Resend Timeout (60 seconds)
   const isResendBlocked = await redisClient.get(resendKey);
   if (isResendBlocked) {
     throw new Error('RESEND_TIMEOUT');
   }
 
-  // Check 5 Minutes Limit (5 max)
   let shortCount = await redisClient.get(shortLimitKey);
   if (shortCount && parseInt(shortCount) >= 5) {
     throw new Error('OTP_LIMIT_EXCEEDED');
   }
 
-  // Check 24 Hour Limit (10 max)
   let dayCount = await redisClient.get(dayKey);
   if (dayCount && parseInt(dayCount) >= 10) {
     throw new Error('OTP_LIMIT_EXCEEDED');
   }
 
-  // Increment counters
   await redisClient.set(resendKey, 'blocked', 'EX', 60);
-  
+
   if (shortCount) {
     await redisClient.incr(shortLimitKey);
   } else {
-    await redisClient.set(shortLimitKey, '1', 'EX', 300); // 300 seconds (5 mins)
+    await redisClient.set(shortLimitKey, '1', 'EX', 300);
   }
 
   if (dayCount) {
@@ -53,97 +53,93 @@ const checkOtpRateLimits = async (businessId, type) => {
 
 const sendPhoneOtp = async (businessId, phone) => {
   await checkOtpRateLimits(businessId, 'PHONE');
-  
+
   const otp = generateOtp();
   const otpHash = await bcrypt.hash(otp, 10);
-  
-  // Store in DB (Expires in 5 minutes)
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
   await OtpVerification.create({
     businessId,
     otpType: 'PHONE',
     destination: phone,
     otpHash,
-    expiresAt
+    expiresAt,
   });
 
-  // Temporary log for testing/debugging
-  console.log(`[DEV OTP] Generated Phone OTP: ${otp} for ${phone}`);
+  logDevOtp('Phone', otp, phone);
 
-  // MSG91 API Integration
-  // MSG91 API Integration
-try {
-  const options = {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'content-type': 'application/json',
-      authkey: config.msg91.authKey
-    },
-    body: JSON.stringify({
-      template_id: config.msg91.templateId,
-      mobile: `91${phone}`,
-      otp: otp
-    })
-  };
+  try {
+    const response = await fetch('https://control.msg91.com/api/v5/otp', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        authkey: config.msg91.authKey,
+      },
+      body: JSON.stringify({
+        template_id: config.msg91.templateId,
+        mobile: `91${phone}`,
+        otp,
+      }),
+    });
 
-  console.log('Phone received:', phone);
-  console.log('Template ID:', config.msg91.templateId);
+    const data = await response.json();
 
-  const response = await fetch(
-    'https://control.msg91.com/api/v5/otp',
-    options
-  );
+    if (data.type === 'error') {
+      throw new Error(data.message || 'MSG91 returned an error');
+    }
 
-  console.log('HTTP Status:', response.status);
-
-  const data = await response.json();
-  console.log('MSG91 Response:', data);
-
-  if (data.type === 'error') {
-    console.error('MSG91 Error:', data);
+    console.log(`[MSG91] Sent phone OTP to ${phone}`);
+  } catch (error) {
+    if (isDevelopment) {
+      console.warn(
+        `[DEV OTP] MSG91 unavailable (${error.message}) — use terminal OTP above for phone ${phone}`
+      );
+      return true;
+    }
+    console.error('MSG91 Request Error:', error);
     throw new Error('Failed to send SMS OTP');
   }
 
-  console.log(`[MSG91 SUCCESS] Sent Phone OTP to ${phone}`);
-} catch (error) {
-  console.error('MSG91 Request Error:', error);
-  throw new Error('Failed to send SMS OTP');
-}
-
-return true;
+  return true;
 };
 
 const sendEmailOtp = async (businessId, email) => {
   await checkOtpRateLimits(businessId, 'EMAIL');
-  
+
   const otp = generateOtp();
   const otpHash = await bcrypt.hash(otp, 10);
-  
-  // Store in DB (Expires in 5 minutes)
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
   await OtpVerification.create({
     businessId,
     otpType: 'EMAIL',
     destination: email,
     otpHash,
-    expiresAt
+    expiresAt,
   });
 
-  // Send via Resend API
+  logDevOtp('Email', otp, email);
+
   try {
     await resend.emails.send({
-      from: 'onboarding@resend.dev', // Default testing domain
+      from: 'onboarding@resend.dev',
       to: email,
       subject: 'Your Verification OTP',
-      html: `<p>Your verification code is: <strong>${otp}</strong>. It expires in 5 minutes.</p>`
+      html: `<p>Your verification code is: <strong>${otp}</strong>. It expires in 5 minutes.</p>`,
     });
-    console.log(`[RESEND EMAIL] Sent Email OTP ${otp} to ${email}`);
+    console.log(`[RESEND] Sent email OTP to ${email}`);
   } catch (error) {
+    if (isDevelopment) {
+      console.warn(
+        `[DEV OTP] Resend unavailable (${error.message}) — use terminal OTP above for ${email}`
+      );
+      return true;
+    }
     console.error('Resend Email Error:', error);
     throw new Error('Failed to send email OTP');
   }
-  
+
   return true;
 };
 
@@ -151,37 +147,33 @@ const verifyOtp = async (businessId, otpType, otp) => {
   const attemptsKey = `otp_attempts:${businessId}:${otpType}`;
   let attempts = await redisClient.get(attemptsKey);
   if (attempts && parseInt(attempts) >= 5) {
-    throw new Error('OTP_LIMIT_EXCEEDED'); // Too many failed attempts
+    throw new Error('OTP_LIMIT_EXCEEDED');
   }
 
-  // Find latest unverified OTP
   const record = await OtpVerification.findOne({
     businessId,
     otpType,
     verified: false,
-    expiresAt: { $gt: new Date() } // Not expired
+    expiresAt: { $gt: new Date() },
   }).sort({ createdAt: -1 });
 
   if (!record) {
-    throw new Error('OTP_EXPIRED'); // Or invalid
+    throw new Error('OTP_EXPIRED');
   }
 
   const isValid = await bcrypt.compare(otp, record.otpHash);
-  
+
   if (!isValid) {
     if (attempts) {
       await redisClient.incr(attemptsKey);
     } else {
-      await redisClient.set(attemptsKey, '1', 'EX', 900); // Block for 15 mins after 5 attempts
+      await redisClient.set(attemptsKey, '1', 'EX', 900);
     }
     throw new Error('OTP_INVALID');
   }
 
-  // Mark as verified
   record.verified = true;
   await record.save();
-
-  // Clear attempts
   await redisClient.del(attemptsKey);
 
   return true;
@@ -190,5 +182,5 @@ const verifyOtp = async (businessId, otpType, otp) => {
 module.exports = {
   sendPhoneOtp,
   sendEmailOtp,
-  verifyOtp
+  verifyOtp,
 };
