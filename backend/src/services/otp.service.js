@@ -81,21 +81,24 @@ const sendPhoneOtp = async (businessId, phone) => {
   rememberDevOtp(businessId, 'phone', otp, phone);
 
   try {
-    const response = await fetch('https://control.msg91.com/api/v5/otp', {
+    const url = new URL('https://control.msg91.com/api/v5/otp');
+    url.searchParams.append('template_id', config.msg91.templateId);
+    url.searchParams.append('mobile', `91${phone}`);
+    url.searchParams.append('authkey', config.msg91.authKey);
+    url.searchParams.append('otp', otp);
+
+    const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-        authkey: config.msg91.authKey,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        template_id: config.msg91.templateId,
-        mobile: `91${phone}`,
-        otp,
+        otp: otp // Also pass in body in case template expects an 'otp' variable
       }),
     });
 
     const data = await response.json();
+    console.log(`[MSG91 RESPONSE]`, data);
 
     if (data.type === 'error') {
       throw new Error(data.message || 'MSG91 returned an error');
