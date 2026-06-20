@@ -36,7 +36,7 @@ const loginSchema = Joi.object({
 });
 
 const employeeLoginSchema = Joi.object({
-  phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
+  employeeId: Joi.string().required(),
   password: Joi.string().required(),
 });
 

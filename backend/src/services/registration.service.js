@@ -184,29 +184,31 @@ const login = async (email, password) => {
   };
 };
 
-const loginWithPhone = async (phone, password) => {
-  const normalizedPhone = normalizePhone(phone);
-  const user = await BusinessUser.findOne({ phone: normalizedPhone });
+const loginEmployee = async (employeeId, password) => {
+  const Employee = require('../models/employee.model');
+  const user = await Employee.findOne({ employeeId });
   if (!user || !user.isActive) {
-    throw new Error('INVALID_PHONE_CREDENTIALS');
+    throw new Error('INVALID_EMPLOYEE_CREDENTIALS');
   }
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
-    throw new Error('INVALID_PHONE_CREDENTIALS');
+    throw new Error('INVALID_EMPLOYEE_CREDENTIALS');
   }
 
   user.lastLoginAt = new Date();
   await user.save();
 
-  const tokens = authService.generateTokens(user.businessId.toString(), user._id.toString(), user.role);
+  const tokens = authService.generateTokens(user.businessId.toString(), user._id.toString(), 'EMP');
 
   return {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     businessId: user.businessId.toString(),
     userId: user._id.toString(),
-    role: user.role,
+    employeeId: user.employeeId,
+    role: 'EMP',
+    permissions: user.permissions
   };
 };
 
@@ -217,5 +219,5 @@ module.exports = {
   verifyEmailOtp,
   createPassword,
   login,
-  loginWithPhone,
+  loginEmployee,
 };
