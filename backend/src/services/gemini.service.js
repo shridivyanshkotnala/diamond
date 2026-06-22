@@ -40,11 +40,15 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
   ];
 
   const response = await ai.models.generateContent({
-    // gemini-2.0-flash has no internal "thinking" overhead — much faster for structured tasks
-    model: 'gemini-2.0-flash',
+    // gemini-2.5-flash with thinkingBudget=0 disables the thinking step entirely —
+    // same speed as 2.0-flash but uses the free-tier quota we actually have
+    model: 'gemini-2.5-flash',
     contents: parts,
     config: {
       responseMimeType: 'application/json',
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     },
   });
 
