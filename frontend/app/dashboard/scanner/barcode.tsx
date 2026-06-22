@@ -73,10 +73,11 @@ export default function BarcodeScannerScreen() {
       if (isDemo) {
         await completeDemoCapture(scanId, Boolean(backUri));
       } else {
-        await uploadFrontImage(scanId, frontUri);
-        if (backUri) {
-          await uploadBackImage(scanId, backUri);
-        }
+        // Upload front and back images in parallel — cuts upload time ~50% for both-sides scans
+        await Promise.all([
+          uploadFrontImage(scanId, frontUri),
+          backUri ? uploadBackImage(scanId, backUri) : Promise.resolve(),
+        ]);
       }
       goToProcessing();
     } catch (error) {
