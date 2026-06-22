@@ -22,6 +22,48 @@ const fileToGenerativePart = async (filePath, mimeType) => {
   };
 };
 
+// Retryable status codes: 503 = server overload, 429 = rate limit (transient)
+const RETRYABLE_CODES = new Set([503, 429]);
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 2000; // 2s → 4s → 8s
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const callGeminiWithRetry = async (parts) => {
+  let lastError;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await ai.models.generateContent({
+        // gemini-2.5-flash with thinkingBudget=0 disables the thinking step entirely —
+        // same speed as 2.0-flash but uses the free-tier quota we actually have
+        model: 'gemini-2.5-flash',
+        contents: parts,
+        config: {
+          responseMimeType: 'application/json',
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
+        },
+      });
+    } catch (err) {
+      lastError = err;
+      const status = err?.status ?? err?.response?.status;
+      const isRetryable = RETRYABLE_CODES.has(status);
+
+      if (!isRetryable || attempt === MAX_RETRIES) {
+        throw err;
+      }
+
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 2s, 4s, 8s
+      console.warn(`[Gemini] ${status} error — retrying in ${delay / 1000}s (attempt ${attempt + 1}/${MAX_RETRIES})...`);
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+};
+
 const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanType) => {
   // Build image parts in parallel to avoid sequential I/O delay
   const imageParts = await Promise.all([
@@ -39,18 +81,7 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
     ...imageParts.filter(Boolean),
   ];
 
-  const response = await ai.models.generateContent({
-    // gemini-2.5-flash with thinkingBudget=0 disables the thinking step entirely —
-    // same speed as 2.0-flash but uses the free-tier quota we actually have
-    model: 'gemini-2.5-flash',
-    contents: parts,
-    config: {
-      responseMimeType: 'application/json',
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
-    },
-  });
+  const response = await callGeminiWithRetry(parts);
 
   const responseText = response.text;
   try {
