@@ -201,10 +201,10 @@ const submitClarification = async (scanId, confirmedMappings) => {
 
 const getReviewData = async (scanId) => {
    const scan = await redisService.getScan(scanId);
-   if (!scan || !scan.analysisResult) throw new Error('Scan not found');
+   if (!scan) throw new Error('Scan not found');
 
    const structuredData = {};
-   const rawStruct = scan.analysisResult.structuredData || {};
+   const rawStruct = scan.analysisResult?.structuredData || {};
    for (const [k, v] of Object.entries(rawStruct)) {
      const value = v?.value;
      if (value != null && String(value).trim() !== '') {
