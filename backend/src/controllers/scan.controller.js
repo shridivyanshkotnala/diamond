@@ -46,7 +46,7 @@ const analyzeScan = async (req, res, next) => {
         provider: updated.analysisResult.provider,
         rawText: updated.analysisResult.rawText,
         structuredData: updated.analysisResult.structuredData,
-        unknownFields: updated.analysisResult.unknownFields,
+        unknownFields: [], // Force empty to bypass frontend clarification screen
         overallConfidence: updated.analysisResult.overallConfidence
     });
   } catch (err) {
