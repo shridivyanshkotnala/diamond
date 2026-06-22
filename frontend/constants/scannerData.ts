@@ -10,7 +10,7 @@ import type {
   ScanResultData,
 } from '@/types/scanner';
 
-export const JEWELLERY_TYPES = ['Diamond', 'Gold', 'Silver', 'Colour Stone'] as const;
+export const JEWELLERY_TYPES = ['Gold', 'Diamond'] as const;
 
 export const DEFAULT_SCAN_ITEM: ScanItemData = {
   sku: 'G-1002',
@@ -19,10 +19,17 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   netWt: '38.200',
   pureWt: '34.991',
   tunch: '91.6',
+  diamondWeight: '1.20',
+  diamondColor: 'IJ',
+  diamondClarity: 'VSSI',
+  diamondQuality: 'IJ VSSI',
   diamondRate: '9500',
-  diamondQuality: 'VVS1/F',
-  diamondWeight: '1.20 ct',
   diamondPieces: '4',
+  colorstoneWeight: '',
+  colorstoneColor: '',
+  colorstoneClarity: '',
+  colorstoneQuality: '',
+  colorstoneRate: '',
   labour: '',
   diamondAmount: '11,400',
 };
@@ -190,46 +197,34 @@ export const ACTIVE_FORMULA_STEPS = [
   { id: '5', label: 'GST Application', progress: 0 },
 ];
 
+const COMMON_ABBREVIATIONS = [
+  'Gross Wt',
+  'Net Wt',
+  'Pure Wt',
+  'Labour',
+  'Other',
+] as const;
+
+const COLORSTONE_ABBREVIATIONS = [
+  'Colorstone Rate',
+  'Colorstone Quality',
+  'Colorstone Pieces',
+] as const;
+
 export const ABBREVIATION_OPTIONS_BY_TYPE: Record<JewelleryType, readonly AbbreviationOption[]> = {
   Diamond: [
-    'Gross Wt',
-    'Net Wt',
-    'Pure Wt',
+    ...COMMON_ABBREVIATIONS,
     'Diamond Rate',
     'Diamond Quality',
     'Diamond Pieces',
-    'Labour',
-    'Other',
+    ...COLORSTONE_ABBREVIATIONS,
   ],
   Gold: [
-    'Gross Wt',
-    'Net Wt',
-    'Pure Wt',
+    ...COMMON_ABBREVIATIONS,
     'Gold Rate',
     'Gold Quality',
     'Gold Pieces',
-    'Labour',
-    'Other',
-  ],
-  Silver: [
-    'Gross Wt',
-    'Net Wt',
-    'Pure Wt',
-    'Silver Rate',
-    'Silver Quality',
-    'Silver Pieces',
-    'Labour',
-    'Other',
-  ],
-  'Colour Stone': [
-    'Gross Wt',
-    'Net Wt',
-    'Pure Wt',
-    'Colour Stone Rate',
-    'Colour Stone Quality',
-    'Colour Stone Pieces',
-    'Labour',
-    'Other',
+    ...COLORSTONE_ABBREVIATIONS,
   ],
 };
 
@@ -242,9 +237,16 @@ export const MOCK_REVIEW_RESULTS = {
   grossWt: '',
   netWt: '38.200 g',
   tunch: '91.6 % (22K)',
-  diamondWeight: '22 ct',
+  diamondWeight: '22',
+  diamondColor: 'IJ',
+  diamondClarity: 'VSSI',
   diamondPieces: '4',
-  diamondRate: '₹16,436',
-  diamondQuality: 'VVS1/F',
-  labour: '₹5,465',
+  diamondRate: '16436',
+  diamondQuality: 'IJ VSSI',
+  colorstoneWeight: '',
+  colorstoneColor: '',
+  colorstoneClarity: '',
+  colorstoneQuality: '',
+  colorstoneRate: '',
+  labour: '5465',
 };

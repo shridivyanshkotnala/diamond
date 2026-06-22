@@ -16,6 +16,7 @@ import { ScreenBackHeader } from '@/components/scanner/ScreenBackHeader';
 import { MOCK_REVIEW_RESULTS } from '@/constants/scannerData';
 import { isDemoScanMode } from '@/constants/scanMode';
 import { useScannerStore } from '@/store/scannerStore';
+import type { ScanItemData } from '@/types/scanner';
 import { ApiError } from '@/utils/apiClient';
 import { getReview, submitReview } from '@/utils/scanApi';
 import { scanItemToStructuredData, structuredDataToScanItem } from '@/utils/scanMappers';
@@ -27,6 +28,7 @@ export default function ReviewResultsScreen() {
   const router = useRouter();
   const scanId = useScannerStore((s) => s.scanId);
   const scanData = useScannerStore((s) => s.scanData);
+  const selectedType = useScannerStore((s) => s.selectedType);
   const structuredData = useScannerStore((s) => s.structuredData);
   const updateScanData = useScannerStore((s) => s.updateScanData);
   const setStructuredData = useScannerStore((s) => s.setStructuredData);
@@ -57,9 +59,16 @@ export default function ReviewResultsScreen() {
           netWt: MOCK_REVIEW_RESULTS.netWt,
           tunch: MOCK_REVIEW_RESULTS.tunch,
           diamondWeight: MOCK_REVIEW_RESULTS.diamondWeight,
+          diamondColor: MOCK_REVIEW_RESULTS.diamondColor,
+          diamondClarity: MOCK_REVIEW_RESULTS.diamondClarity,
           diamondPieces: MOCK_REVIEW_RESULTS.diamondPieces,
           diamondRate: MOCK_REVIEW_RESULTS.diamondRate,
           diamondQuality: MOCK_REVIEW_RESULTS.diamondQuality,
+          colorstoneWeight: MOCK_REVIEW_RESULTS.colorstoneWeight,
+          colorstoneColor: MOCK_REVIEW_RESULTS.colorstoneColor,
+          colorstoneClarity: MOCK_REVIEW_RESULTS.colorstoneClarity,
+          colorstoneQuality: MOCK_REVIEW_RESULTS.colorstoneQuality,
+          colorstoneRate: MOCK_REVIEW_RESULTS.colorstoneRate,
           labour: MOCK_REVIEW_RESULTS.labour,
         });
         return;
@@ -78,7 +87,7 @@ export default function ReviewResultsScreen() {
     loadReview();
   }, [loadReview]);
 
-  const handleFieldChange = (field: keyof typeof scanData, value: string) => {
+  const handleFieldChange = (field: keyof ScanItemData, value: string) => {
     const updated = { ...useScannerStore.getState().scanData, [field]: value };
     updateScanData({ [field]: value });
     setStructuredData(
@@ -132,22 +141,9 @@ export default function ReviewResultsScreen() {
             ) : (
               <View className="w-full">
                 <ReviewScannedResultsModal
-                  grossWt={scanData.grossWt}
-                  netWt={scanData.netWt}
-                  tunch={scanData.tunch}
-                  diamondWeight={scanData.diamondWeight}
-                  diamondPieces={scanData.diamondPieces}
-                  diamondRate={scanData.diamondRate}
-                  diamondQuality={scanData.diamondQuality}
-                  labour={scanData.labour}
-                  onGrossWtChange={(value) => handleFieldChange('grossWt', value)}
-                  onNetWtChange={(value) => handleFieldChange('netWt', value)}
-                  onTunchChange={(value) => handleFieldChange('tunch', value)}
-                  onDiamondWeightChange={(value) => handleFieldChange('diamondWeight', value)}
-                  onDiamondPiecesChange={(value) => handleFieldChange('diamondPieces', value)}
-                  onDiamondRateChange={(value) => handleFieldChange('diamondRate', value)}
-                  onDiamondQualityChange={(value) => handleFieldChange('diamondQuality', value)}
-                  onLabourChange={(value) => handleFieldChange('labour', value)}
+                  scanData={scanData}
+                  jewelleryType={selectedType}
+                  onFieldChange={handleFieldChange}
                   onReScan={handleReScan}
                   onConfirm={handleConfirm}
                   confirming={submitting}

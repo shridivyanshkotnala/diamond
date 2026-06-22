@@ -1,7 +1,14 @@
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { Pencil } from 'lucide-react-native';
 
+import { ColorstoneSection } from '@/components/scanner/ColorstoneSection';
+import { DiamondSection } from '@/components/scanner/DiamondSection';
+import { ScannerInput } from '@/components/scanner/ScannerInput';
+import { ScannerPreview } from '@/components/scanner/ScannerPreview';
 import { Colors } from '@/constants/theme';
+import type { ScanItemData } from '@/types/scanner';
+import { parseScannerTag } from '@/utils/scannerTagParser';
 
 interface ReviewFieldRowProps {
   label: string;
@@ -10,6 +17,7 @@ interface ReviewFieldRowProps {
   placeholder?: string;
   required?: boolean;
   missing?: boolean;
+  editable?: boolean;
 }
 
 function ReviewFieldRow({
@@ -19,6 +27,7 @@ function ReviewFieldRow({
   placeholder,
   required = false,
   missing = false,
+  editable = true,
 }: ReviewFieldRowProps) {
   return (
     <View className="mb-3 flex-row items-center gap-3">
@@ -35,85 +44,128 @@ function ReviewFieldRow({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
+          editable={editable}
           placeholderTextColor={Colors.placeholder}
           className="flex-1 text-sm text-text-primary"
         />
-        {!missing ? <Pencil size={14} color="#757575" /> : null}
+        {editable && !missing ? <Pencil size={14} color="#757575" /> : null}
       </View>
     </View>
   );
 }
 
 interface ReviewScannedResultsModalProps {
-  grossWt: string;
-  netWt: string;
-  tunch: string;
-  diamondWeight: string;
-  diamondPieces: string;
-  diamondRate: string;
-  diamondQuality: string;
-  labour: string;
-  onGrossWtChange: (value: string) => void;
-  onNetWtChange: (value: string) => void;
-  onTunchChange: (value: string) => void;
-  onDiamondWeightChange: (value: string) => void;
-  onDiamondPiecesChange: (value: string) => void;
-  onDiamondRateChange: (value: string) => void;
-  onDiamondQualityChange: (value: string) => void;
-  onLabourChange: (value: string) => void;
+  scanData: ScanItemData;
+  jewelleryType: 'Gold' | 'Diamond';
+  onFieldChange: (field: keyof ScanItemData, value: string) => void;
   onReScan: () => void;
   onConfirm: () => void;
   confirming?: boolean;
 }
 
 export function ReviewScannedResultsModal({
-  grossWt,
-  netWt,
-  tunch,
-  diamondWeight,
-  diamondPieces,
-  diamondRate,
-  diamondQuality,
-  labour,
-  onGrossWtChange,
-  onNetWtChange,
-  onTunchChange,
-  onDiamondWeightChange,
-  onDiamondPiecesChange,
-  onDiamondRateChange,
-  onDiamondQualityChange,
-  onLabourChange,
+  scanData,
+  jewelleryType,
+  onFieldChange,
   onReScan,
   onConfirm,
   confirming = false,
 }: ReviewScannedResultsModalProps) {
+  const [scannerInput, setScannerInput] = useState('');
+  const [parsedTag, setParsedTag] = useState(parseScannerTag(''));
+  const [diamondRateError, setDiamondRateError] = useState(false);
+  const [colorstoneRateError, setColorstoneRateError] = useState(false);
+
+  const handleScannerInput = useCallback(
+    (text: string) => {
+      setScannerInput(text);
+      const parsed = parseScannerTag(text);
+      setParsedTag(parsed);
+
+      if (!parsed) return;
+
+      if (parsed.stoneType === 'diamond') {
+        onFieldChange('diamondWeight', parsed.weight);
+        onFieldChange('diamondRate', parsed.rate);
+      } else {
+        onFieldChange('colorstoneWeight', parsed.weight);
+        onFieldChange('colorstoneRate', parsed.rate);
+      }
+    },
+    [onFieldChange],
+  );
+
+  const hasRateError = diamondRateError || colorstoneRateError;
+  const canConfirm = Boolean(scanData.grossWt.trim()) && !hasRateError;
+
   return (
     <View className="rounded-[20px] bg-white px-5 py-6 shadow-lg">
       <Text className="mb-5 text-lg font-bold text-text-primary">Review Scanned Results</Text>
 
+      <ScannerInput value={scannerInput} onChangeText={handleScannerInput} />
+      <ScannerPreview parsed={parsedTag} rawInput={scannerInput} />
+
       <ReviewFieldRow
         label="Gross Wt."
-        value={grossWt}
-        onChangeText={onGrossWtChange}
+        value={scanData.grossWt}
+        onChangeText={(value) => onFieldChange('grossWt', value)}
         placeholder="Enter Missing Value"
         required
-        missing={!grossWt}
+        missing={!scanData.grossWt}
       />
-      <ReviewFieldRow label="Net Weight" value={netWt} onChangeText={onNetWtChange} />
-      <ReviewFieldRow label="Tunch (Purity)" value={tunch} onChangeText={onTunchChange} />
-      <ReviewFieldRow label="Diamond Wt." value={diamondWeight} onChangeText={onDiamondWeightChange} />
       <ReviewFieldRow
-        label="Diamond Pieces"
-        value={diamondPieces}
-        onChangeText={onDiamondPiecesChange}
+        label="Net Weight"
+        value={scanData.netWt}
+        onChangeText={(value) => onFieldChange('netWt', value)}
       />
-      <ReviewFieldRow label="Diamond Rate" value={diamondRate} onChangeText={onDiamondRateChange} />
       <ReviewFieldRow
-        label="Diamond Quality"
-        value={diamondQuality}
-        onChangeText={onDiamondQualityChange}
+        label="Tunch (Purity)"
+        value={scanData.tunch}
+        onChangeText={(value) => onFieldChange('tunch', value)}
       />
-      <ReviewFieldRow label="Labour" value={labour} onChangeText={onLabourChange} />
+      <ReviewFieldRow
+        label="Labour"
+        value={scanData.labour}
+        onChangeText={(value) => onFieldChange('labour', value)}
+      />
+
+      {jewelleryType === 'Diamond' ? (
+        <DiamondSection
+          values={{
+            weight: scanData.diamondWeight,
+            color: scanData.diamondColor,
+            clarity: scanData.diamondClarity,
+            quality: scanData.diamondQuality,
+            rate: scanData.diamondRate,
+          }}
+          onChange={(values) => {
+            if (values.weight !== undefined) onFieldChange('diamondWeight', values.weight);
+            if (values.color !== undefined) onFieldChange('diamondColor', values.color);
+            if (values.clarity !== undefined) onFieldChange('diamondClarity', values.clarity);
+            if (values.quality !== undefined) onFieldChange('diamondQuality', values.quality);
+            if (values.rate !== undefined) onFieldChange('diamondRate', values.rate);
+          }}
+          onRateErrorChange={setDiamondRateError}
+        />
+      ) : null}
+
+      <ColorstoneSection
+        values={{
+          weight: scanData.colorstoneWeight,
+          color: scanData.colorstoneColor,
+          clarity: scanData.colorstoneClarity,
+          quality: scanData.colorstoneQuality,
+          rate: scanData.colorstoneRate,
+        }}
+        onChange={(values) => {
+          if (values.weight !== undefined) onFieldChange('colorstoneWeight', values.weight);
+          if (values.color !== undefined) onFieldChange('colorstoneColor', values.color);
+          if (values.clarity !== undefined) onFieldChange('colorstoneClarity', values.clarity);
+          if (values.quality !== undefined) onFieldChange('colorstoneQuality', values.quality);
+          if (values.rate !== undefined) onFieldChange('colorstoneRate', values.rate);
+        }}
+        onRateErrorChange={setColorstoneRateError}
+      />
 
       <View className="mt-4 flex-row gap-3">
         <Pressable
@@ -124,7 +176,7 @@ export function ReviewScannedResultsModal({
         </Pressable>
         <Pressable
           onPress={onConfirm}
-          disabled={confirming}
+          disabled={confirming || !canConfirm}
           className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
         >
           {confirming ? (
@@ -135,8 +187,14 @@ export function ReviewScannedResultsModal({
         </Pressable>
       </View>
 
+      {hasRateError ? (
+        <Text className="mt-3 text-center text-xs text-danger-text">
+          Resolve rate errors before saving.
+        </Text>
+      ) : null}
+
       <Text className="mt-4 text-center text-xs leading-5 text-text-secondary">
-        <Text className="text-danger-text">*</Text> Scanner couldn't scan or find specific value,
+        <Text className="text-danger-text">*</Text> Scanner couldn&apos;t scan or find specific value,
         Manually Enter value or ReScan.
       </Text>
     </View>

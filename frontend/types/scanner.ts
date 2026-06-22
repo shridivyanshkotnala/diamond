@@ -1,6 +1,8 @@
-export type JewelleryType = 'Diamond' | 'Gold' | 'Silver' | 'Colour Stone';
+export type JewelleryType = 'Diamond' | 'Gold';
 
-export type ApiJewelleryType = 'DIAMOND' | 'GOLD' | 'SILVER' | 'COLOUR_STONE';
+export type ApiJewelleryType = 'DIAMOND' | 'GOLD';
+
+export type StoneRateType = 'diamond' | 'colorstone';
 
 export type ApiScanType = 'SINGLE_SIDE' | 'BOTH_SIDES';
 
@@ -93,12 +95,9 @@ export type AbbreviationOption =
   | 'Gold Rate'
   | 'Gold Quality'
   | 'Gold Pieces'
-  | 'Silver Rate'
-  | 'Silver Quality'
-  | 'Silver Pieces'
-  | 'Colour Stone Rate'
-  | 'Colour Stone Quality'
-  | 'Colour Stone Pieces'
+  | 'Colorstone Rate'
+  | 'Colorstone Quality'
+  | 'Colorstone Pieces'
   | 'Labour'
   | 'Other';
 
@@ -109,12 +108,26 @@ export interface ScanItemData {
   netWt: string;
   pureWt: string;
   tunch: string;
-  diamondRate: string;
-  diamondQuality: string;
   diamondWeight: string;
+  diamondColor: string;
+  diamondClarity: string;
+  diamondQuality: string;
+  diamondRate: string;
   diamondPieces: string;
+  colorstoneWeight: string;
+  colorstoneColor: string;
+  colorstoneClarity: string;
+  colorstoneQuality: string;
+  colorstoneRate: string;
   labour: string;
   diamondAmount: string;
+}
+
+export interface ParsedScannerTag {
+  stoneType: 'diamond' | 'colorstone';
+  shape?: string;
+  weight: string;
+  rate: string;
 }
 
 export interface FormulaRule {

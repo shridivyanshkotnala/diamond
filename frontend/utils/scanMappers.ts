@@ -6,13 +6,12 @@ import type {
   ConfirmedMapping,
   StructuredScanData,
 } from '@/types/scanner';
+import { buildQuality } from '@/utils/qualityUtils';
 import { getClarificationFieldLabel } from '@/utils/clarificationFields';
 
 const JEWELLERY_TYPE_TO_API: Record<JewelleryType, ApiJewelleryType> = {
   Diamond: 'DIAMOND',
   Gold: 'GOLD',
-  Silver: 'SILVER',
-  'Colour Stone': 'COLOUR_STONE',
 };
 
 const API_FIELD_LABELS: Record<string, string> = {
@@ -24,18 +23,17 @@ const API_FIELD_LABELS: Record<string, string> = {
   diamondPieces: 'Diamond Pieces',
   diamondRate: 'Diamond Rate',
   diamondQuality: 'Diamond Quality',
+  diamondColor: 'Diamond Color',
+  diamondClarity: 'Diamond Clarity',
   goldWeight: 'Gold Wt',
   goldRate: 'Gold Rate',
   goldQuality: 'Gold Quality',
   goldPieces: 'Gold Pieces',
-  silverWeight: 'Silver Wt',
-  silverRate: 'Silver Rate',
-  silverQuality: 'Silver Quality',
-  silverPieces: 'Silver Pieces',
-  coloredStoneWeight: 'Colour Stone Wt',
-  coloredStoneRate: 'Colour Stone Rate',
-  coloredStoneQuality: 'Colour Stone Quality',
-  coloredStonePieces: 'Colour Stone Pieces',
+  colorstoneWeight: 'CS Wt',
+  colorstoneRate: 'CS Rate',
+  colorstoneQuality: 'CS Quality',
+  colorstoneColor: 'CS Color',
+  colorstoneClarity: 'CS Clarity',
   labour: 'Labour',
   other: 'Other',
 };
@@ -46,9 +44,16 @@ const SCAN_ITEM_TO_API: Partial<Record<keyof ScanItemData, string>> = {
   pureWt: 'pureWeight',
   tunch: 'purity',
   diamondWeight: 'diamondWeight',
+  diamondColor: 'diamondColor',
+  diamondClarity: 'diamondClarity',
   diamondPieces: 'diamondPieces',
   diamondRate: 'diamondRate',
   diamondQuality: 'diamondQuality',
+  colorstoneWeight: 'colorstoneWeight',
+  colorstoneColor: 'colorstoneColor',
+  colorstoneClarity: 'colorstoneClarity',
+  colorstoneRate: 'colorstoneRate',
+  colorstoneQuality: 'colorstoneQuality',
   labour: 'labour',
 };
 
@@ -58,9 +63,16 @@ const API_TO_SCAN_ITEM: Record<string, keyof ScanItemData> = {
   pureWeight: 'pureWt',
   purity: 'tunch',
   diamondWeight: 'diamondWeight',
+  diamondColor: 'diamondColor',
+  diamondClarity: 'diamondClarity',
   diamondPieces: 'diamondPieces',
   diamondRate: 'diamondRate',
   diamondQuality: 'diamondQuality',
+  colorstoneWeight: 'colorstoneWeight',
+  colorstoneColor: 'colorstoneColor',
+  colorstoneClarity: 'colorstoneClarity',
+  colorstoneRate: 'colorstoneRate',
+  colorstoneQuality: 'colorstoneQuality',
   labour: 'labour',
 };
 
@@ -79,19 +91,33 @@ export function getApiFieldLabel(field: string, jewelleryType?: JewelleryType): 
   return API_FIELD_LABELS[field] ?? field;
 }
 
-/** API-mapped scan fields cleared before apply so stale demo defaults (e.g. labour) are not kept. */
+/** API-mapped scan fields cleared before apply so stale demo defaults are not kept. */
 export function structuredDataToScanItem(data: StructuredScanData): Partial<ScanItemData> {
-  const result = {} as Partial<ScanItemData>;
+  const result: Partial<ScanItemData> = {};
 
   for (const scanKey of Object.values(API_TO_SCAN_ITEM)) {
-    result[scanKey] = '' as ScanItemData[typeof scanKey];
+    result[scanKey] = '';
   }
 
   for (const [apiKey, value] of Object.entries(data)) {
     const scanKey = API_TO_SCAN_ITEM[apiKey];
     if (scanKey && value != null && String(value).trim() !== '') {
-      result[scanKey] = String(value) as ScanItemData[typeof scanKey];
+      result[scanKey] = String(value);
     }
+  }
+
+  if (result.diamondColor || result.diamondClarity) {
+    result.diamondQuality = buildQuality(
+      result.diamondColor ?? '',
+      result.diamondClarity ?? '',
+    );
+  }
+
+  if (result.colorstoneColor || result.colorstoneClarity) {
+    result.colorstoneQuality = buildQuality(
+      result.colorstoneColor ?? '',
+      result.colorstoneClarity ?? '',
+    );
   }
 
   return result;

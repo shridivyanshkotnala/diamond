@@ -2,6 +2,8 @@ import type {
   GoldRate,
   GoldRatesResponse,
   StoneRate,
+  StoneRateLookupPayload,
+  StoneRateLookupResponse,
   UpdateGoldRatePayload,
   UpsertStoneRatePayload,
 } from '@/types/rates';
@@ -177,4 +179,37 @@ export async function upsertColorstoneRate(payload: UpsertStoneRatePayload): Pro
   }
 
   throw new Error('Invalid colorstone rate response from server');
+}
+
+export class RateNotFoundError extends Error {
+  readonly quality: string;
+
+  constructor(quality: string) {
+    super(`No rate exists for quality "${quality}"`);
+    this.name = 'RateNotFoundError';
+    this.quality = quality;
+  }
+}
+
+export async function lookupStoneRate(
+  payload: StoneRateLookupPayload,
+): Promise<StoneRateLookupResponse> {
+  const trimmedColor = payload.color.trim();
+  const trimmedClarity = payload.clarity.trim();
+  const quality = `${trimmedColor} ${trimmedClarity}`.trim();
+
+  const rates =
+    payload.type === 'colorstone' ? await fetchColorstoneRates() : await fetchDiamondRates();
+
+  const match = rates.find(
+    (item) =>
+      item.color.trim().toLowerCase() === trimmedColor.toLowerCase() &&
+      item.clarity.trim().toLowerCase() === trimmedClarity.toLowerCase(),
+  );
+
+  if (match) {
+    return { rate: match.rate };
+  }
+
+  throw new RateNotFoundError(quality);
 }

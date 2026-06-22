@@ -3,15 +3,30 @@ import { toApiJewelleryType } from '@/utils/scanMappers';
 
 const COMMON_FIELDS = ['grossWeight', 'netWeight', 'purity', 'labour', 'other'] as const;
 
+const COLORSTONE_FIELDS = [
+  'colorstoneWeight',
+  'colorstoneRate',
+  'colorstoneQuality',
+  'colorstoneColor',
+  'colorstoneClarity',
+] as const;
+
 const JEWELLERY_STONE_FIELDS: Record<JewelleryType, readonly string[]> = {
-  Diamond: ['diamondWeight', 'diamondRate', 'diamondQuality', 'diamondPieces'],
-  Gold: ['goldWeight', 'goldRate', 'goldQuality', 'goldPieces'],
-  Silver: ['silverWeight', 'silverRate', 'silverQuality', 'silverPieces'],
-  'Colour Stone': [
-    'coloredStoneWeight',
-    'coloredStoneRate',
-    'coloredStoneQuality',
-    'coloredStonePieces',
+  Diamond: [
+    'diamondWeight',
+    'diamondRate',
+    'diamondQuality',
+    'diamondColor',
+    'diamondClarity',
+    'diamondPieces',
+    ...COLORSTONE_FIELDS,
+  ],
+  Gold: [
+    'goldWeight',
+    'goldRate',
+    'goldQuality',
+    'goldPieces',
+    ...COLORSTONE_FIELDS,
   ],
 };
 
@@ -30,7 +45,14 @@ const JEWELLERY_FIELD_LABELS: Record<JewelleryType, Record<string, string>> = {
     diamondWeight: 'Diamond Wt',
     diamondRate: 'Diamond Rate',
     diamondQuality: 'Diamond Quality',
+    diamondColor: 'Diamond Color',
+    diamondClarity: 'Diamond Clarity',
     diamondPieces: 'Diamond Pieces',
+    colorstoneWeight: 'CS Wt',
+    colorstoneRate: 'CS Rate',
+    colorstoneQuality: 'CS Quality',
+    colorstoneColor: 'CS Color',
+    colorstoneClarity: 'CS Clarity',
   },
   Gold: {
     ...SHARED_FIELD_LABELS,
@@ -38,20 +60,11 @@ const JEWELLERY_FIELD_LABELS: Record<JewelleryType, Record<string, string>> = {
     goldRate: 'Gold Rate',
     goldQuality: 'Gold Quality',
     goldPieces: 'Gold Pieces',
-  },
-  Silver: {
-    ...SHARED_FIELD_LABELS,
-    silverWeight: 'Silver Wt',
-    silverRate: 'Silver Rate',
-    silverQuality: 'Silver Quality',
-    silverPieces: 'Silver Pieces',
-  },
-  'Colour Stone': {
-    ...SHARED_FIELD_LABELS,
-    coloredStoneWeight: 'Colour Stone Wt',
-    coloredStoneRate: 'Colour Stone Rate',
-    coloredStoneQuality: 'Colour Stone Quality',
-    coloredStonePieces: 'Colour Stone Pieces',
+    colorstoneWeight: 'CS Wt',
+    colorstoneRate: 'CS Rate',
+    colorstoneQuality: 'CS Quality',
+    colorstoneColor: 'CS Color',
+    colorstoneClarity: 'CS Clarity',
   },
 };
 
@@ -73,17 +86,14 @@ export function getAvailableFieldsForApiJewelleryType(
   const typeMap: Record<ApiJewelleryType, JewelleryType> = {
     DIAMOND: 'Diamond',
     GOLD: 'Gold',
-    SILVER: 'Silver',
-    COLOUR_STONE: 'Colour Stone',
   };
 
   return getAvailableFieldsForJewelleryType(typeMap[normalized] ?? 'Diamond');
 }
 
-export function applyJewelleryTypeToClarificationFields<T extends { availableFields: string[] }>(
-  fields: T[],
-  jewelleryType: JewelleryType,
-): T[] {
+export function applyJewelleryTypeToClarificationFields<
+  T extends { availableFields: string[]; suggestedField: string },
+>(fields: T[], jewelleryType: JewelleryType): T[] {
   const availableFields = getAvailableFieldsForJewelleryType(jewelleryType);
 
   return fields.map((field) => ({
@@ -99,8 +109,6 @@ export function getJewelleryTypeFromApi(apiType?: string | null): JewelleryType 
   const map: Record<string, JewelleryType> = {
     DIAMOND: 'Diamond',
     GOLD: 'Gold',
-    SILVER: 'Silver',
-    COLOUR_STONE: 'Colour Stone',
   };
   return map[(apiType ?? '').toUpperCase()] ?? 'Diamond';
 }

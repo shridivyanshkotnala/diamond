@@ -37,3 +37,15 @@ export interface UpsertStoneRatePayload {
   clarity: string;
   rate: number;
 }
+
+export type StoneLookupType = 'diamond' | 'colorstone';
+
+export interface StoneRateLookupPayload {
+  type: StoneLookupType;
+  color: string;
+  clarity: string;
+}
+
+export interface StoneRateLookupResponse {
+  rate: number;
+}
