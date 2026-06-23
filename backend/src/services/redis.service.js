@@ -50,19 +50,37 @@ const getScan = async (scanId) => {
   });
 };
 
+const scanLocks = new Map();
+
+const acquireLock = async (scanId) => {
+  while (scanLocks.get(scanId)) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  scanLocks.set(scanId, true);
+};
+
+const releaseLock = (scanId) => {
+  scanLocks.delete(scanId);
+};
+
 const updateScanStatus = async (scanId, status, extraData = {}) => {
-  const scan = await getScan(scanId);
-  if (!scan) throw new Error('Scan not found');
+  await acquireLock(scanId);
+  try {
+    const scan = await getScan(scanId);
+    if (!scan) throw new Error('Scan not found');
 
-  const updatedScan = {
-    ...scan,
-    ...extraData,
-    status,
-    updatedAt: new Date().toISOString(),
-  };
+    const updatedScan = {
+      ...scan,
+      ...extraData,
+      status,
+      updatedAt: new Date().toISOString(),
+    };
 
-  await setScan(scanId, updatedScan);
-  return updatedScan;
+    await setScan(scanId, updatedScan);
+    return updatedScan;
+  } finally {
+    releaseLock(scanId);
+  }
 };
 
 module.exports = {
