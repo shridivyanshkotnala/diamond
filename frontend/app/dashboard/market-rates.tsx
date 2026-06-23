@@ -1,9 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,17 +11,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { ChevronLeft, Plus, SquarePen, X } from 'lucide-react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronLeft, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
+import {
+  GoldEditModalFields,
+  GoldIncreaseModalFields,
+  GoldRatesTable,
+  McxLiveBanner,
+} from '@/components/dashboard/market-rates/GoldRatesTable';
+import { StoneRatesTable } from '@/components/dashboard/market-rates/StoneRatesTable';
 import { BottomNav } from '@/components/dashboard/BottomNav';
+import { ToastNotification, type ToastType } from '@/components/scanner/ToastNotification';
+import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useRequireMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
 import type { GoldIncreaseByType, GoldRate, StoneRate } from '@/types/rates';
 import { ApiError } from '@/utils/apiClient';
-import { formatInr } from '@/utils/rateMappers';
+import {
+  applyGoldIncrease,
+  calculateBaseGoldRate,
+  flatIncreaseForFinalRate,
+  formatKaratLabel,
+  validateFinalRateValue,
+  validateIncreaseAmount,
+  validatePurityValue,
+} from '@/utils/goldRateUtils';
 import {
   fetchColorstoneRates,
   fetchDiamondRates,
@@ -33,72 +49,57 @@ import {
 
 const BUTTON_GREEN = '#1B3022';
 const ACCENT_GOLD = '#D4C19C';
+const CARAT_ORDER = ['22Kt', '20Kt', '18Kt', '14Kt', '9Kt'];
 
-type RatesTab = 'gold' | 'diamond' | 'colorstone';
+type RatesTab = 'gold' | 'diamond' | 'colorstone' | 'labour';
 
-interface GoldRowProps {
-  rate: GoldRate;
-  onEdit: () => void;
-  showDivider: boolean;
+function sortGoldRates(rates: GoldRate[]): GoldRate[] {
+  return [...rates].sort((a, b) => {
+    const ai = CARAT_ORDER.indexOf(a.carat);
+    const bi = CARAT_ORDER.indexOf(b.carat);
+    if (ai === -1 && bi === -1) return a.carat.localeCompare(b.carat);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 }
 
-function GoldRow({ rate, onEdit, showDivider }: GoldRowProps) {
-  return (
-    <>
-      <View style={styles.row}>
-        <View style={styles.rowTextWrap}>
-          <Text style={styles.rowLabel}>{rate.carat}</Text>
-          <Text style={styles.rowSubLabel}>Purity {rate.purity}%</Text>
-        </View>
-        <Text style={styles.rowValue}>{formatInr(rate.finalRate)}</Text>
-        <Pressable onPress={onEdit} hitSlop={8} style={styles.editBtn}>
-          <SquarePen size={16} color={Colors.textPrimary} />
-        </Pressable>
-      </View>
-      {showDivider ? <View style={styles.divider} /> : null}
-    </>
-  );
-}
-
-interface StoneRowProps {
-  rate: StoneRate;
-  onEdit: () => void;
-  showDivider: boolean;
-}
-
-function StoneRow({ rate, onEdit, showDivider }: StoneRowProps) {
-  return (
-    <>
-      <View style={styles.row}>
-        <View style={styles.rowTextWrap}>
-          <Text style={styles.rowLabel}>
-            {rate.color} · {rate.clarity}
-          </Text>
-        </View>
-        <Text style={styles.rowValue}>{formatInr(rate.rate)}</Text>
-        <Pressable onPress={onEdit} hitSlop={8} style={styles.editBtn}>
-          <SquarePen size={16} color={Colors.textPrimary} />
-        </Pressable>
-      </View>
-      {showDivider ? <View style={styles.divider} /> : null}
-    </>
-  );
+function parseTabParam(tab?: string): RatesTab {
+  if (tab === 'diamond' || tab === 'colorstone' || tab === 'labour' || tab === 'gold') {
+    return tab;
+  }
+  return 'gold';
 }
 
 export default function MarketRatesScreen() {
   const allowed = useRequireMarketRatesAccess();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<RatesTab>('gold');
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<RatesTab>(parseTabParam(tab));
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
   const [diamondRates, setDiamondRates] = useState<StoneRate[]>([]);
   const [colorstoneRates, setColorstoneRates] = useState<StoneRate[]>([]);
 
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
+    visible: false,
+    message: '',
+    type: 'info',
+  });
+
   const [editingGold, setEditingGold] = useState<GoldRate | null>(null);
-  const [goldIncreaseAmount, setGoldIncreaseAmount] = useState('');
-  const [goldIncreaseType, setGoldIncreaseType] = useState<GoldIncreaseByType>('FLAT');
+  const [editPurity, setEditPurity] = useState('');
+  const [editFinalRate, setEditFinalRate] = useState('');
+  const [editPurityError, setEditPurityError] = useState<string | null>(null);
+  const [editFinalRateError, setEditFinalRateError] = useState<string | null>(null);
+
+  const [increasingGold, setIncreasingGold] = useState<GoldRate | null>(null);
+  const [increaseAmount, setIncreaseAmount] = useState('');
+  const [increaseType, setIncreaseType] = useState<GoldIncreaseByType>('PERCENTAGE');
+  const [increaseError, setIncreaseError] = useState<string | null>(null);
 
   const [editingStone, setEditingStone] = useState<StoneRate | null>(null);
   const [stoneColor, setStoneColor] = useState('');
@@ -107,8 +108,20 @@ export default function MarketRatesScreen() {
   const [stoneModalMode, setStoneModalMode] = useState<'diamond' | 'colorstone'>('diamond');
   const [isNewStone, setIsNewStone] = useState(false);
 
-  const loadRates = useCallback(async () => {
-    setLoading(true);
+  const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
+
+  useEffect(() => {
+    if (tab) setActiveTab(parseTabParam(tab));
+  }, [tab]);
+
+  const showToast = (message: string, type: ToastType = 'info') => {
+    setToast({ visible: true, message, type });
+  };
+
+  const loadRates = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
     try {
       const [gold, diamond, colorstone] = await Promise.all([
         fetchGoldRates(),
@@ -119,20 +132,20 @@ export default function MarketRatesScreen() {
       setGoldRates(gold.rates);
       setDiamondRates(diamond);
       setColorstoneRates(colorstone);
+      if (isRefresh) showToast('Rates refreshed successfully', 'success');
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'Failed to load market rates. Please try again.';
-      Alert.alert('Load Error', message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      if (allowed) {
-        void loadRates();
-      }
+      if (allowed) void loadRates();
     }, [allowed, loadRates]),
   );
 
@@ -140,9 +153,110 @@ export default function MarketRatesScreen() {
 
   const openGoldEdit = (rate: GoldRate) => {
     setEditingGold(rate);
-    setGoldIncreaseAmount(String(rate.increaseByAmount ?? 0));
-    setGoldIncreaseType(rate.increaseByType ?? 'FLAT');
+    setEditPurity(String(rate.purity));
+    setEditFinalRate(String(rate.finalRate));
+    setEditPurityError(null);
+    setEditFinalRateError(null);
   };
+
+  const openGoldIncrease = (rate: GoldRate) => {
+    setIncreasingGold(rate);
+    setIncreaseAmount('');
+    setIncreaseType('PERCENTAGE');
+    setIncreaseError(null);
+  };
+
+  const handleEditPurityChange = (value: string) => {
+    setEditPurity(value);
+    const purity = Number(value);
+    const purityErr = validatePurityValue(purity);
+    setEditPurityError(purityErr);
+    if (!purityErr && mcxLiveRate > 0) {
+      const recalculated = calculateBaseGoldRate(mcxLiveRate, purity);
+      setEditFinalRate(String(recalculated));
+      setEditFinalRateError(null);
+    }
+  };
+
+  const handleEditFinalRateChange = (value: string) => {
+    setEditFinalRate(value.replace(/[^\d.]/g, ''));
+    const finalRate = Number(value);
+    setEditFinalRateError(validateFinalRateValue(finalRate));
+  };
+
+  const handleSaveGoldEdit = async () => {
+    if (!editingGold) return;
+    const purity = Number(editPurity);
+    const finalRate = Number(editFinalRate);
+    const purityErr = validatePurityValue(purity);
+    const finalRateErr = validateFinalRateValue(finalRate);
+    setEditPurityError(purityErr);
+    setEditFinalRateError(finalRateErr);
+    if (purityErr || finalRateErr) return;
+
+    const baseRate = calculateBaseGoldRate(mcxLiveRate, purity);
+    const increaseByAmount = flatIncreaseForFinalRate(baseRate, finalRate);
+    const increaseByType: GoldIncreaseByType = 'FLAT';
+
+    setSaving(true);
+    try {
+      const updated = await updateGoldRate({
+        carat: editingGold.carat,
+        purity,
+        increaseByAmount,
+        increaseByType,
+      });
+      setGoldRates((prev) =>
+        prev.map((row) => (row.carat === updated.carat ? updated : row)),
+      );
+      setEditingGold(null);
+      showToast(`${formatKaratLabel(updated.carat)} rate updated`, 'success');
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : 'Failed to update gold rate. Please try again.';
+      showToast(message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApplyIncrease = async () => {
+    if (!increasingGold) return;
+    const amount = Number(increaseAmount);
+    const amountErr = validateIncreaseAmount(amount);
+    setIncreaseError(amountErr);
+    if (amountErr) return;
+
+    setSaving(true);
+    try {
+      const updated = await updateGoldRate({
+        carat: increasingGold.carat,
+        purity: increasingGold.purity,
+        increaseByAmount: amount,
+        increaseByType: increaseType,
+      });
+      setGoldRates((prev) =>
+        prev.map((row) => (row.carat === updated.carat ? updated : row)),
+      );
+      setIncreasingGold(null);
+      showToast(`${formatKaratLabel(updated.carat)} rate increased`, 'success');
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : 'Failed to apply increase. Please try again.';
+      showToast(message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const increasePreview =
+    increasingGold && increaseAmount
+      ? applyGoldIncrease(
+          calculateBaseGoldRate(mcxLiveRate, increasingGold.purity),
+          Number(increaseAmount) || 0,
+          increaseType,
+        )
+      : null;
 
   const openStoneEdit = (rate: StoneRate, mode: 'diamond' | 'colorstone') => {
     setStoneModalMode(mode);
@@ -167,44 +281,17 @@ export default function MarketRatesScreen() {
     setIsNewStone(false);
   };
 
-  const handleSaveGold = async () => {
-    if (!editingGold) return;
-    const increaseByAmount = Number(goldIncreaseAmount);
-    if (!Number.isFinite(increaseByAmount)) {
-      Alert.alert('Invalid Input', 'Please enter a valid increase amount.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const updated = await updateGoldRate({
-        carat: editingGold.carat,
-        purity: editingGold.purity,
-        increaseByAmount,
-        increaseByType: goldIncreaseType,
-      });
-      setGoldRates((prev) => prev.map((row) => (row.carat === updated.carat ? updated : row)));
-      setEditingGold(null);
-    } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to update gold rate. Please try again.';
-      Alert.alert('Update Error', message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSaveStone = async () => {
     const color = stoneColor.trim();
     const clarity = stoneClarity.trim();
     const rate = Number(stoneRateValue);
 
     if (!color || !clarity) {
-      Alert.alert('Invalid Input', 'Color and clarity are required.');
+      showToast('Color and clarity are required.', 'error');
       return;
     }
     if (!Number.isFinite(rate) || rate <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid rate.');
+      showToast('Please enter a valid rate.', 'error');
       return;
     }
 
@@ -216,67 +303,67 @@ export default function MarketRatesScreen() {
           ? await upsertDiamondRate(payload)
           : await upsertColorstoneRate(payload);
 
-      if (stoneModalMode === 'diamond') {
-        setDiamondRates((prev) => {
-          const index = prev.findIndex(
-            (item) => item.color === updated.color && item.clarity === updated.clarity,
-          );
-          if (index >= 0) {
-            const next = [...prev];
-            next[index] = updated;
-            return next;
-          }
-          return [...prev, updated];
-        });
-      } else {
-        setColorstoneRates((prev) => {
-          const index = prev.findIndex(
-            (item) => item.color === updated.color && item.clarity === updated.clarity,
-          );
-          if (index >= 0) {
-            const next = [...prev];
-            next[index] = updated;
-            return next;
-          }
-          return [...prev, updated];
-        });
-      }
+      const setter = stoneModalMode === 'diamond' ? setDiamondRates : setColorstoneRates;
+      setter((prev) => {
+        const index = prev.findIndex(
+          (item) => item.color === updated.color && item.clarity === updated.clarity,
+        );
+        if (index >= 0) {
+          const next = [...prev];
+          next[index] = updated;
+          return next;
+        }
+        return [...prev, updated];
+      });
       closeStoneModal();
+      showToast(`${stoneModalMode === 'diamond' ? 'Diamond' : 'Colorstone'} rate saved`, 'success');
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'Failed to save rate. Please try again.';
-      Alert.alert('Save Error', message);
+      showToast(message, 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const activeStoneRates = stoneModalMode === 'diamond' ? diamondRates : colorstoneRates;
-  const stoneTitle = activeTab === 'diamond' ? 'Diamond' : 'Colorstone';
+  const visibleTabs: { key: RatesTab; label: string }[] = [
+    { key: 'gold', label: 'Gold' },
+    { key: 'diamond', label: 'Diamond' },
+    { key: 'colorstone', label: 'Colorstone' },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <BackgroundPattern />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void loadRates(true)}
+            tintColor={BUTTON_GREEN}
+          />
+        }
+      >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
             <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
           </Pressable>
-          <Text style={styles.headerTitle}>
-            Market Rates{'\n'}Control
-          </Text>
+          <Text style={styles.headerTitle}>Market Rates{'\n'}Control</Text>
+          <Text style={styles.headerSubtitle}>Settings → Masters → Rates</Text>
         </View>
 
         <View style={styles.tabPill}>
-          {(['gold', 'diamond', 'colorstone'] as RatesTab[]).map((tab) => (
+          {visibleTabs.map(({ key, label }) => (
             <Pressable
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
+              key={key}
+              onPress={() => setActiveTab(key)}
+              style={[styles.tabBtn, activeTab === key && styles.tabBtnActive]}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab === 'colorstone' ? 'Colorstone' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <Text style={[styles.tabText, activeTab === key && styles.tabTextActive]}>
+                {label}
               </Text>
             </Pressable>
           ))}
@@ -285,60 +372,52 @@ export default function MarketRatesScreen() {
         {loading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={BUTTON_GREEN} />
+            <Text style={styles.loadingText}>Loading rates…</Text>
           </View>
         ) : activeTab === 'gold' ? (
-          <>
-            <View style={styles.mcxBanner}>
-              <Text style={styles.mcxLabel}>MCX Live Rate</Text>
-              <Text style={styles.mcxValue}>{formatInr(mcxLiveRate)}</Text>
-            </View>
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardHeaderText}>Gold Karat Rates</Text>
+          <View style={styles.section}>
+            <McxLiveBanner mcxLiveRate={mcxLiveRate} />
+            <Text style={styles.sectionTitle}>Gold Karat Rates</Text>
+            {sortedGoldRates.length > 0 ? (
+              <GoldRatesTable
+                rates={sortedGoldRates}
+                onEdit={openGoldEdit}
+                onIncreaseBy={openGoldIncrease}
+              />
+            ) : (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>
+                  Unable to load gold rates. Pull down to refresh.
+                </Text>
               </View>
-              {goldRates.length === 0 ? (
-                <Text style={styles.emptyText}>No gold rates found. Pull to refresh from API.</Text>
-              ) : (
-                goldRates.map((rate, index) => (
-                  <GoldRow
-                    key={rate.id ?? rate.carat}
-                    rate={rate}
-                    onEdit={() => openGoldEdit(rate)}
-                    showDivider={index < goldRates.length - 1}
-                  />
-                ))
-              )}
-            </View>
-          </>
+            )}
+          </View>
+        ) : activeTab === 'labour' ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Labour Rates</Text>
+            <Text style={styles.emptyText}>
+              Labour rate masters will be configured here. Use the scanner Labour section for
+              per-item labour charges until this module is enabled.
+            </Text>
+          </View>
         ) : (
-          <>
-            <Pressable
-              onPress={() => openStoneAdd(activeTab)}
-              style={styles.addBtn}
-            >
-              <Plus size={18} color={Colors.white} />
-              <Text style={styles.addBtnText}>Add {stoneTitle} Rate</Text>
-            </Pressable>
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardHeaderText}>{stoneTitle} Rates</Text>
-              </View>
-              {activeStoneRates.length === 0 ? (
-                <Text style={styles.emptyText}>No {stoneTitle.toLowerCase()} rates yet.</Text>
-              ) : (
-                (activeTab === 'diamond' ? diamondRates : colorstoneRates).map((rate, index, list) => (
-                  <StoneRow
-                    key={rate.id ?? `${rate.color}-${rate.clarity}`}
-                    rate={rate}
-                    onEdit={() => openStoneEdit(rate, activeTab)}
-                    showDivider={index < list.length - 1}
-                  />
-                ))
-              )}
-            </View>
-          </>
+          <View style={styles.section}>
+            <StoneRatesTable
+              title={activeTab === 'diamond' ? 'Diamond' : 'Colorstone'}
+              rates={activeTab === 'diamond' ? diamondRates : colorstoneRates}
+              onEdit={(rate) => openStoneEdit(rate, activeTab)}
+              onAdd={() => openStoneAdd(activeTab)}
+            />
+          </View>
         )}
       </ScrollView>
+
+      <ToastNotification
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onDismiss={() => setToast((prev) => ({ ...prev, visible: false }))}
+      />
 
       <BottomNav activeRoute="home" />
 
@@ -353,46 +432,83 @@ export default function MarketRatesScreen() {
             <Pressable onPress={() => setEditingGold(null)} hitSlop={8} style={styles.modalClose}>
               <X size={20} color={Colors.textSecondary} />
             </Pressable>
-            <Text style={styles.modalTitle}>Update {editingGold?.carat} Gold Rate</Text>
-            <Text style={styles.modalMeta}>
-              Purity: {editingGold?.purity}% · Current: {formatInr(editingGold?.finalRate ?? 0)}
+            <Text style={styles.modalTitle}>
+              Edit {editingGold ? formatKaratLabel(editingGold.carat) : ''} Rate
             </Text>
-            <Text style={styles.modalLabel}>Increase By Amount</Text>
-            <TextInput
-              value={goldIncreaseAmount}
-              onChangeText={setGoldIncreaseAmount}
-              keyboardType="decimal-pad"
-              placeholder="50"
-              placeholderTextColor={Colors.placeholder}
-              style={styles.modalInput}
+            <GoldEditModalFields
+              karatLabel={editingGold ? formatKaratLabel(editingGold.carat) : ''}
+              purity={editPurity}
+              finalRate={editFinalRate}
+              purityError={editPurityError}
+              finalRateError={editFinalRateError}
+              onPurityChange={handleEditPurityChange}
+              onFinalRateChange={handleEditFinalRateChange}
             />
-            <Text style={styles.modalLabel}>Increase Type</Text>
-            <View style={styles.typeRow}>
-              {(['FLAT', 'PERCENTAGE'] as GoldIncreaseByType[]).map((type) => {
-                const active = goldIncreaseType === type;
-                return (
-                  <Pressable
-                    key={type}
-                    onPress={() => setGoldIncreaseType(type)}
-                    style={[styles.typeBtn, active && styles.typeBtnActive]}
-                  >
-                    <Text style={[styles.typeBtnText, active && styles.typeBtnTextActive]}>{type}</Text>
-                  </Pressable>
-                );
-              })}
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setEditingGold(null)} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={handleSaveGoldEdit}
+                disabled={saving}
+                style={[styles.applyBtn, saving && styles.applyBtnDisabled]}
+              >
+                {saving ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.applyBtnText}>Apply</Text>
+                )}
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={handleSaveGold}
-              disabled={saving}
-              style={[styles.modalSaveBtn, saving && styles.modalSaveBtnDisabled]}
-            >
-              {saving ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.modalSaveText}>Save Gold Rate</Text>
-              )}
-            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={increasingGold !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIncreasingGold(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Pressable onPress={() => setIncreasingGold(null)} hitSlop={8} style={styles.modalClose}>
+              <X size={20} color={Colors.textSecondary} />
+            </Pressable>
+            <Text style={styles.modalTitle}>
+              Increase {increasingGold ? formatKaratLabel(increasingGold.carat) : ''} Rate
+            </Text>
+            <GoldIncreaseModalFields
+              currentFinalRate={increasingGold?.finalRate ?? 0}
+              increaseAmount={increaseAmount}
+              increaseType={increaseType}
+              increaseError={increaseError}
+              onIncreaseAmountChange={setIncreaseAmount}
+              onIncreaseTypeChange={setIncreaseType}
+            />
+            {increasePreview != null ? (
+              <Text style={styles.previewText}>
+                New rate after apply: ₹{increasePreview.toLocaleString('en-IN')}
+              </Text>
+            ) : null}
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setIncreasingGold(null)} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={handleApplyIncrease}
+                disabled={saving}
+                style={[styles.applyBtn, saving && styles.applyBtnDisabled]}
+              >
+                {saving ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.applyBtnText}>Apply</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -409,25 +525,26 @@ export default function MarketRatesScreen() {
               <X size={20} color={Colors.textSecondary} />
             </Pressable>
             <Text style={styles.modalTitle}>
-              {isNewStone ? 'Add' : 'Update'} {stoneModalMode === 'diamond' ? 'Diamond' : 'Colorstone'} Rate
+              {isNewStone ? 'Add' : 'Edit'}{' '}
+              {stoneModalMode === 'diamond' ? 'Diamond' : 'Colorstone'} Rate
             </Text>
-            <Text style={styles.modalLabel}>Color</Text>
+            <Text style={styles.fieldLabel}>Color</Text>
             <TextInput
               value={stoneColor}
               onChangeText={setStoneColor}
-              placeholder={stoneModalMode === 'diamond' ? 'D' : 'Ruby Red'}
+              placeholder={stoneModalMode === 'diamond' ? 'IJ' : 'Ruby Red'}
               placeholderTextColor={Colors.placeholder}
               style={styles.modalInput}
             />
-            <Text style={styles.modalLabel}>Clarity</Text>
+            <Text style={styles.fieldLabel}>Clarity</Text>
             <TextInput
               value={stoneClarity}
               onChangeText={setStoneClarity}
-              placeholder={stoneModalMode === 'diamond' ? 'VVS1' : 'A1'}
+              placeholder={stoneModalMode === 'diamond' ? 'VSSI' : 'A1'}
               placeholderTextColor={Colors.placeholder}
               style={styles.modalInput}
             />
-            <Text style={styles.modalLabel}>Rate</Text>
+            <Text style={styles.fieldLabel}>Rate (₹)</Text>
             <TextInput
               value={stoneRateValue}
               onChangeText={setStoneRateValue}
@@ -436,18 +553,23 @@ export default function MarketRatesScreen() {
               placeholderTextColor={Colors.placeholder}
               style={styles.modalInput}
             />
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={handleSaveStone}
-              disabled={saving}
-              style={[styles.modalSaveBtn, saving && styles.modalSaveBtnDisabled]}
-            >
-              {saving ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.modalSaveText}>Save Rate</Text>
-              )}
-            </TouchableOpacity>
+            <View style={styles.modalActions}>
+              <Pressable onPress={closeStoneModal} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={handleSaveStone}
+                disabled={saving}
+                style={[styles.applyBtn, saving && styles.applyBtnDisabled]}
+              >
+                {saving ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.applyBtnText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -456,30 +578,16 @@ export default function MarketRatesScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.white },
+  scrollContent: { paddingBottom: 120 },
   header: {
     paddingHorizontal: Spacing.screenHorizontal,
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    lineHeight: 34,
-  },
+  backBtn: { width: 32, height: 32, justifyContent: 'center', marginBottom: 8 },
+  headerTitle: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary, lineHeight: 34 },
+  headerSubtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
   tabPill: {
     flexDirection: 'row',
     marginHorizontal: Spacing.screenHorizontal,
@@ -489,123 +597,24 @@ const styles = StyleSheet.create({
     padding: 4,
     gap: 4,
   },
-  tabBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  tabBtnActive: {
-    backgroundColor: ACCENT_GOLD,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textMuted,
-  },
-  tabTextActive: {
-    color: Colors.textPrimary,
-  },
-  loadingWrap: {
-    paddingVertical: 48,
-    alignItems: 'center',
-  },
-  mcxBanner: {
+  tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 20 },
+  tabBtnActive: { backgroundColor: ACCENT_GOLD },
+  tabText: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
+  tabTextActive: { color: Colors.textPrimary },
+  loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: 12 },
+  loadingText: { fontSize: 14, color: Colors.textMuted },
+  section: { marginHorizontal: Spacing.screenHorizontal, gap: 16 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  emptyCard: {
     marginHorizontal: Spacing.screenHorizontal,
-    marginBottom: 16,
-    backgroundColor: BUTTON_GREEN,
-    borderRadius: Radius.input,
-    padding: 16,
-  },
-  mcxLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 4,
-  },
-  mcxValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  card: {
-    marginHorizontal: Spacing.screenHorizontal,
-    marginBottom: 16,
-    backgroundColor: Colors.white,
-    borderRadius: Radius.input,
     borderWidth: 1,
     borderColor: Colors.border,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderRadius: Radius.input,
+    padding: 20,
+    backgroundColor: Colors.white,
   },
-  cardHeader: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  cardHeaderText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  rowTextWrap: {
-    flex: 1,
-  },
-  rowLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  rowSubLabel: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  rowValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    textAlign: 'right',
-  },
-  editBtn: {
-    padding: 4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginHorizontal: 16,
-  },
-  emptyText: {
-    padding: 16,
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
-  addBtn: {
-    marginHorizontal: Spacing.screenHorizontal,
-    marginBottom: 12,
-    height: 44,
-    borderRadius: Radius.button,
-    backgroundColor: BUTTON_GREEN,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  addBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.white,
-  },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
+  emptyText: { fontSize: 14, color: Colors.textMuted, lineHeight: 20 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -619,25 +628,15 @@ const styles = StyleSheet.create({
     borderRadius: Radius.input,
     padding: 20,
   },
-  modalClose: {
-    alignSelf: 'flex-end',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  modalMeta: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginBottom: 16,
-  },
-  modalLabel: {
+  modalClose: { alignSelf: 'flex-end' },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
+  fieldLabel: {
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 8,
     marginTop: 8,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   modalInput: {
     minHeight: 48,
@@ -648,44 +647,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
   },
-  typeRow: {
-    flexDirection: 'row',
-    gap: 8,
+  previewText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 12,
+    fontWeight: '600',
   },
-  typeBtn: {
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  cancelBtn: {
     flex: 1,
-    alignItems: 'center',
+    height: 48,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Radius.input,
-    paddingVertical: 10,
+    borderRadius: Radius.button,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  typeBtnActive: {
-    borderColor: BUTTON_GREEN,
-    backgroundColor: '#E8F0EC',
-  },
-  typeBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  typeBtnTextActive: {
-    color: BUTTON_GREEN,
-  },
-  modalSaveBtn: {
+  cancelBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  applyBtn: {
+    flex: 1,
     height: 48,
     backgroundColor: BUTTON_GREEN,
     borderRadius: Radius.button,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
   },
-  modalSaveBtnDisabled: {
-    opacity: 0.7,
-  },
-  modalSaveText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.white,
-  },
+  applyBtnDisabled: { opacity: 0.7 },
+  applyBtnText: { fontSize: 15, fontWeight: '600', color: Colors.white },
 });

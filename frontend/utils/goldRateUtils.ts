@@ -1,0 +1,62 @@
+import type { GoldIncreaseByType } from '@/types/rates';
+
+export function formatKaratLabel(carat: string): string {
+  return carat.replace(/Kt/gi, ' KT').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+export function formatMcxLiveRate(mcxLiveRate: number): string {
+  return `₹${mcxLiveRate.toLocaleString('en-IN')} per 10gm`;
+}
+
+export function calculateBaseGoldRate(mcxLiveRate: number, purity: number): number {
+  return Math.round(mcxLiveRate * (purity / 100));
+}
+
+export function applyGoldIncrease(
+  baseRate: number,
+  increaseByAmount: number,
+  increaseByType: GoldIncreaseByType,
+): number {
+  if (!increaseByAmount || !Number.isFinite(increaseByAmount)) {
+    return baseRate;
+  }
+  if (increaseByType === 'PERCENTAGE') {
+    return Math.round(baseRate + baseRate * (increaseByAmount / 100));
+  }
+  return Math.round(baseRate + increaseByAmount);
+}
+
+export function computeFinalGoldRate(
+  mcxLiveRate: number,
+  purity: number,
+  increaseByAmount = 0,
+  increaseByType: GoldIncreaseByType = 'FLAT',
+): number {
+  const baseRate = calculateBaseGoldRate(mcxLiveRate, purity);
+  return applyGoldIncrease(baseRate, increaseByAmount, increaseByType);
+}
+
+export function flatIncreaseForFinalRate(baseRate: number, finalRate: number): number {
+  return Math.round(finalRate - baseRate);
+}
+
+export function validatePurityValue(purity: number): string | null {
+  if (!Number.isFinite(purity) || purity <= 0 || purity > 100) {
+    return 'Purity must be between 0 and 100.';
+  }
+  return null;
+}
+
+export function validateFinalRateValue(finalRate: number): string | null {
+  if (!Number.isFinite(finalRate) || finalRate <= 0) {
+    return 'Final rate must be greater than 0.';
+  }
+  return null;
+}
+
+export function validateIncreaseAmount(amount: number): string | null {
+  if (!Number.isFinite(amount) || amount < 0) {
+    return 'Increase amount must be 0 or greater.';
+  }
+  return null;
+}

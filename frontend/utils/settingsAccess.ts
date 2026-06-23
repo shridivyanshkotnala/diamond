@@ -37,7 +37,7 @@ export function canAccessSettingsItem(
     return true;
   }
 
-  if (itemId === 'market-rates') {
+  if (itemId === 'masters' || itemId === 'market-rates') {
     return permissions?.edit_market_prices === true;
   }
 

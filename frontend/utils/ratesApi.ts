@@ -30,9 +30,15 @@ function readString(value: unknown): string | undefined {
 }
 
 function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
-  const carat = readString(raw.carat);
+  const carat = readString(raw.carat ?? raw.karat);
   const purity = readNumber(raw.purity);
-  const finalRate = readNumber(raw.finalRate ?? raw.final_rate ?? raw.rate);
+  const finalRate = readNumber(
+    raw.finalRate ??
+      raw.final_rate ??
+      raw.calculatedFinalRate ??
+      raw.calculated_final_rate ??
+      raw.rate,
+  );
 
   if (!carat || purity == null || finalRate == null) {
     return null;
@@ -91,7 +97,7 @@ export function normalizeGoldRatesResponse(response: unknown): GoldRatesResponse
   const unwrapped = unwrapApiData((response ?? {}) as ApiEnvelope);
   const mcxLiveRate =
     readNumber(unwrapped.mcxLiveRate ?? unwrapped.mcx_live_rate) ?? 0;
-  const ratesRaw = extractRatesArray(unwrapped, ['rates', 'goldRates', 'items']);
+  const ratesRaw = extractRatesArray(unwrapped, ['rates', 'goldRates', 'items', 'data']);
   const rates = (Array.isArray(ratesRaw) ? ratesRaw : [])
     .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
     .map(normalizeGoldRate)
@@ -102,7 +108,7 @@ export function normalizeGoldRatesResponse(response: unknown): GoldRatesResponse
 
 export function normalizeStoneRatesResponse(response: unknown): StoneRate[] {
   const unwrapped = unwrapApiData((response ?? {}) as ApiEnvelope);
-  const list = extractRatesArray(unwrapped, ['rates', 'diamondRates', 'colorstoneRates', 'items']);
+  const list = extractRatesArray(unwrapped, ['rates', 'diamondRates', 'colorstoneRates', 'items', 'data']);
   if (Array.isArray(list) && list.length > 0) {
     return normalizeRateList(list);
   }

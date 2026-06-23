@@ -44,11 +44,11 @@ export const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
     route: '/dashboard/dashboard-matrices',
   },
   {
-    id: 'market-rates',
-    title: 'Market Rates Control',
-    subtitle: 'Manage Gold, Diamond and Colorstone rates',
+    id: 'masters',
+    title: 'Masters',
+    subtitle: 'Rates and Formulas — Gold, Diamond, Labour',
     icon: TrendingUp,
-    route: '/dashboard/market-rates',
+    route: '/dashboard/masters',
   },
   {
     id: 'inventory',
