@@ -40,6 +40,11 @@ export function useStoneRateFetch({
 
   const quality = buildQuality(color, clarity);
 
+  const onRateFetchedRef = useRef(onRateFetched);
+  useEffect(() => {
+    onRateFetchedRef.current = onRateFetched;
+  }, [onRateFetched]);
+
   const fetchRate = useCallback(async () => {
     const trimmedColor = color.trim();
     const trimmedClarity = clarity.trim();
@@ -66,7 +71,7 @@ export function useStoneRateFetch({
 
       const rateValue = String(response.rate);
       setRate(rateValue);
-      onRateFetched?.(rateValue);
+      onRateFetchedRef.current?.(rateValue);
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
 
@@ -74,18 +79,18 @@ export function useStoneRateFetch({
         setRate('');
         setRateNotFound(true);
         setNotFoundQuality(error.quality);
-        onRateFetched?.('');
+        onRateFetchedRef.current?.('');
         return;
       }
 
       setRate('');
-      onRateFetched?.('');
+      onRateFetchedRef.current?.('');
     } finally {
       if (requestId === requestIdRef.current) {
         setIsFetching(false);
       }
     }
-  }, [type, color, clarity, onRateFetched]);
+  }, [type, color, clarity]);
 
   useEffect(() => {
     if (!enabled) return;
