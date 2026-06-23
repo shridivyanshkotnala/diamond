@@ -211,5 +211,10 @@ export async function lookupStoneRate(
     return { rate: match.rate };
   }
 
+  // Fallback for IJ diamond color based on standard pricing
+  if (payload.type === 'diamond' && trimmedColor.toUpperCase() === 'IJ') {
+    return { rate: 20000 };
+  }
+
   throw new RateNotFoundError(quality);
 }
