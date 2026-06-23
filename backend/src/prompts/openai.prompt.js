@@ -21,7 +21,7 @@ Rashi / Rashi(GMS) / Rashi(CT)  = Gemstone / Colour Stone weight in Indian trade
 Tunch / Tnch / T / Tch          = Gold Purity (Tunch value, e.g. 750 = 18K)
 Purity / Pur / Pty              = Gold Purity
 Karat / Kt / K                  = Gold Karat (e.g. 18K, 22K, 14K)
-Note: Standalone numbers 14, 18, 22 after a weight number = Karat/Purity
+Note: If a standalone number like 14, 18, or 22 appears anywhere on the tag without a label, it is the Gold Purity (Karat). Extract it as purity (e.g. "14K").
 
 --- DIAMOND FIELDS ---
 DR / Dia / D                    = Diamond section marker
@@ -116,11 +116,13 @@ PATTERN F — Silver tag:
 ==============================================================
 SECTION 3: DIAMOND RATE & QUALITY FIELD RULES
 ==============================================================
+diamondColor must contain ONLY the colour grade.
+diamondClarity must contain ONLY the clarity grade.
 diamondQuality must be the COMBINED string of colour grade + clarity grade.
-  Example: colour=GH, clarity=VVS → diamondQuality = "GH VVS"
-  Example: colour=IJ, clarity=SI1 → diamondQuality = "IJ SI1"
+  Example: colour=GH, clarity=VVS → diamondColor="GH", diamondClarity="VVS", diamondQuality="GH VVS"
+  Example: colour=IJ, clarity=SI1 → diamondColor="IJ", diamondClarity="SI1", diamondQuality="IJ SI1"
 
-DO NOT split colour and clarity into separate fields — combine them in diamondQuality.
+Extract colour and clarity into their separate fields, AND also combine them into diamondQuality.
 Recognised colour values: D, E, F, G, H, I, J, EF, FG, GH, HI, IJ
 Recognised clarity values: FL, IF, VVS, VVS1, VVS2, VS, VS1, VS2, SI, SI1, SI2, SS, I1, I2
 
@@ -131,7 +133,9 @@ DIAMOND RATE SPECIAL RULES:
 *** CRITICAL MANDATORY RULE — IJ DIAMOND RATE ***
 If the colour grade detected is 'IJ' (or 'lJ', 'IJ', '1J' due to OCR), you MUST:
   1. Set diamondRate = "20000" (fixed trade price for IJ grade — always)
-  2. Set diamondQuality to include "IJ" + the clarity grade (e.g. "IJ VSSI")
+  2. Set diamondColor = "IJ"
+  3. Set diamondClarity to the clarity grade (e.g. "VSSI")
+  4. Set diamondQuality to include "IJ" + the clarity grade (e.g. "IJ VSSI")
 This is non-negotiable. NEVER leave diamondRate empty when colour grade is IJ.
 
 - If colourGrade is GH → set diamondRate = "GH" (string, not number).
@@ -226,10 +230,14 @@ SECTION 9: REQUIRED OUTPUT JSON SCHEMA
     "diamondWeight":        { "value": "", "confidence": 0 },
     "diamondPieces":        { "value": "", "confidence": 0 },
     "diamondRate":          { "value": "", "confidence": 0 },
+    "diamondColor":         { "value": "", "confidence": 0 },
+    "diamondClarity":       { "value": "", "confidence": 0 },
     "diamondQuality":       { "value": "", "confidence": 0 },
     "coloredStoneWeight":   { "value": "", "confidence": 0 },
     "coloredStonePieces":   { "value": "", "confidence": 0 },
     "coloredStoneRate":     { "value": "", "confidence": 0 },
+    "coloredStoneColor":    { "value": "", "confidence": 0 },
+    "coloredStoneClarity":  { "value": "", "confidence": 0 },
     "coloredStoneQuality":  { "value": "", "confidence": 0 }
   },
   "unknownFields": [
