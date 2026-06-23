@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const redisService = require('./redis.service');
-const geminiService = require('./gemini.service');
+const openaiService = require('./openai.service');
 
 const createScan = async (jewelleryType, scanType) => {
   const scanId = uuidv4();
@@ -34,8 +34,8 @@ const analyzeScan = async (scanId, scannerSettings = {}) => {
     throw new Error('No images uploaded for this scan');
   }
 
-  // Call Gemini to get structured data
-  const result = await geminiService.analyzeImages(frontImagePath, backImagePath, jewelleryType, scanType, scannerSettings);
+  // Call OpenAI to get structured data
+  const result = await openaiService.analyzeImages(frontImagePath, backImagePath, jewelleryType, scanType, scannerSettings);
   
   return await redisService.updateScanStatus(scanId, 'ANALYSIS_COMPLETED', {
     analysisResult: result

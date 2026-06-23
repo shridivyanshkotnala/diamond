@@ -13,7 +13,8 @@ const envVarsSchema = joi.object({
   JWT_REFRESH_SECRET: joi.string().required().description('JWT Refresh Secret'),
   MSG91_AUTH_KEY: joi.string().required().description('MSG91 Auth Key'),
   MSG91_TEMPLATE_ID: joi.string().required().description('MSG91 Template ID'),
-  RESEND_API_KEY: joi.string().required().description('Resend API Key')
+  RESEND_API_KEY: joi.string().required().description('Resend API Key'),
+  OPENAI_API_KEY: joi.string().required().description('OpenAI API Key')
 }).unknown();
 
 const { value: envVars, error } = envVarsSchema.prefs({ errors: { label: 'key' } }).validate(process.env);
@@ -30,6 +31,9 @@ module.exports = {
   },
   gemini: {
     apiKey: envVars.GEMINI_API_KEY,
+  },
+  openai: {
+    apiKey: envVars.OPENAI_API_KEY,
   },
   mongodb: {
     uri: envVars.MONGODB_URI,
