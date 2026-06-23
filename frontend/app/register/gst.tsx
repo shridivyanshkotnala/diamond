@@ -31,6 +31,8 @@ export default function GstVerificationScreen() {
 
   const [gstNumber, setGstNumber] = useState('');
   const [businessName, setBusinessName] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [address, setAddress] = useState('');
   const [gstVerified, setGstVerified] = useState(false);
   const [gstError, setGstError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,8 @@ export default function GstVerificationScreen() {
 
     setLoading(true);
     setBusinessName('');
+    setBusinessType('');
+    setAddress('');
     setGstVerified(false);
     try {
       const result = await verifyBusinessGst(gstNumber);
@@ -51,6 +55,8 @@ export default function GstVerificationScreen() {
       }
 
       setBusinessName(result.businessName ?? '');
+      setBusinessType(result.businessType ?? '');
+      setAddress(result.address ?? '');
       setGstVerified(true);
     } catch (error) {
       setGstError(error instanceof Error ? error.message : 'GST verification failed.');
@@ -76,6 +82,8 @@ export default function GstVerificationScreen() {
         businessId: confirmed.businessId,
         gstNumber: normalizeGstNumber(gstNumber),
         businessName,
+        businessType,
+        address,
       });
       router.push('/register/contact');
     } catch (error) {
@@ -128,6 +136,8 @@ export default function GstVerificationScreen() {
                   onChangeText={(text) => {
                     setGstNumber(text.toUpperCase());
                     setBusinessName('');
+                    setBusinessType('');
+                    setAddress('');
                     setGstVerified(false);
                     setGstError(null);
                   }}
@@ -142,11 +152,27 @@ export default function GstVerificationScreen() {
               {gstError ? <Text style={styles.errorText}>{gstError}</Text> : null}
 
               {businessName ? (
-                <View style={styles.businessNameBox}>
-                  <Text style={styles.businessNameLabel}>Verified business</Text>
-                  <Text style={styles.businessNameText} numberOfLines={2}>
+                <View style={styles.verifiedBox}>
+                  <Text style={styles.verifiedLabel}>Verified business</Text>
+                  <Text style={styles.verifiedValue} numberOfLines={2}>
                     {businessName}
                   </Text>
+                  {businessType ? (
+                    <>
+                      <Text style={[styles.verifiedLabel, styles.verifiedFieldSpacing]}>
+                        Company Type
+                      </Text>
+                      <Text style={styles.verifiedValue}>{businessType}</Text>
+                    </>
+                  ) : null}
+                  {address ? (
+                    <>
+                      <Text style={[styles.verifiedLabel, styles.verifiedFieldSpacing]}>
+                        Address
+                      </Text>
+                      <Text style={styles.verifiedValueMultiline}>{address}</Text>
+                    </>
+                  ) : null}
                 </View>
               ) : null}
 
@@ -288,23 +314,29 @@ const styles = StyleSheet.create({
     color: Colors.dangerText,
     marginTop: 8,
   },
-  businessNameBox: {
-    minHeight: Spacing.inputHeight,
-    justifyContent: 'center',
+  verifiedBox: {
     backgroundColor: BUSINESS_BOX_BG,
     borderRadius: Radius.input,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginTop: 16,
   },
-  businessNameLabel: {
+  verifiedLabel: {
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 4,
   },
-  businessNameText: {
+  verifiedFieldSpacing: {
+    marginTop: 12,
+  },
+  verifiedValue: {
     fontSize: 16,
     fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  verifiedValueMultiline: {
+    fontSize: 14,
+    lineHeight: 20,
     color: Colors.textPrimary,
   },
   continueBtn: {

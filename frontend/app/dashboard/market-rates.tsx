@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -21,13 +20,13 @@ import {
   GoldRatesTable,
   McxLiveBanner,
 } from '@/components/dashboard/market-rates/GoldRatesTable';
-import { StoneRatesTable } from '@/components/dashboard/market-rates/StoneRatesTable';
+import { StoneRatesPanel } from '@/components/dashboard/market-rates/StoneRatesPanel';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { ToastNotification, type ToastType } from '@/components/scanner/ToastNotification';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useRequireMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
-import type { GoldIncreaseByType, GoldRate, StoneRate } from '@/types/rates';
+import type { GoldIncreaseByType, GoldRate } from '@/types/rates';
 import { ApiError } from '@/utils/apiClient';
 import {
   applyGoldIncrease,
@@ -39,19 +38,28 @@ import {
   validatePurityValue,
 } from '@/utils/goldRateUtils';
 import {
-  fetchColorstoneRates,
-  fetchDiamondRates,
   fetchGoldRates,
   updateGoldRate,
-  upsertColorstoneRate,
-  upsertDiamondRate,
 } from '@/utils/ratesApi';
 
 const BUTTON_GREEN = '#1B3022';
-const ACCENT_GOLD = '#D4C19C';
 const CARAT_ORDER = ['22Kt', '20Kt', '18Kt', '14Kt', '9Kt'];
 
 type RatesTab = 'gold' | 'diamond' | 'colorstone' | 'labour';
+
+const TAB_BREADCRUMB: Record<RatesTab, string> = {
+  gold: 'Settings → Masters → Rates → Gold',
+  diamond: 'Settings → Masters → Rates → Diamond',
+  colorstone: 'Settings → Masters → Rates → Colorstone',
+  labour: 'Settings → Masters → Rates → Labour Charges',
+};
+
+const TAB_SCREEN_TITLE: Record<RatesTab, string> = {
+  gold: 'Gold Rates',
+  diamond: 'Diamond Rates',
+  colorstone: 'Colorstone Rates',
+  labour: 'Labour Charge Rates',
+};
 
 function sortGoldRates(rates: GoldRate[]): GoldRate[] {
   return [...rates].sort((a, b) => {
@@ -75,14 +83,12 @@ export default function MarketRatesScreen() {
   const allowed = useRequireMarketRatesAccess();
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<RatesTab>(parseTabParam(tab));
+  const activeTab = useMemo(() => parseTabParam(tab), [tab]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
-  const [diamondRates, setDiamondRates] = useState<StoneRate[]>([]);
-  const [colorstoneRates, setColorstoneRates] = useState<StoneRate[]>([]);
 
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
     visible: false,
@@ -101,18 +107,7 @@ export default function MarketRatesScreen() {
   const [increaseType, setIncreaseType] = useState<GoldIncreaseByType>('PERCENTAGE');
   const [increaseError, setIncreaseError] = useState<string | null>(null);
 
-  const [editingStone, setEditingStone] = useState<StoneRate | null>(null);
-  const [stoneColor, setStoneColor] = useState('');
-  const [stoneClarity, setStoneClarity] = useState('');
-  const [stoneRateValue, setStoneRateValue] = useState('');
-  const [stoneModalMode, setStoneModalMode] = useState<'diamond' | 'colorstone'>('diamond');
-  const [isNewStone, setIsNewStone] = useState(false);
-
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
-
-  useEffect(() => {
-    if (tab) setActiveTab(parseTabParam(tab));
-  }, [tab]);
 
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ visible: true, message, type });
@@ -123,15 +118,9 @@ export default function MarketRatesScreen() {
     else setLoading(true);
 
     try {
-      const [gold, diamond, colorstone] = await Promise.all([
-        fetchGoldRates(),
-        fetchDiamondRates(),
-        fetchColorstoneRates(),
-      ]);
+      const gold = await fetchGoldRates();
       setMcxLiveRate(gold.mcxLiveRate);
       setGoldRates(gold.rates);
-      setDiamondRates(diamond);
-      setColorstoneRates(colorstone);
       if (isRefresh) showToast('Rates refreshed successfully', 'success');
     } catch (error) {
       const message =
@@ -145,8 +134,8 @@ export default function MarketRatesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (allowed) void loadRates();
-    }, [allowed, loadRates]),
+      if (allowed && activeTab === 'gold') void loadRates();
+    }, [allowed, activeTab, loadRates]),
   );
 
   if (!allowed) return null;
@@ -258,80 +247,6 @@ export default function MarketRatesScreen() {
         )
       : null;
 
-  const openStoneEdit = (rate: StoneRate, mode: 'diamond' | 'colorstone') => {
-    setStoneModalMode(mode);
-    setIsNewStone(false);
-    setEditingStone(rate);
-    setStoneColor(rate.color);
-    setStoneClarity(rate.clarity);
-    setStoneRateValue(String(rate.rate));
-  };
-
-  const openStoneAdd = (mode: 'diamond' | 'colorstone') => {
-    setStoneModalMode(mode);
-    setIsNewStone(true);
-    setEditingStone(null);
-    setStoneColor('');
-    setStoneClarity('');
-    setStoneRateValue('');
-  };
-
-  const closeStoneModal = () => {
-    setEditingStone(null);
-    setIsNewStone(false);
-  };
-
-  const handleSaveStone = async () => {
-    const color = stoneColor.trim();
-    const clarity = stoneClarity.trim();
-    const rate = Number(stoneRateValue);
-
-    if (!color || !clarity) {
-      showToast('Color and clarity are required.', 'error');
-      return;
-    }
-    if (!Number.isFinite(rate) || rate <= 0) {
-      showToast('Please enter a valid rate.', 'error');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const payload = { color, clarity, rate };
-      const updated =
-        stoneModalMode === 'diamond'
-          ? await upsertDiamondRate(payload)
-          : await upsertColorstoneRate(payload);
-
-      const setter = stoneModalMode === 'diamond' ? setDiamondRates : setColorstoneRates;
-      setter((prev) => {
-        const index = prev.findIndex(
-          (item) => item.color === updated.color && item.clarity === updated.clarity,
-        );
-        if (index >= 0) {
-          const next = [...prev];
-          next[index] = updated;
-          return next;
-        }
-        return [...prev, updated];
-      });
-      closeStoneModal();
-      showToast(`${stoneModalMode === 'diamond' ? 'Diamond' : 'Colorstone'} rate saved`, 'success');
-    } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to save rate. Please try again.';
-      showToast(message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const visibleTabs: { key: RatesTab; label: string }[] = [
-    { key: 'gold', label: 'Gold' },
-    { key: 'diamond', label: 'Diamond' },
-    { key: 'colorstone', label: 'Colorstone' },
-  ];
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <BackgroundPattern />
@@ -340,36 +255,24 @@ export default function MarketRatesScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void loadRates(true)}
-            tintColor={BUTTON_GREEN}
-          />
+          activeTab === 'gold' ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void loadRates(true)}
+              tintColor={BUTTON_GREEN}
+            />
+          ) : undefined
         }
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
             <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
           </Pressable>
-          <Text style={styles.headerTitle}>Market Rates{'\n'}Control</Text>
-          <Text style={styles.headerSubtitle}>Settings → Masters → Rates</Text>
+          <Text style={styles.headerTitle}>{TAB_SCREEN_TITLE[activeTab]}</Text>
+          <Text style={styles.headerSubtitle}>{TAB_BREADCRUMB[activeTab]}</Text>
         </View>
 
-        <View style={styles.tabPill}>
-          {visibleTabs.map(({ key, label }) => (
-            <Pressable
-              key={key}
-              onPress={() => setActiveTab(key)}
-              style={[styles.tabBtn, activeTab === key && styles.tabBtnActive]}
-            >
-              <Text style={[styles.tabText, activeTab === key && styles.tabTextActive]}>
-                {label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {loading ? (
+        {loading && activeTab === 'gold' ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={BUTTON_GREEN} />
             <Text style={styles.loadingText}>Loading rates…</Text>
@@ -394,22 +297,17 @@ export default function MarketRatesScreen() {
           </View>
         ) : activeTab === 'labour' ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Labour Rates</Text>
+            <Text style={styles.emptyTitle}>Labour Charges</Text>
             <Text style={styles.emptyText}>
               Labour rate masters will be configured here. Use the scanner Labour section for
               per-item labour charges until this module is enabled.
             </Text>
           </View>
-        ) : (
+        ) : activeTab === 'diamond' || activeTab === 'colorstone' ? (
           <View style={styles.section}>
-            <StoneRatesTable
-              title={activeTab === 'diamond' ? 'Diamond' : 'Colorstone'}
-              rates={activeTab === 'diamond' ? diamondRates : colorstoneRates}
-              onEdit={(rate) => openStoneEdit(rate, activeTab)}
-              onAdd={() => openStoneAdd(activeTab)}
-            />
+            <StoneRatesPanel stoneType={activeTab} onToast={showToast} />
           </View>
-        )}
+        ) : null}
       </ScrollView>
 
       <ToastNotification
@@ -512,67 +410,6 @@ export default function MarketRatesScreen() {
           </View>
         </View>
       </Modal>
-
-      <Modal
-        visible={editingStone !== null || isNewStone}
-        transparent
-        animationType="fade"
-        onRequestClose={closeStoneModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Pressable onPress={closeStoneModal} hitSlop={8} style={styles.modalClose}>
-              <X size={20} color={Colors.textSecondary} />
-            </Pressable>
-            <Text style={styles.modalTitle}>
-              {isNewStone ? 'Add' : 'Edit'}{' '}
-              {stoneModalMode === 'diamond' ? 'Diamond' : 'Colorstone'} Rate
-            </Text>
-            <Text style={styles.fieldLabel}>Color</Text>
-            <TextInput
-              value={stoneColor}
-              onChangeText={setStoneColor}
-              placeholder={stoneModalMode === 'diamond' ? 'IJ' : 'Ruby Red'}
-              placeholderTextColor={Colors.placeholder}
-              style={styles.modalInput}
-            />
-            <Text style={styles.fieldLabel}>Clarity</Text>
-            <TextInput
-              value={stoneClarity}
-              onChangeText={setStoneClarity}
-              placeholder={stoneModalMode === 'diamond' ? 'VSSI' : 'A1'}
-              placeholderTextColor={Colors.placeholder}
-              style={styles.modalInput}
-            />
-            <Text style={styles.fieldLabel}>Rate (₹)</Text>
-            <TextInput
-              value={stoneRateValue}
-              onChangeText={setStoneRateValue}
-              keyboardType="decimal-pad"
-              placeholder="120000"
-              placeholderTextColor={Colors.placeholder}
-              style={styles.modalInput}
-            />
-            <View style={styles.modalActions}>
-              <Pressable onPress={closeStoneModal} style={styles.cancelBtn}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </Pressable>
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={handleSaveStone}
-                disabled={saving}
-                style={[styles.applyBtn, saving && styles.applyBtnDisabled]}
-              >
-                {saving ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.applyBtnText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -588,19 +425,6 @@ const styles = StyleSheet.create({
   backBtn: { width: 32, height: 32, justifyContent: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary, lineHeight: 34 },
   headerSubtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
-  tabPill: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.screenHorizontal,
-    marginBottom: 16,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 24,
-    padding: 4,
-    gap: 4,
-  },
-  tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 20 },
-  tabBtnActive: { backgroundColor: ACCENT_GOLD },
-  tabText: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
-  tabTextActive: { color: Colors.textPrimary },
   loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: 12 },
   loadingText: { fontSize: 14, color: Colors.textMuted },
   section: { marginHorizontal: Spacing.screenHorizontal, gap: 16 },

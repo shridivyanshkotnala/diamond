@@ -6,10 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MasterNavList } from '@/components/dashboard/masters/MasterNavList';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
-import { MASTER_SECTION_ITEMS } from '@/constants/settingsMasters';
+import { MASTER_RATES_ITEMS } from '@/constants/settingsMasters';
 import { Colors, Spacing } from '@/constants/theme';
 
-export default function MastersScreen() {
+export default function MasterRatesScreen() {
   const router = useRouter();
 
   return (
@@ -19,12 +19,12 @@ export default function MastersScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
           <ChevronLeft size={24} color={Colors.textPrimary} />
         </Pressable>
-        <Text style={styles.title}>Masters</Text>
-        <Text style={styles.subtitle}>Settings → Masters</Text>
+        <Text style={styles.title}>Rates</Text>
+        <Text style={styles.subtitle}>Settings → Masters → Rates</Text>
       </View>
 
       <View style={styles.content}>
-        <MasterNavList items={MASTER_SECTION_ITEMS} />
+        <MasterNavList items={MASTER_RATES_ITEMS} />
       </View>
 
       <BottomNav activeRoute="home" />

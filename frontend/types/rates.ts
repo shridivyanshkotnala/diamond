@@ -25,7 +25,7 @@ export interface UpdateGoldRatePayload {
 }
 
 export interface StoneRate {
-  id?: string;
+  id: string;
   color: string;
   clarity: string;
   rate: number;

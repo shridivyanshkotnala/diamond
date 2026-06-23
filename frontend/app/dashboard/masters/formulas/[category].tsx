@@ -3,22 +3,20 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
-import type { MasterFormulaCategory } from '@/constants/settingsMasters';
+import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
+import {
+  MASTER_CATEGORY_LABELS,
+  MASTER_FORMULA_LABELS,
+  parseFormulaCategory,
+} from '@/constants/settingsMasters';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 
-const LABELS: Record<MasterFormulaCategory, string> = {
-  gold: 'Gold Formulas',
-  diamond: 'Diamond Formulas',
-  labour: 'Labour Formulas',
-};
-
-export default function MasterFormulasScreen() {
+export default function MasterFormulaDetailScreen() {
   const router = useRouter();
   const { category } = useLocalSearchParams<{ category?: string }>();
-  const key = (category ?? 'gold') as MasterFormulaCategory;
-  const title = LABELS[key] ?? 'Formulas';
+  const key = parseFormulaCategory(category);
+  const title = MASTER_FORMULA_LABELS[key];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -28,6 +26,9 @@ export default function MasterFormulasScreen() {
           <ChevronLeft size={24} color={Colors.textPrimary} />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>
+          Settings → Masters → Formulas → {MASTER_CATEGORY_LABELS[key]}
+        </Text>
       </View>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Formula management</Text>
@@ -52,6 +53,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 8, paddingBottom: 16 },
   backBtn: { width: 32, height: 32, justifyContent: 'center', marginBottom: 8 },
   title: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary },
+  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
   card: {
     marginHorizontal: Spacing.screenHorizontal,
     borderWidth: 1,

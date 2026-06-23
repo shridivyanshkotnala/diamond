@@ -4,6 +4,7 @@ export interface RegistrationData {
   businessId: string;
   gstNumber: string;
   businessName: string;
+  businessType: string;
   phone: string;
   email: string;
   address: string;

@@ -132,7 +132,7 @@ export default function DashboardScreen() {
 
         {canEditMarketRates ? (
           <Pressable
-            onPress={() => router.push('/dashboard/market-rates' as Href)}
+            onPress={() => router.push('/dashboard/masters' as Href)}
             style={styles.editRatesLink}
           >
             <Text style={styles.editRatesText}>Edit Market Rates</Text>

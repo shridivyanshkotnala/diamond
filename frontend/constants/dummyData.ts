@@ -7,6 +7,7 @@ export const DUMMY = {
   otp: '127560',
   password: 'Password@123',
   address: '401, Dwarka sector, Surat, Gujrat, 261542',
+  businessType: 'Proprietorship',
 };
 /** Default values shown on the Business Profile view screen */
 export const BUSINESS_PROFILE_VIEW = {

@@ -37,6 +37,8 @@ export default function EditBusinessProfileScreen() {
   const [email, setEmail] = useState(initial.email);
   const [gstNumber, setGstNumber] = useState(initial.gstNumber);
   const [businessName, setBusinessName] = useState(initial.businessName);
+  const [businessType, setBusinessType] = useState(initial.businessType);
+  const [address, setAddress] = useState(initial.address);
   const [isGstVerified, setIsGstVerified] = useState(true);
 
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -55,6 +57,8 @@ export default function EditBusinessProfileScreen() {
       const result = await verifyBusinessGst(gstNumber);
       if (result.success && result.businessName) {
         setBusinessName(result.businessName);
+        if (result.businessType) setBusinessType(result.businessType);
+        if (result.address) setAddress(result.address);
         setIsGstVerified(true);
         setGstError(null);
       } else {
@@ -83,6 +87,8 @@ export default function EditBusinessProfileScreen() {
         email: email.trim(),
         gstNumber: normalizeGstNumber(gstNumber),
         businessName,
+        businessType,
+        address: address.trim(),
       });
       router.back();
     } finally {
@@ -182,6 +188,24 @@ export default function EditBusinessProfileScreen() {
                 {businessName}
               </Text>
             </View>
+
+            <Text style={styles.inputLabel}>Company Type</Text>
+            <View style={styles.readOnlyBox}>
+              <Text style={styles.readOnlyText}>
+                {businessType.trim() || 'Verify GST to load company type'}
+              </Text>
+            </View>
+
+            <Text style={styles.inputLabel}>Address</Text>
+            <TextInput
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Business address"
+              placeholderTextColor={Colors.placeholder}
+              multiline
+              textAlignVertical="top"
+              style={styles.addressInput}
+            />
 
             <TouchableOpacity
               onPress={handleUpdate}
@@ -345,6 +369,29 @@ const styles = StyleSheet.create({
   businessNameText: {
     fontSize: 16,
     color: Colors.textSecondary,
+  },
+  readOnlyBox: {
+    minHeight: Spacing.inputHeight,
+    justifyContent: 'center',
+    backgroundColor: BUSINESS_BOX_BG,
+    borderRadius: Radius.input,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  readOnlyText: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  addressInput: {
+    minHeight: 96,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.input,
+    backgroundColor: Colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: Colors.textPrimary,
   },
   updateBtn: {
     height: Spacing.buttonHeight,

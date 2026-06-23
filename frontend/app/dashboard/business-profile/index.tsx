@@ -68,6 +68,7 @@ export default function BusinessProfileScreen() {
               value={profile.phone ? `+91 ${profile.phone}` : 'Not set'}
             />
             <DetailRow label="Email" value={formatProfileValue(profile.email)} />
+            <DetailRow label="Company Type" value={formatProfileValue(profile.businessType)} />
             <DetailRow label="Address" value={formatProfileValue(profile.address)} multiline />
           </View>
         </View>

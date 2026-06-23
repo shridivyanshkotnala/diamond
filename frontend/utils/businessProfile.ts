@@ -3,6 +3,7 @@ import type { RegistrationData } from '@/types/auth';
 export interface BusinessProfile {
   businessName: string;
   gstNumber: string;
+  businessType: string;
   phone: string;
   email: string;
   address: string;
@@ -11,6 +12,7 @@ export interface BusinessProfile {
 const EMPTY_PROFILE: BusinessProfile = {
   businessName: '',
   gstNumber: '',
+  businessType: '',
   phone: '',
   email: '',
   address: '',
@@ -20,6 +22,7 @@ function buildProfile(registration: Partial<RegistrationData>): BusinessProfile 
   return {
     businessName: registration.businessName ?? '',
     gstNumber: registration.gstNumber ?? '',
+    businessType: registration.businessType ?? '',
     phone: registration.phone ?? '',
     email: registration.email ?? '',
     address: registration.address ?? '',

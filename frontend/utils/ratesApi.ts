@@ -26,6 +26,10 @@ function readNumber(value: unknown): number | undefined {
 
 function readString(value: unknown): string | undefined {
   if (typeof value === 'string' && value.trim()) return value.trim();
+  if (value != null && typeof value === 'object' && 'toString' in value) {
+    const asString = String(value);
+    if (asString.trim() && asString !== '[object Object]') return asString.trim();
+  }
   return undefined;
 }
 
@@ -60,16 +64,20 @@ function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
 }
 
 function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
-  const color = readString(raw.color);
-  const clarity = readString(raw.clarity);
+  const color = readString(raw.color) ?? '';
+  const clarity = readString(raw.clarity) ?? '';
   const rate = readNumber(raw.rate);
 
-  if (!color || !clarity || rate == null) {
+  if (rate == null || (!color && !clarity)) {
     return null;
   }
 
+  const id =
+    readString(raw.id ?? raw._id) ??
+    `${color.trim().toLowerCase()}|${clarity.trim().toLowerCase()}|${rate}`;
+
   return {
-    id: readString(raw.id ?? raw._id),
+    id,
     color,
     clarity,
     rate,
@@ -185,6 +193,14 @@ export async function upsertColorstoneRate(payload: UpsertStoneRatePayload): Pro
   }
 
   throw new Error('Invalid colorstone rate response from server');
+}
+
+export async function deleteDiamondRate(id: string): Promise<void> {
+  await apiRequest<ApiEnvelope>(`/rates/diamond/${id}`, { method: 'DELETE' });
+}
+
+export async function deleteColorstoneRate(id: string): Promise<void> {
+  await apiRequest<ApiEnvelope>(`/rates/colorstone/${id}`, { method: 'DELETE' });
 }
 
 export class RateNotFoundError extends Error {

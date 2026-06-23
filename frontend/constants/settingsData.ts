@@ -46,7 +46,7 @@ export const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   {
     id: 'masters',
     title: 'Masters',
-    subtitle: 'Rates and Formulas — Gold, Diamond, Labour',
+    subtitle: 'Rates and Formulas — Gold, Diamond, Colorstone, Labour',
     icon: TrendingUp,
     route: '/dashboard/masters',
   },

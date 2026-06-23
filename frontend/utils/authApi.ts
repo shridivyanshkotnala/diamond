@@ -49,6 +49,8 @@ function resolveApiMessage(
 export async function verifyBusinessGst(gstNumber: string): Promise<{
   success: boolean;
   businessName?: string;
+  address?: string;
+  businessType?: string;
   error?: string;
 }> {
   try {
@@ -72,7 +74,9 @@ export async function verifyBusinessGst(gstNumber: string): Promise<{
       'tradeName',
       'name',
     ]);
-    return { success: true, businessName };
+    const address = readString(unwrapped, ['address', 'registeredAddress', 'principalAddress']);
+    const businessType = readString(unwrapped, ['businessType', 'companyType', 'type']);
+    return { success: true, businessName, address, businessType };
   } catch (error) {
     return {
       success: false,
@@ -85,6 +89,8 @@ export async function verifyAndConfirmBusinessGst(gstNumber: string): Promise<{
   success: boolean;
   businessId?: string;
   businessName?: string;
+  address?: string;
+  businessType?: string;
   error?: string;
 }> {
   const verifyResult = await verifyBusinessGst(gstNumber);
@@ -98,6 +104,8 @@ export async function verifyAndConfirmBusinessGst(gstNumber: string): Promise<{
       success: true,
       businessId: confirmed.businessId,
       businessName: verifyResult.businessName,
+      address: verifyResult.address,
+      businessType: verifyResult.businessType,
     };
   } catch (error) {
     return {
