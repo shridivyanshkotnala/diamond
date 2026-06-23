@@ -26,6 +26,7 @@ const confirmGst = async (gstData) => {
     legalName: gstData.legalName,
     tradeName: gstData.tradeName,
     businessType: gstData.businessType,
+    companyType: gstData.companyType,
     gstStatus: gstData.gstStatus,
     address: gstData.address,
     stateCode: gstData.stateCode,

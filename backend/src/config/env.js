@@ -14,7 +14,11 @@ const envVarsSchema = joi.object({
   MSG91_AUTH_KEY: joi.string().required().description('MSG91 Auth Key'),
   MSG91_TEMPLATE_ID: joi.string().required().description('MSG91 Template ID'),
   RESEND_API_KEY: joi.string().required().description('Resend API Key'),
-  OPENAI_API_KEY: joi.string().required().description('OpenAI API Key')
+  OPENAI_API_KEY: joi.string().required().description('OpenAI API Key'),
+  MASTERS_INDIA_CLIENT_ID: joi.string().required().description('Masters India Client ID'),
+  MASTERS_INDIA_CLIENT_SECRET: joi.string().required().description('Masters India Client Secret'),
+  MASTERS_INDIA_USERNAME: joi.string().required().description('Masters India Username'),
+  MASTERS_INDIA_PASSWORD: joi.string().required().description('Masters India Password')
 }).unknown();
 
 const { value: envVars, error } = envVarsSchema.prefs({ errors: { label: 'key' } }).validate(process.env);
@@ -48,5 +52,11 @@ module.exports = {
   },
   resend: {
     apiKey: envVars.RESEND_API_KEY,
+  },
+  mastersIndia: {
+    clientId: envVars.MASTERS_INDIA_CLIENT_ID,
+    clientSecret: envVars.MASTERS_INDIA_CLIENT_SECRET,
+    username: envVars.MASTERS_INDIA_USERNAME,
+    password: envVars.MASTERS_INDIA_PASSWORD
   }
 };

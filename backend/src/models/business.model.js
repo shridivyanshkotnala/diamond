@@ -20,6 +20,9 @@ const businessSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  companyType: {
+    type: String
+  },
   gstStatus: {
     type: String,
     required: true
