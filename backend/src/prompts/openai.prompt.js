@@ -209,7 +209,7 @@ SECTION 8: HALLUCINATION PREVENTION — ABSOLUTE RULES
 SECTION 9: REQUIRED OUTPUT JSON SCHEMA
 ==============================================================
 {
-  "provider": "openai-gpt-4o",
+  "provider": "openai-gpt-4o-mini",
   "rawText": {
     "front": "<all visible text from front image>",
     "back": "<all visible text from back image>",
