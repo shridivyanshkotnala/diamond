@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { FormInput } from '@/components/scanner/FormInput';
 
@@ -9,7 +9,7 @@ interface QualityFieldProps {
 
 export function QualityField({ label, value }: QualityFieldProps) {
   return (
-    <View className="w-[48%]">
+    <View className="mb-1 w-[48%]">
       <FormInput label={label} value={value} editable={false} placeholder="Auto-generated" />
     </View>
   );

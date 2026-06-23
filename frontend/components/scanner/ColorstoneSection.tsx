@@ -73,7 +73,7 @@ export function ColorstoneSection({
     <>
       <FormSection title="Colorstone Details">
         <View className="flex-row flex-wrap justify-between">
-          <View className="w-[48%]">
+          <View className="mb-1 w-[48%]">
             <FormInput
               label="CS Weight (ct)"
               value={values.weight}
@@ -82,7 +82,7 @@ export function ColorstoneSection({
               placeholder="e.g. 4.26"
             />
           </View>
-          <View className="w-[48%]">
+          <View className="mb-1 w-[48%]">
             <FormInput
               label="CS Color"
               value={values.color}
@@ -91,7 +91,7 @@ export function ColorstoneSection({
               placeholder="e.g. Red"
             />
           </View>
-          <View className="w-[48%]">
+          <View className="mb-1 w-[48%]">
             <FormInput
               label="CS Clarity"
               value={values.clarity}
@@ -101,8 +101,8 @@ export function ColorstoneSection({
             />
           </View>
           <QualityField label="CS Quality" value={quality} />
-          <RateField label="CS Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
         </View>
+        <RateField label="CS Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
       </FormSection>
 
       <RateNotFoundModal

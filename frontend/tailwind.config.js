@@ -7,6 +7,12 @@ module.exports = {
   },
   theme: {
     extend: {
+      spacing: {
+        screen: '20px',
+        'screen-lg': '24px',
+        card: '16px',
+        section: '16px',
+      },
       colors: {
         primary: {
           DEFAULT: '#1A332E',
@@ -23,6 +29,7 @@ module.exports = {
           DEFAULT: '#FFFFFF',
           muted: '#F9F9F9',
           card: '#F3F3F3',
+          input: '#F4F5F7',
         },
         border: {
           DEFAULT: '#E0E0E0',

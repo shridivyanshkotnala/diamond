@@ -1,11 +1,13 @@
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { ChevronLeft, SquarePen } from 'lucide-react-native';
+import { SquarePen } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { BusinessProfileBanner } from '@/components/settings/BusinessProfileBanner';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { getBusinessProfile, formatProfileValue } from '@/utils/businessProfile';
@@ -38,20 +40,15 @@ export default function BusinessProfileScreen() {
   const profile = getBusinessProfile(registration);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={screenStyles.safeArea} edges={['top']}>
       <BackgroundPattern />
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={screenStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
-            <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Profile</Text>
-        </View>
+        <PageHeader title="Profile" />
 
         <BusinessProfileBanner businessName={formatProfileValue(profile.businessName, 'Your Business')} />
 
@@ -89,36 +86,12 @@ export default function BusinessProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
   scroll: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  header: {
-    paddingHorizontal: Spacing.screenHorizontal,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    lineHeight: 34,
-  },
   detailsCard: {
     marginHorizontal: Spacing.screenHorizontal,
-    marginTop: 20,
+    marginTop: Spacing.xl,
     backgroundColor: Colors.white,
     borderRadius: Radius.input,
     borderWidth: 1,
@@ -132,8 +105,8 @@ const styles = StyleSheet.create({
   },
   detailsHeader: {
     backgroundColor: '#F0F0F0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   detailsHeaderText: {
     fontSize: 11,
@@ -142,15 +115,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   detailsBody: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingVertical: 12,
-    gap: 16,
+    paddingVertical: Spacing.md,
+    gap: Spacing.lg,
   },
   detailLabel: {
     flex: 1,
@@ -173,9 +146,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     marginHorizontal: Spacing.screenHorizontal,
-    marginTop: 24,
+    marginTop: Spacing.xxl,
     height: Spacing.buttonHeight,
     backgroundColor: BUTTON_GREEN,
     borderRadius: Radius.button,

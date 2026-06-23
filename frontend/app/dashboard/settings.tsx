@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
+import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useSettingsAccess } from '@/hooks/useSettingsAccess';
 import { useAuthStore } from '@/store/authStore';
@@ -24,19 +25,19 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={screenStyles.safeArea} edges={['top']}>
       <BackgroundPattern />
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={screenStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
+        <View style={screenStyles.pageHeader}>
+          <Pressable onPress={() => router.back()} hitSlop={8} style={screenStyles.backBtn}>
             <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
           </Pressable>
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={screenStyles.pageTitle}>Settings</Text>
         </View>
 
         <View style={styles.profileCard}>
@@ -107,32 +108,8 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
   scroll: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  header: {
-    paddingHorizontal: Spacing.screenHorizontal,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    lineHeight: 34,
   },
   profileCard: {
     flexDirection: 'row',
@@ -140,8 +117,9 @@ const styles = StyleSheet.create({
     backgroundColor: PROFILE_GREEN,
     borderRadius: Radius.input,
     marginHorizontal: Spacing.screenHorizontal,
-    marginTop: 16,
-    padding: 16,
+    marginTop: Spacing.lg,
+    padding: Spacing.lg,
+    gap: Spacing.lg,
   },
   avatar: {
     width: 56,
@@ -151,7 +129,6 @@ const styles = StyleSheet.create({
   },
   profileName: {
     flex: 1,
-    marginLeft: 16,
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 24,
@@ -159,8 +136,8 @@ const styles = StyleSheet.create({
   },
   menuList: {
     paddingHorizontal: Spacing.screenHorizontal,
-    marginTop: 20,
-    gap: 12,
+    marginTop: Spacing.xl,
+    gap: Spacing.md,
   },
   menuCard: {
     flexDirection: 'row',
@@ -169,8 +146,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.input,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -184,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F3F3',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   logoutIconWrap: {
     width: 40,
@@ -193,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCE8E6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   menuTextWrap: {
     flex: 1,
@@ -207,7 +184,7 @@ const styles = StyleSheet.create({
   menuSubtitle: {
     fontSize: 12,
     color: Colors.textSecondary,
-    marginTop: 4,
+    marginTop: Spacing.xs,
     lineHeight: 16,
   },
   logoutTitle: {

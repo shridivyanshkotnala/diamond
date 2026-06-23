@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Heart, Menu } from 'lucide-react-native';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 
 const ACCENT_GOLD = '#D4C19C';
 
@@ -33,9 +33,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingHorizontal: Spacing.screenHorizontal,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   menuBtn: {
     width: 40,
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: Spacing.md,
     fontSize: 17,
     fontWeight: '700',
     color: Colors.textPrimary,
@@ -57,11 +57,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F3F3F3',
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
   },
   wishlistText: {
-    marginLeft: 6,
     fontSize: 12,
     fontWeight: '500',
     color: Colors.textPrimary,

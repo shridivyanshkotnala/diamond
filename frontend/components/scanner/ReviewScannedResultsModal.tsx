@@ -4,6 +4,7 @@ import { Pencil } from 'lucide-react-native';
 
 import { ColorstoneSection } from '@/components/scanner/ColorstoneSection';
 import { DiamondSection } from '@/components/scanner/DiamondSection';
+import { FieldLabel } from '@/components/scanner/FieldLabel';
 import { FormSection } from '@/components/scanner/FormSection';
 import { getLaborValuesFromScanData, LaborSection } from '@/components/scanner/LaborSection';
 import { Colors } from '@/constants/theme';
@@ -30,13 +31,10 @@ function ReviewFieldRow({
   editable = true,
 }: ReviewFieldRowProps) {
   return (
-    <View className="mb-3 flex-row items-center gap-3">
-      <Text className="w-[118px] text-sm font-semibold text-text-primary">
-        {label}
-        {required ? <Text className="text-danger-text">*</Text> : null}
-      </Text>
+    <View className="mb-3">
+      <FieldLabel label={label} required={required} />
       <View
-        className={`h-[42px] flex-1 flex-row items-center rounded-input border bg-white px-3 ${
+        className={`h-11 flex-row items-center rounded-input border bg-surface-input px-3.5 ${
           missing ? 'border-danger-text' : 'border-border'
         }`}
       >
@@ -90,15 +88,15 @@ export function ReviewScannedResultsModal({
   };
 
   return (
-    <View className="rounded-[20px] bg-white px-5 py-6 shadow-lg">
-      <Text className="mb-5 text-lg font-bold text-text-primary">Review Scanned Results</Text>
+    <View className="rounded-[20px] bg-white px-screen py-5 shadow-lg">
+      <Text className="mb-4 text-lg font-bold text-text-primary">Review Scanned Results</Text>
 
       <FormSection title="Weight & Purity">
         <ReviewFieldRow
           label="Gross Wt."
           value={scanData.grossWt}
           onChangeText={(value) => onFieldChange('grossWt', value)}
-          placeholder="Enter Missing Value"
+          placeholder="Enter missing value"
           required
           missing={!scanData.grossWt}
         />
@@ -158,7 +156,7 @@ export function ReviewScannedResultsModal({
         showValidationError={showLabourValidation || Boolean(labourError)}
       />
 
-      <View className="mt-4 flex-row gap-3">
+      <View className="mt-2 flex-row gap-3">
         <Pressable
           onPress={onReScan}
           className="flex-1 items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
@@ -179,14 +177,14 @@ export function ReviewScannedResultsModal({
       </View>
 
       {hasRateError ? (
-        <Text className="mt-3 text-center text-xs text-danger-text">
+        <Text className="mt-3 text-center text-xs leading-5 text-danger-text">
           Resolve rate errors before saving.
         </Text>
       ) : null}
 
       <Text className="mt-4 text-center text-xs leading-5 text-text-secondary">
-        <Text className="text-danger-text">*</Text> Scanner couldn&apos;t scan or find specific value,
-        Manually Enter value or ReScan.
+        <Text className="text-danger-text">*</Text> Scanner couldn&apos;t scan or find specific value.
+        Manually enter the value or ReScan.
       </Text>
     </View>
   );

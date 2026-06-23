@@ -1,15 +1,16 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/dashboard/BottomNav';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import {
   MASTER_CATEGORY_LABELS,
   MASTER_FORMULA_LABELS,
   parseFormulaCategory,
 } from '@/constants/settingsMasters';
+import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 
 export default function MasterFormulaDetailScreen() {
@@ -19,17 +20,12 @@ export default function MasterFormulaDetailScreen() {
   const title = MASTER_FORMULA_LABELS[key];
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={screenStyles.safeArea} edges={['top']}>
       <BackgroundPattern />
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
-          <ChevronLeft size={24} color={Colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>
-          Settings → Masters → Formulas → {MASTER_CATEGORY_LABELS[key]}
-        </Text>
-      </View>
+      <PageHeader
+        title={title}
+        subtitle={`Settings → Masters → Formulas → ${MASTER_CATEGORY_LABELS[key]}`}
+      />
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Formula management</Text>
         <Text style={styles.cardBody}>
@@ -38,9 +34,9 @@ export default function MasterFormulaDetailScreen() {
         </Text>
         <Pressable
           onPress={() => router.push('/dashboard/scanner/formula-management')}
-          style={styles.btn}
+          style={screenStyles.primaryButton}
         >
-          <Text style={styles.btnText}>Open Formula Manager</Text>
+          <Text style={screenStyles.primaryButtonText}>Open Formula Manager</Text>
         </Pressable>
       </View>
       <BottomNav activeRoute="home" />
@@ -49,26 +45,23 @@ export default function MasterFormulaDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.white },
-  header: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 8, paddingBottom: 16 },
-  backBtn: { width: 32, height: 32, justifyContent: 'center', marginBottom: 8 },
-  title: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
   card: {
     marginHorizontal: Spacing.screenHorizontal,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
-    padding: 16,
+    padding: Spacing.lg,
     backgroundColor: Colors.white,
+    gap: Spacing.md,
   },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
-  cardBody: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20, marginBottom: 16 },
-  btn: {
-    backgroundColor: '#1B3022',
-    borderRadius: Radius.button,
-    paddingVertical: 12,
-    alignItems: 'center',
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
-  btnText: { color: Colors.white, fontWeight: '600', fontSize: 14 },
+  cardBody: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
 });

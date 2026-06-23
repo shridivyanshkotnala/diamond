@@ -1,49 +1,22 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MasterNavList } from '@/components/dashboard/masters/MasterNavList';
 import { BottomNav } from '@/components/dashboard/BottomNav';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { MASTER_SECTION_ITEMS } from '@/constants/settingsMasters';
-import { Colors, Spacing } from '@/constants/theme';
+import { screenStyles } from '@/constants/screenLayout';
 
 export default function MastersScreen() {
-  const router = useRouter();
-
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={screenStyles.safeArea} edges={['top']}>
       <BackgroundPattern />
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
-          <ChevronLeft size={24} color={Colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Masters</Text>
-        <Text style={styles.subtitle}>Settings → Masters</Text>
-      </View>
-
-      <View style={styles.content}>
+      <PageHeader title="Masters" subtitle="Settings → Masters" />
+      <View style={screenStyles.screenBody}>
         <MasterNavList items={MASTER_SECTION_ITEMS} />
       </View>
-
       <BottomNav activeRoute="home" />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.white },
-  header: {
-    paddingHorizontal: Spacing.screenHorizontal,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  backBtn: { width: 32, height: 32, justifyContent: 'center', marginBottom: 8 },
-  title: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary },
-  subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
-  content: {
-    marginHorizontal: Spacing.screenHorizontal,
-    marginBottom: 20,
-  },
-});

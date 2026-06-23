@@ -17,7 +17,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { MarketCard } from '@/components/dashboard/MarketCard';
 import { StoneRateCard } from '@/components/dashboard/StoneRateCard';
 import { GOLD_MARKET_DATA } from '@/constants/marketData';
-import { Colors } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
 import type { MarketItem } from '@/types/auth';
 import type { StoneRate } from '@/types/rates';
@@ -186,14 +186,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: Spacing.screenBottom,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 16,
+    paddingHorizontal: Spacing.screenHorizontal,
+    marginTop: Spacing.lg,
   },
   pageTitle: {
     flex: 1,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT_GOLD,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
+    marginLeft: Spacing.md,
   },
   dateDay: {
     fontSize: 10,
@@ -225,8 +225,8 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 20,
+    paddingHorizontal: Spacing.screenHorizontal,
+    marginTop: Spacing.xl,
   },
   tabScroll: {
     flex: 1,
@@ -238,8 +238,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   tabBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     borderRadius: 20,
   },
   tabBtnActive: {
@@ -254,12 +254,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   refreshBtn: {
-    marginLeft: 12,
-    padding: 8,
+    marginLeft: Spacing.md,
+    padding: Spacing.sm,
   },
   editRatesLink: {
-    marginHorizontal: 20,
-    marginTop: 12,
+    marginHorizontal: Spacing.screenHorizontal,
+    marginTop: Spacing.md,
   },
   editRatesText: {
     fontSize: 13,
@@ -267,14 +267,14 @@ const styles = StyleSheet.create({
     color: Colors.primaryNav,
   },
   mcxHint: {
-    marginHorizontal: 20,
-    marginTop: 8,
+    marginHorizontal: Spacing.screenHorizontal,
+    marginTop: Spacing.sm,
     fontSize: 12,
     color: Colors.textMuted,
   },
   cardsWrap: {
-    paddingHorizontal: 20,
-    marginTop: 16,
+    paddingHorizontal: Spacing.screenHorizontal,
+    marginTop: Spacing.lg,
   },
   loadingWrap: {
     paddingVertical: 40,

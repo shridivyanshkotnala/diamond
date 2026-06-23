@@ -29,13 +29,13 @@ export function ScanScreenWrapper({
       <ScreenBackHeader title={title} onBack={onBack} />
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-32 pt-2"
+        contentContainerClassName="px-screen pb-32 pt-1"
         showsVerticalScrollIndicator={false}
       >
         {children}
       </ScrollView>
       {footer ? (
-        <View className="absolute bottom-24 left-0 right-0 px-5">{footer}</View>
+        <View className="absolute bottom-24 left-0 right-0 px-screen">{footer}</View>
       ) : null}
       <BottomNav activeRoute={activeRoute} scanButtonVariant={scanButtonVariant} />
     </SafeAreaView>

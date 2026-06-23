@@ -145,7 +145,7 @@ export default function ReviewResultsScreen() {
 
           <ScrollView
             className="flex-1"
-            contentContainerClassName="flex-grow items-center justify-center px-6 pb-28 pt-4"
+            contentContainerClassName="flex-grow items-center justify-center px-screen pb-28 pt-2"
             showsVerticalScrollIndicator={false}
           >
             {loading ? (

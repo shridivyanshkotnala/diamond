@@ -1,5 +1,6 @@
-import { Text, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
+import { FieldLabel } from '@/components/scanner/FieldLabel';
 import { Colors } from '@/constants/theme';
 
 interface FormInputProps {
@@ -8,6 +9,7 @@ interface FormInputProps {
   onChangeText?: (text: string) => void;
   placeholder?: string;
   editable?: boolean;
+  required?: boolean;
 }
 
 export function FormInput({
@@ -16,19 +18,18 @@ export function FormInput({
   onChangeText,
   placeholder,
   editable = true,
+  required = false,
 }: FormInputProps) {
   return (
-    <View className="mb-4">
-      <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-text-label">
-        {label}
-      </Text>
+    <View className="mb-3">
+      <FieldLabel label={label} required={required} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         editable={editable}
         placeholderTextColor={Colors.placeholder}
-        className="rounded-input border border-border bg-[#F4F5F7] px-4 py-3.5 text-base text-text-primary"
+        className="h-11 rounded-input border border-border bg-surface-input px-3.5 text-sm text-text-primary"
       />
     </View>
   );

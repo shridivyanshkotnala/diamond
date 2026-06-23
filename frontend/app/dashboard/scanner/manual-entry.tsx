@@ -94,11 +94,11 @@ export default function ManualEntryScreen() {
           placeholder="e.g. G-1002"
           onChangeText={(sku) => updateScanData({ sku })}
         />
-        <View className="mb-4">
+        <View className="mb-3">
           <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-text-label">
             Item Category
           </Text>
-          <View className="flex-row items-center justify-between rounded-input border border-border bg-[#F4F5F7] px-4 py-3.5">
+          <View className="h-11 flex-row items-center justify-between rounded-input border border-border bg-[#F4F5F7] px-3.5">
             <Text className="text-base text-text-primary">{scanData.category}</Text>
             <ChevronDown size={20} color="#757575" />
           </View>
@@ -181,7 +181,6 @@ export default function ManualEntryScreen() {
       />
 
       <LaborSection
-        layout="form"
         values={getLaborValuesFromScanData(scanData)}
         onChange={(values) => updateScanData(values)}
         showValidationError={showLabourValidation || Boolean(labourError)}

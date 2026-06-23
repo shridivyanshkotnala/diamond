@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -24,6 +24,8 @@ import { StoneRatesPanel } from '@/components/dashboard/market-rates/StoneRatesP
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { ToastNotification, type ToastType } from '@/components/scanner/ToastNotification';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useRequireMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
 import type { GoldIncreaseByType, GoldRate } from '@/types/rates';
@@ -248,11 +250,11 @@ export default function MarketRatesScreen() {
       : null;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={screenStyles.safeArea} edges={['top']}>
       <BackgroundPattern />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={screenStyles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           activeTab === 'gold' ? (
@@ -264,13 +266,10 @@ export default function MarketRatesScreen() {
           ) : undefined
         }
       >
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
-            <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
-          </Pressable>
-          <Text style={styles.headerTitle}>{TAB_SCREEN_TITLE[activeTab]}</Text>
-          <Text style={styles.headerSubtitle}>{TAB_BREADCRUMB[activeTab]}</Text>
-        </View>
+        <PageHeader
+          title={TAB_SCREEN_TITLE[activeTab]}
+          subtitle={TAB_BREADCRUMB[activeTab]}
+        />
 
         {loading && activeTab === 'gold' ? (
           <View style={styles.loadingWrap}>
@@ -278,7 +277,7 @@ export default function MarketRatesScreen() {
             <Text style={styles.loadingText}>Loading rates…</Text>
           </View>
         ) : activeTab === 'gold' ? (
-          <View style={styles.section}>
+          <View style={screenStyles.screenSection}>
             <McxLiveBanner mcxLiveRate={mcxLiveRate} />
             <Text style={styles.sectionTitle}>Gold Karat Rates</Text>
             {sortedGoldRates.length > 0 ? (
@@ -288,23 +287,25 @@ export default function MarketRatesScreen() {
                 onIncreaseBy={openGoldIncrease}
               />
             ) : (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>
+              <View style={screenStyles.emptyCard}>
+                <Text style={screenStyles.emptyText}>
                   Unable to load gold rates. Pull down to refresh.
                 </Text>
               </View>
             )}
           </View>
         ) : activeTab === 'labour' ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Labour Charges</Text>
-            <Text style={styles.emptyText}>
+          <View style={screenStyles.screenSection}>
+            <View style={screenStyles.emptyCard}>
+              <Text style={screenStyles.emptyTitle}>Labour Charges</Text>
+              <Text style={screenStyles.emptyText}>
               Labour rate masters will be configured here. Use the scanner Labour section for
               per-item labour charges until this module is enabled.
             </Text>
           </View>
+          </View>
         ) : activeTab === 'diamond' || activeTab === 'colorstone' ? (
-          <View style={styles.section}>
+          <View style={screenStyles.screenSection}>
             <StoneRatesPanel stoneType={activeTab} onToast={showToast} />
           </View>
         ) : null}
@@ -325,8 +326,8 @@ export default function MarketRatesScreen() {
         animationType="fade"
         onRequestClose={() => setEditingGold(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
+        <View style={screenStyles.modalOverlay}>
+          <View style={screenStyles.modalCard}>
             <Pressable onPress={() => setEditingGold(null)} hitSlop={8} style={styles.modalClose}>
               <X size={20} color={Colors.textSecondary} />
             </Pressable>
@@ -369,8 +370,8 @@ export default function MarketRatesScreen() {
         animationType="fade"
         onRequestClose={() => setIncreasingGold(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
+        <View style={screenStyles.modalOverlay}>
+          <View style={screenStyles.modalCard}>
             <Pressable onPress={() => setIncreasingGold(null)} hitSlop={8} style={styles.modalClose}>
               <X size={20} color={Colors.textSecondary} />
             </Pressable>
@@ -415,72 +416,21 @@ export default function MarketRatesScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.white },
-  scrollContent: { paddingBottom: 120 },
-  header: {
-    paddingHorizontal: Spacing.screenHorizontal,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: { width: 32, height: 32, justifyContent: 'center', marginBottom: 8 },
-  headerTitle: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary, lineHeight: 34 },
-  headerSubtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 4 },
-  loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: 12 },
+  loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: Spacing.md },
   loadingText: { fontSize: 14, color: Colors.textMuted },
-  section: { marginHorizontal: Spacing.screenHorizontal, gap: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  emptyCard: {
-    marginHorizontal: Spacing.screenHorizontal,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.input,
-    padding: 20,
-    backgroundColor: Colors.white,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
-  emptyText: { fontSize: 14, color: Colors.textMuted, lineHeight: 20 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  modal: {
-    width: '100%',
-    backgroundColor: Colors.white,
-    borderRadius: Radius.input,
-    padding: 20,
-  },
   modalClose: { alignSelf: 'flex-end' },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
-  fieldLabel: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginBottom: 8,
-    marginTop: 8,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  modalInput: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.input,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    color: Colors.textPrimary,
-  },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
   previewText: {
     fontSize: 13,
     color: Colors.textSecondary,
-    marginTop: 12,
+    marginTop: Spacing.md,
     fontWeight: '600',
   },
-  modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  modalActions: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xl },
   cancelBtn: {
     flex: 1,
-    height: 48,
+    height: Spacing.buttonHeight,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.button,
@@ -490,7 +440,7 @@ const styles = StyleSheet.create({
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
   applyBtn: {
     flex: 1,
-    height: 48,
+    height: Spacing.buttonHeight,
     backgroundColor: BUTTON_GREEN,
     borderRadius: Radius.button,
     alignItems: 'center',

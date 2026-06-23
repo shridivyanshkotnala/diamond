@@ -6,7 +6,8 @@ import { DeleteStoneRateModal } from '@/components/dashboard/market-rates/Delete
 import { StoneRateFormModal } from '@/components/dashboard/market-rates/StoneRateFormModal';
 import type { ToastType } from '@/components/scanner/ToastNotification';
 import type { StoneRateKind } from '@/constants/stoneRateOptions';
-import { Colors, Radius } from '@/constants/theme';
+import { screenStyles } from '@/constants/screenLayout';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import type { StoneRate } from '@/types/rates';
 import {
   createLocalStoneRateId,
@@ -240,53 +241,30 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
 
 const styles = StyleSheet.create({
   addBtn: {
-    height: 44,
+    height: Spacing.buttonHeight,
     borderRadius: Radius.button,
     backgroundColor: BUTTON_GREEN,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   addBtnText: { color: Colors.white, fontWeight: '600', fontSize: 14 },
   emptyCard: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.input,
-    padding: 20,
-    backgroundColor: Colors.white,
+    ...screenStyles.emptyCard,
     alignItems: 'center',
   },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
   emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
   table: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.input,
-    overflow: 'hidden',
-    backgroundColor: Colors.white,
+    ...screenStyles.table,
   },
   tableCompact: { minWidth: 520 },
-  headerRow: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F0F0',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-  },
-  headerCell: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    textTransform: 'uppercase',
-  },
-  dataRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-  },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  cell: { fontSize: 13, color: Colors.textPrimary },
+  headerRow: screenStyles.tableHeaderRow,
+  headerCell: screenStyles.tableHeaderCell,
+  dataRow: screenStyles.tableDataRow,
+  rowBorder: screenStyles.tableRowBorder,
+  cell: screenStyles.tableCell,
   colorCol: { width: 72, flexShrink: 0 },
   clarityCol: { width: 72, flexShrink: 0 },
   rateCol: { width: 120, flexShrink: 0 },

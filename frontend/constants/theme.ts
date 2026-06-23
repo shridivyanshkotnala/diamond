@@ -24,11 +24,22 @@ export const Colors = {
   tabInactive: '#F0F0F0',
 } as const;
 
+/** Consistent spacing scale used across StyleSheet and layout helpers. */
 export const Spacing = {
-  screenHorizontal: 24,
-  cardPadding: 24,
-  inputHeight: 52,
-  buttonHeight: 52,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  screenHorizontal: 20,
+  cardPadding: 20,
+  screenBottom: 120,
+  sectionGap: 16,
+  listGap: 12,
+  inputHeight: 48,
+  buttonHeight: 48,
+  inputPaddingX: 14,
 } as const;
 
 export const Radius = {

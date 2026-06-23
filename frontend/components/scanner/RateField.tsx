@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { FormInput } from '@/components/scanner/FormInput';
 import { Loader } from '@/components/scanner/Loader';
@@ -11,7 +11,7 @@ interface RateFieldProps {
 
 export function RateField({ label, value, isFetching = false }: RateFieldProps) {
   return (
-    <View className="w-[48%]">
+    <View className="w-full">
       <FormInput
         label={label}
         value={isFetching ? '' : value}
@@ -19,7 +19,7 @@ export function RateField({ label, value, isFetching = false }: RateFieldProps) 
         placeholder={isFetching ? '' : 'Auto-filled'}
       />
       {isFetching ? (
-        <View className="-mt-2 mb-2">
+        <View className="-mt-1 mb-1">
           <Loader message="Fetching rate..." />
         </View>
       ) : null}

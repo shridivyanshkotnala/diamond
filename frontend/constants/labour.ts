@@ -9,4 +9,7 @@ export const DEFAULT_LABOUR_CHARGE_UNITS: LabourChargeUnit[] = [
 export const DEFAULT_LABOUR_CHARGE_UNIT: LabourChargeUnit = 'Per Gram';
 
 export const LABOUR_VALIDATION_MESSAGE =
-  'Please enter either Percentage Purity or Labor Charges.';
+  'Please enter % Purity or Labour Amount.';
+
+export const LABOUR_SECTION_HINT =
+  'Scanner fills one option automatically. You can also enter % Purity or Labour Amount manually.';

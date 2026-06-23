@@ -73,16 +73,16 @@ export function DiamondSection({
     <>
       <FormSection title="Diamond Details">
         <View className="flex-row flex-wrap justify-between">
-          <View className="w-[48%]">
+          <View className="mb-1 w-[48%]">
             <FormInput
               label="Diamond Weight (ct)"
               value={values.weight}
               onChangeText={(weight) => onChange({ weight })}
               editable={!inputsDisabled}
-              placeholder="e.g. 6.28"
+              placeholder="e.g. 0.46"
             />
           </View>
-          <View className="w-[48%]">
+          <View className="mb-1 w-[48%]">
             <FormInput
               label="Diamond Color"
               value={values.color}
@@ -91,22 +91,18 @@ export function DiamondSection({
               placeholder="e.g. IJ"
             />
           </View>
-          <View className="w-[48%]">
+          <View className="mb-1 w-[48%]">
             <FormInput
               label="Diamond Clarity"
               value={values.clarity}
               onChangeText={handleClarityChange}
               editable={!inputsDisabled}
-              placeholder="e.g. VSSI"
+              placeholder="e.g. VVS1"
             />
           </View>
           <QualityField label="Diamond Quality" value={quality} />
-          <RateField
-            label="Diamond Rate (₹/ct)"
-            value={values.rate}
-            isFetching={isFetching}
-          />
         </View>
+        <RateField label="Diamond Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
       </FormSection>
 
       <RateNotFoundModal

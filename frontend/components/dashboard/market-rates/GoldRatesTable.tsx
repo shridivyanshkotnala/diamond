@@ -4,7 +4,7 @@ import { TrendingUp } from 'lucide-react-native';
 import type { GoldRate } from '@/types/rates';
 import { formatInr } from '@/utils/rateMappers';
 import { formatKaratLabel } from '@/utils/goldRateUtils';
-import { Colors, Radius } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 
 interface GoldRatesTableProps {
   rates: GoldRate[];
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     backgroundColor: '#F0F0F0',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
   },
   headerCell: {
     fontSize: 12,
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
   dataRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
   },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
   cell: { fontSize: 13, color: Colors.textPrimary },
@@ -242,8 +242,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1B3022',
     borderRadius: Radius.input,
-    padding: 16,
-    gap: 12,
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
   mcxIconWrap: {
     width: 36,
