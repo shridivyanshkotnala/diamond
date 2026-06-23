@@ -21,7 +21,8 @@ Rashi / Rashi(GMS) / Rashi(CT)  = Gemstone / Colour Stone weight in Indian trade
 Tunch / Tnch / T / Tch          = Gold Purity (Tunch value, e.g. 750 = 18K)
 Purity / Pur / Pty              = Gold Purity
 Karat / Kt / K                  = Gold Karat (e.g. 18K, 22K, 14K)
-Note: If a standalone number like 14, 18, or 22 appears anywhere on the tag without a label, it is the Gold Purity (Karat). Extract it as purity (e.g. "14K").
+Note 1: If a standalone number like 14, 18, or 22 appears anywhere on the tag without a label, it is the Gold Purity (Karat). Extract it as purity (e.g. "14K").
+Note 2: If a Serial Number or Stock Code ends with a space and 14, 18, or 22 (e.g. "GR01453 14"), that number is ALWAYS the Gold Purity. Extract it as purity (e.g. "14K") and remove it from the serialNumber!
 
 --- DIAMOND FIELDS ---
 DR / Dia / D                    = Diamond section marker
