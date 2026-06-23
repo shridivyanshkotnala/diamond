@@ -38,7 +38,8 @@ const uploadBackImage = async (req, res, next) => {
 const analyzeScan = async (req, res, next) => {
   try {
     const { scanId } = req.params;
-    const updated = await scanService.analyzeScan(scanId);
+    const scannerSettings = req.body?.scannerSettings || {};
+    const updated = await scanService.analyzeScan(scanId, scannerSettings);
     
     sendSuccess(res, {
         scanId: updated.scanId,

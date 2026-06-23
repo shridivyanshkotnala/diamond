@@ -25,13 +25,17 @@ const saveImage = async (scanId, imagePath, type) => {
   });
 };
 
-const analyzeScan = async (scanId) => {
+const analyzeScan = async (scanId, scannerSettings = {}) => {
   const scan = await redisService.getScan(scanId);
   if (!scan) throw new Error('Scan not found');
 
   const { frontImagePath, backImagePath, jewelleryType, scanType } = scan;
+  if (!frontImagePath && !backImagePath) {
+    throw new Error('No images uploaded for this scan');
+  }
 
-  const result = await geminiService.analyzeImages(frontImagePath, backImagePath, jewelleryType, scanType);
+  // Call Gemini to get structured data
+  const result = await geminiService.analyzeImages(frontImagePath, backImagePath, jewelleryType, scanType, scannerSettings);
   
   return await redisService.updateScanStatus(scanId, 'ANALYSIS_COMPLETED', {
     analysisResult: result

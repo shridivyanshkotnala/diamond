@@ -139,11 +139,20 @@ This is non-negotiable. NEVER leave diamondRate empty when colour grade is IJ.
 - For all other colour grades, set diamondRate = the colour grade string.
 
 *** CRITICAL MANDATORY RULE — LABOUR ***
-If the word 'Labour' or 'Lab' appears on the tag followed by a number:
-  1. ALWAYS extract that number as the labour value — no exceptions.
-  2. Example: "Labour: 71  14" → labour = "71" (14 here = purity, not labour).
-  3. labour must remain empty ONLY when the word Labour/Lab is completely absent from the tag.
-  4. NEVER leave labour empty if the label is visible.
+Identify labour-related fields using keywords such as: Labour, Labour Charge, Making, Making Charge, MC, M.C., Labour %.
+Extract the numeric value associated with the labour field.
+Determine the labour charge type:
+  - If the value is between 0 and 100 (inclusive), classify it as a percentage-based labour charge.
+  - If the value is greater than 100, classify it as a fixed labour amount in rupees.
+
+Populate ONLY ONE labour field based on the type:
+  - Percentage labour → populate labourPercentage and keep labourAmount null (or empty string).
+  - Amount labour → populate labourAmount and keep labourPercentage null (or empty string).
+  - Return labourChargeType as either "PERCENTAGE" or "AMOUNT".
+  - NEVER populate both labourPercentage and labourAmount simultaneously.
+
+Example: "Labour: 71  14" → value is 71 (<= 100). Set labourPercentage = "71", labourChargeType = "PERCENTAGE", labourAmount = "".
+Example: "Making: 1200" → value is 1200 (> 100). Set labourAmount = "1200", labourChargeType = "AMOUNT", labourPercentage = "".
 
 ==============================================================
 SECTION 4: OCR NEAR-MEANING & ERROR AUTO-CORRECTION
@@ -179,13 +188,11 @@ SECTION 6: CONFIDENCE RULES
 Below 60 = Unknown — place in unknownFields
 
 ==============================================================
-SECTION 7: WHAT TO IGNORE
+SECTION 7: SERIAL NUMBERS & WHAT TO IGNORE
 ==============================================================
-- Product codes (alphanumeric 6+ chars, e.g. GR01496B, 25LDGR272483929)
-- Barcodes and QR codes
-- Serial/lot/stock numbers (e.g. "Sr: 1671", "Lot: 4892")
-- Shop name, brand name, address text
-- Prices or totals (these are calculated values — do not extract)
+- Extract any Product codes, Barcode numbers, Serial/lot/stock numbers (e.g. GR01496B, 25LDGR272483929, 1671, LR11042, 260056) and place them in the 'serialNumber' field. If multiple exist, combine them with a space.
+- IGNORE Shop name, brand name, address text.
+- IGNORE Prices or totals (these are calculated values — do not extract).
 
 ==============================================================
 SECTION 8: HALLUCINATION PREVENTION — ABSOLUTE RULES
@@ -195,7 +202,7 @@ SECTION 8: HALLUCINATION PREVENTION — ABSOLUTE RULES
 3. NEVER calculate labour from any formula.
 4. NEVER convert purity (e.g. do not convert 750 to 18K or vice versa).
 5. NEVER guess diamond rate from quality grade.
-6. If a field is not visible → leave value as empty string "".
+6. CRITICAL: If a field is not explicitly visible (e.g., no labour, no gold purity, no CS quality), leave the value EXACTLY as an empty string "". Do NOT populate it.
 7. If a number appears but its label is unclear → put in unknownFields.
 
 ==============================================================
@@ -209,10 +216,13 @@ SECTION 9: REQUIRED OUTPUT JSON SCHEMA
     "merged": "<combined text>"
   },
   "structuredData": {
+    "serialNumber":         { "value": "", "confidence": 0 },
     "grossWeight":          { "value": "", "confidence": 0 },
     "netWeight":            { "value": "", "confidence": 0 },
     "purity":               { "value": "", "confidence": 0 },
-    "labour":               { "value": "", "confidence": 0 },
+    "labourChargeType":     { "value": "", "confidence": 0 },
+    "labourPercentage":     { "value": "", "confidence": 0 },
+    "labourAmount":         { "value": "", "confidence": 0 },
     "diamondWeight":        { "value": "", "confidence": 0 },
     "diamondPieces":        { "value": "", "confidence": 0 },
     "diamondRate":          { "value": "", "confidence": 0 },
@@ -239,12 +249,11 @@ Rules for unknownFields:
 - Do NOT duplicate: if a value is already in structuredData, remove it from unknownFields.
 - If purity has been extracted as 14K, do NOT add the standalone value 14 to unknownFields.
 - If diamondPieces has been extracted as 16, do NOT add DR pattern numbers to unknownFields.
-- Product codes, barcodes, item references, identifiers (e.g. GR01496B, 25LDGR272483929, 1671) MUST be ignored — do NOT put in unknownFields.
 - Only abbreviations or values with NO confident mapping to structuredData should appear in unknownFields.
 - CRITICAL: ALWAYS set "clarificationRequired": false. The clarification workflow has been temporarily disconnected. Users will fix any unmapped fields directly in the review screen.
 - Fields in structuredData with confidence below 80 should also be added to unknownFields for human review.`;
 
-const getUserPrompt = (jewelleryType, scanType) => {
+const getUserPrompt = (jewelleryType, scanType, scannerSettings = {}) => {
   const typeContext = {
     DIAMOND: `Focus on: grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, labour.
 Diamond quality = colour grade (D/E/F/G/H/I/J or EF/FG/GH/HI/IJ) + clarity grade (VVS/VS/SI etc.) combined into one string.`,
@@ -257,11 +266,18 @@ CS = Colour Stone. Stone types: Red, Blue, Green, Pink, Clean.`,
 
   const context = typeContext[jewelleryType] || typeContext.DIAMOND;
 
+  let dynamicSettings = '';
+  if (scannerSettings?.labourChargePreference === 'PERCENTAGE') {
+    dynamicSettings += `\nCRITICAL OVERRIDE: Scanner Settings specify "Always Use Percentage". You MUST ALWAYS populate labourPercentage (and set labourChargeType="PERCENTAGE") regardless of the detected labour value (>100 or <=100). Keep labourAmount empty.\n`;
+  } else if (scannerSettings?.labourChargePreference === 'AMOUNT') {
+    dynamicSettings += `\nCRITICAL OVERRIDE: Scanner Settings specify "Always Use Amount". You MUST ALWAYS populate labourAmount (and set labourChargeType="AMOUNT") regardless of the detected labour value (>100 or <=100). Keep labourPercentage empty.\n`;
+  }
+
   return `Analyse the provided jewellery tag image(s).
 
 Jewellery Type: ${jewelleryType}
 Scan Type: ${scanType}
-
+${dynamicSettings}
 ${context}
 
 INSTRUCTIONS:

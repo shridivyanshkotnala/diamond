@@ -59,7 +59,7 @@ const callGeminiWithRetry = async (parts) => {
   throw lastError;
 };
 
-const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanType) => {
+const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanType, scannerSettings = {}) => {
   // Build image parts in parallel to avoid sequential I/O delay
   const imageParts = await Promise.all([
     frontImagePath && fs.existsSync(frontImagePath)
@@ -72,7 +72,7 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
 
   const parts = [
     { text: SYSTEM_PROMPT },
-    { text: getUserPrompt(jewelleryType, scanType) },
+    { text: getUserPrompt(jewelleryType, scanType, scannerSettings) },
     ...imageParts.filter(Boolean),
   ];
 
