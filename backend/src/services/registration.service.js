@@ -119,9 +119,7 @@ const createPassword = async (businessId, password) => {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // MongoDB Transaction
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Transactions removed because free-tier M0 clusters have limitations with them
 
   try {
     const newUsers = await BusinessUser.create([{
@@ -133,14 +131,14 @@ const createPassword = async (businessId, password) => {
       emailVerified: true,
       phoneVerified: true,
       isActive: true
-    }], { session });
+    }]);
 
     business.registrationStep = 'COMPLETED';
     business.isRegistered = true;
-    await business.save({ session });
+    await business.save();
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
 
     // Clean up redis
     await redisClient.del(`registration:${businessId}`);
@@ -150,8 +148,8 @@ const createPassword = async (businessId, password) => {
       userId: newUsers[0]._id.toString()
     };
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     throw error;
   }
 };
