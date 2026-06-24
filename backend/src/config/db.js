@@ -5,7 +5,9 @@ let memoryServer;
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(config.mongodb.uri);
+    const conn = await mongoose.connect(config.mongodb.uri, {
+      retryWrites: false
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {

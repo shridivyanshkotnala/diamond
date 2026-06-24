@@ -30,7 +30,12 @@ app.get('/api/v1/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+app.get('/', (req, res) => {
+  res.status(200).send('Jewellery Tag Backend is running');
+});
+
 
 app.use(errorHandler);
 
 module.exports = app;
+
