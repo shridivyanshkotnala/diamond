@@ -83,8 +83,48 @@ const updateScanStatus = async (scanId, status, extraData = {}) => {
   }
 };
 
+// === GOLD RATES CACHING ===
+
+function goldKey(businessId) {
+  return `gold_rates:${businessId}`;
+}
+
+const setGoldRatesCache = async (businessId, data) => {
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      memoryStore.set(goldKey(businessId), JSON.stringify(data));
+      return;
+    }
+    await redis.set(goldKey(businessId), JSON.stringify(data), "EX", TTL);
+  });
+};
+
+const getGoldRatesCache = async (businessId) => {
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      const data = memoryStore.get(goldKey(businessId));
+      return data ? JSON.parse(data) : null;
+    }
+    const data = await redis.get(goldKey(businessId));
+    return data ? JSON.parse(data) : null;
+  });
+};
+
+const invalidateGoldRatesCache = async (businessId) => {
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      memoryStore.delete(goldKey(businessId));
+      return;
+    }
+    await redis.del(goldKey(businessId));
+  });
+};
+
 module.exports = {
   setScan,
   getScan,
   updateScanStatus,
+  setGoldRatesCache,
+  getGoldRatesCache,
+  invalidateGoldRatesCache
 };

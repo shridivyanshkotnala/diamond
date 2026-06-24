@@ -2,8 +2,9 @@ const GoldRate = require('../models/goldRate.model');
 const DiamondRate = require('../models/diamondRate.model');
 const ColorstoneRate = require('../models/colorstoneRate.model');
 const LabourRate = require('../models/labourRate.model');
-const { calculateGoldFinalRate } = require('../services/rateCalculation.service');
-const mcxService = require('../services/mcx.service');
+const GoldTaxSetting = require('../models/goldTaxSetting.model');
+const { getLiveGoldRates } = require('../services/rateCalculation.service');
+const redisService = require('../services/redis.service');
 
 // === GOLD RATES ===
 
@@ -16,18 +17,18 @@ const updateGoldRate = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Carat and purity are required' });
     }
 
-    const calculatedFinalRate = await calculateGoldFinalRate(purity, increaseByAmount, increaseByType);
-
     const goldRate = await GoldRate.findOneAndUpdate(
       { businessId, carat },
       { 
         purity, 
         increaseByAmount: increaseByAmount || 0, 
-        increaseByType: increaseByType || 'FLAT', 
-        calculatedFinalRate 
+        increaseByType: increaseByType || 'FLAT'
       },
       { new: true, upsert: true }
     );
+
+    // Invalidate Cache since configuration changed
+    await redisService.invalidateGoldRatesCache(businessId.toString());
 
     res.status(200).json({ success: true, data: goldRate });
   } catch (error) {
@@ -39,41 +40,61 @@ const updateGoldRate = async (req, res) => {
 const getGoldRates = async (req, res) => {
   try {
     const businessId = req.user.businessId;
-    let rates = await GoldRate.find({ businessId });
+    // Uses the "Supreme Truth Engine" which orchestrates MongoDB + Redis + Live Math
+    const data = await getLiveGoldRates(businessId);
     
-    const requiredCarats = [
-      { carat: '22Kt', purity: 91.6 },
-      { carat: '20Kt', purity: 85 },
-      { carat: '18Kt', purity: 75 },
-      { carat: '14Kt', purity: 58.5 },
-      { carat: '9Kt', purity: 39 }
-    ];
-
-    // Initialize the fixed rows if they don't exist
-    if (rates.length < 5) {
-      const existingCarats = rates.map(r => r.carat);
-      const toCreate = requiredCarats.filter(rc => !existingCarats.includes(rc.carat));
-      
-      for (const rc of toCreate) {
-        const calculatedFinalRate = await calculateGoldFinalRate(rc.purity, 0, 'FLAT');
-        const newRate = new GoldRate({
-          businessId,
-          carat: rc.carat,
-          purity: rc.purity,
-          increaseByAmount: 0,
-          increaseByType: 'FLAT',
-          calculatedFinalRate
-        });
-        await newRate.save();
-        rates.push(newRate);
-      }
-    }
-
-    const mcxLiveRate = await mcxService.getLiveMcxRate24K();
-
-    res.status(200).json({ success: true, mcxLiveRate, data: rates });
+    // The previous frontend expected data format: { success, mcxLiveRate, data: rates }
+    // The new UI uses taxSettings too, so we'll merge them in the response.
+    res.status(200).json({ 
+      success: true, 
+      mcxLiveRate: data.mcxLiveRate, 
+      taxSettings: data.taxSettings,
+      data: data.karatRates 
+    });
   } catch (error) {
     console.error('Get Gold Rates Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// === GOLD TAX SETTINGS ===
+
+const getGoldTaxSettings = async (req, res) => {
+  try {
+    const businessId = req.user.businessId;
+    let taxSettings = await GoldTaxSetting.findOne({ businessId });
+    if (!taxSettings) {
+      taxSettings = { rtgsChangeBy: 0, cashChangeBy: 0, scannerCalculationUse: 'rtgs' };
+    }
+    res.status(200).json({ success: true, data: taxSettings });
+  } catch (error) {
+    console.error('Get Gold Tax Settings Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+const updateGoldTaxSettings = async (req, res) => {
+  try {
+    const { rtgsChangeBy, cashChangeBy, scannerCalculationUse } = req.body;
+    const businessId = req.user.businessId;
+
+    const updateData = {};
+    if (rtgsChangeBy !== undefined) updateData.rtgsChangeBy = rtgsChangeBy;
+    if (cashChangeBy !== undefined) updateData.cashChangeBy = cashChangeBy;
+    if (scannerCalculationUse) updateData.scannerCalculationUse = scannerCalculationUse;
+
+    const taxSettings = await GoldTaxSetting.findOneAndUpdate(
+      { businessId },
+      { $set: updateData },
+      { new: true, upsert: true }
+    );
+
+    // Invalidate Cache since base rate logic changed
+    await redisService.invalidateGoldRatesCache(businessId.toString());
+
+    res.status(200).json({ success: true, data: taxSettings });
+  } catch (error) {
+    console.error('Update Gold Tax Settings Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -233,6 +254,8 @@ const upsertLabourRate = async (req, res) => {
 module.exports = {
   updateGoldRate,
   getGoldRates,
+  getGoldTaxSettings,
+  updateGoldTaxSettings,
   addOrUpdateDiamondRate,
   getDiamondRates,
   deleteDiamondRate,

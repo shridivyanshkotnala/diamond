@@ -1,40 +1,112 @@
 const mcxService = require('./mcx.service');
+const GoldTaxSetting = require('../models/goldTaxSetting.model');
+const GoldRate = require('../models/goldRate.model');
+const redisService = require('./redis.service');
 
-/**
- * Calculates the final gold rate based on the MCX live rate, purity percentage, and an optional increase.
- * Formula: (MCX_LIVE_RATE * (PURITY / 100)) + increaseByAmount (if flat) or + percentage (if percentage)
- * 
- * @param {Number} purity - The purity percentage (e.g., 91.6 for 22Kt)
- * @param {Number} increaseByAmount - The amount to increase by (e.g., 50)
- * @param {String} increaseByType - 'FLAT' (₹) or 'PERCENTAGE' (%)
- * @returns {Number} - The calculated final rate rounded to 2 decimal places.
- */
-const calculateGoldFinalRate = async (purity, increaseByAmount = 0, increaseByType = 'FLAT') => {
-  if (purity == null || isNaN(purity)) {
-    throw new Error('Valid purity percentage is required for calculation.');
+const getLiveGoldRates = async (businessId) => {
+  if (!businessId) throw new Error('Business ID is required');
+
+  // 1. Check Redis Cache First
+  const cachedData = await redisService.getGoldRatesCache(businessId.toString());
+  if (cachedData) {
+    return cachedData;
   }
 
+  // 2. Fetch MCX Live Rate (The Supreme Truth)
   const mcxLiveRate = await mcxService.getLiveMcxRate24K();
+
+  // 3. Fetch Gold Tax Settings from DB (or assume defaults)
+  let taxSettings = await GoldTaxSetting.findOne({ businessId });
+  if (!taxSettings) {
+    taxSettings = {
+      rtgsChangeBy: 0,
+      cashChangeBy: 0,
+      scannerCalculationUse: 'rtgs'
+    };
+  }
+
+  // 4. Compute Live Final Tax Rates
+  const rtgsFinalRate = mcxLiveRate + taxSettings.rtgsChangeBy;
+  const cashFinalRate = mcxLiveRate + taxSettings.cashChangeBy;
+
+  // 5. Determine Base Rate for Karat Calculations
+  const baseRate = taxSettings.scannerCalculationUse === 'cash' ? cashFinalRate : rtgsFinalRate;
+
+  // 6. Fetch Gold Rate Rows from DB
+  let karatRows = await GoldRate.find({ businessId });
   
-  // Base calculated rate based on purity
-  const baseRate = mcxLiveRate * (purity / 100);
+  // Initialize missing default rows if they don't exist
+  const requiredCarats = [
+    { carat: '22Kt', purity: 91.6 },
+    { carat: '20Kt', purity: 85 },
+    { carat: '18Kt', purity: 75 },
+    { carat: '14Kt', purity: 58.5 },
+    { carat: '9Kt', purity: 39 }
+  ];
 
-  let finalRate = baseRate;
-
-  // Apply increase
-  if (increaseByAmount && !isNaN(increaseByAmount)) {
-    if (increaseByType === 'PERCENTAGE') {
-      finalRate = baseRate + (baseRate * (increaseByAmount / 100));
-    } else {
-      // Default to FLAT
-      finalRate = baseRate + Number(increaseByAmount);
+  if (karatRows.length < 5) {
+    const existingCarats = karatRows.map(r => r.carat);
+    const toCreate = requiredCarats.filter(rc => !existingCarats.includes(rc.carat));
+    
+    for (const rc of toCreate) {
+      const newRate = new GoldRate({
+        businessId,
+        carat: rc.carat,
+        purity: rc.purity,
+        increaseByAmount: 0,
+        increaseByType: 'FLAT'
+      });
+      await newRate.save();
+      karatRows.push(newRate);
     }
   }
 
-  // Return rounded to 2 decimal places
-  return Math.round(finalRate * 100) / 100;
+  // 7. Calculate Final Live Rates for Each Row
+  const computedKaratRates = karatRows.map(row => {
+    const basePurityRate = baseRate * (row.purity / 100);
+    let finalRate = basePurityRate;
+
+    if (row.increaseByAmount && !isNaN(row.increaseByAmount)) {
+      if (row.increaseByType === 'PERCENTAGE') {
+        finalRate = basePurityRate + (basePurityRate * (row.increaseByAmount / 100));
+      } else {
+        finalRate = basePurityRate + row.increaseByAmount;
+      }
+    }
+
+    return {
+      _id: row._id,
+      carat: row.carat,
+      purity: row.purity,
+      increaseByAmount: row.increaseByAmount,
+      increaseByType: row.increaseByType,
+      finalRate: Math.round(finalRate * 100) / 100
+    };
+  });
+
+  // Sort rows to maintain consistent order
+  const caratOrder = { '22Kt': 1, '20Kt': 2, '18Kt': 3, '14Kt': 4, '9Kt': 5 };
+  computedKaratRates.sort((a, b) => caratOrder[a.carat] - caratOrder[b.carat]);
+
+  // 8. Compile the Final Rich Response
+  const responseData = {
+    mcxLiveRate,
+    taxSettings: {
+      rtgsChangeBy: taxSettings.rtgsChangeBy,
+      cashChangeBy: taxSettings.cashChangeBy,
+      scannerCalculationUse: taxSettings.scannerCalculationUse,
+      rtgsFinalRate,
+      cashFinalRate
+    },
+    karatRates: computedKaratRates
+  };
+
+  // 9. Cache in Redis for 24 hours
+  await redisService.setGoldRatesCache(businessId.toString(), responseData);
+
+  return responseData;
 };
 
 module.exports = {
-  calculateGoldFinalRate
+  getLiveGoldRates
 };

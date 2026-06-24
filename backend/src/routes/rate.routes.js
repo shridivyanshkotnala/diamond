@@ -11,6 +11,9 @@ router.use(authenticateJWT);
 router.get('/gold', rateController.getGoldRates);
 router.post('/gold', requirePermission('manageRates'), rateController.updateGoldRate);
 
+router.get('/gold/tax-settings', rateController.getGoldTaxSettings);
+router.post('/gold/tax-settings', requirePermission('manageRates'), rateController.updateGoldTaxSettings);
+
 // Diamond
 router.get('/diamond', rateController.getDiamondRates);
 router.post('/diamond', requirePermission('manageRates'), rateController.addOrUpdateDiamondRate);
