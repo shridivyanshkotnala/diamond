@@ -6,6 +6,11 @@ let memoryServer;
 const connectDB = async () => {
   try {
     let uri = config.mongodb.uri;
+    
+    // Completely wipe out any retryWrites=true that might be in the string
+    uri = uri.replace(/retryWrites=true/gi, 'retryWrites=false');
+    
+    // If it's still completely missing, append it safely
     if (!uri.includes('retryWrites=false')) {
       uri += uri.includes('?') ? '&retryWrites=false' : '?retryWrites=false';
     }
