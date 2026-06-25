@@ -113,14 +113,13 @@ PATTERN F — Silver tag:
   SWt <v>  Purity <v>  Lab <v>
   → netWeight (silver), purity, labour
 
-PATTERN G — Delimited Stone Tag (Backslash separated):
+PATTERN G — Delimited Stone Tag (Separated by \, /, or |):
   Type\\Weight\\Rate or Type\\Weight\\Pieces\\Rate
   Example: "RD\\6.72\\30000"
-  → This is a Diamond. diamondWeight=6.72, diamondRate=30000. (RD = Round Diamond, so shape=RD)
+  → This is a Diamond. Add an object to the "diamonds" array: shape="RD", weight="6.72", rate="30000".
   Example: "CS\\10.82\\500"
-  → This is a Colour Stone. coloredStoneWeight=10.82, coloredStoneRate=500.
-  NOTE: The backslashes separate the values. Extract the explicit numeric rate into diamondRate or coloredStoneRate.
-  CRITICAL: If there are multiple lines (e.g. two RD lines and two CS lines), you MUST create a SEPARATE object in the "diamonds" or "colorstones" JSON array for EACH line! Do not combine them!
+  → This is a Colour Stone. Add an object to the "colorstones" array: type="CS", weight="10.82", rate="500".
+  CRITICAL: If there are multiple lines (e.g. two RD lines), you MUST create a SEPARATE object in the JSON array for EACH line! Do not combine them into one!
 
 ==============================================================
 SECTION 3: DIAMOND RATE & QUALITY FIELD RULES
