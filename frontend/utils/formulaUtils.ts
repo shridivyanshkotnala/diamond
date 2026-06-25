@@ -2,23 +2,24 @@ export const ALL_FORMULA_KARATS = ['24K', '22K', '20K', '18K', '14K', '9K'] as c
 
 export type FormulaKarat = (typeof ALL_FORMULA_KARATS)[number];
 
-export function normalizeKarat(value: string): string {
-  const match = value.trim().match(/(\d+)\s*k(?:t)?/i);
+export function normalizeKarat(value?: string | null): string {
+  if (!value) return '';
+  const match = String(value).trim().match(/(\d+)\s*k(?:t)?/i);
   if (!match) return '';
   return `${match[1]}K`.toUpperCase();
 }
 
-export function extractKaratFromTunch(tunch: string): string {
+export function extractKaratFromTunch(tunch?: string | null): string {
   return normalizeKarat(tunch);
 }
 
-export function resolveScannedKarat(karat: string, tunch: string): string {
+export function resolveScannedKarat(karat?: string | null, tunch?: string | null): string {
   const fromKarat = normalizeKarat(karat);
   if (fromKarat) return fromKarat;
   return extractKaratFromTunch(tunch);
 }
 
-export function isKaratWhitelisted(karat: string, whitelist: string[]): boolean {
+export function isKaratWhitelisted(karat?: string | null, whitelist: string[] = []): boolean {
   const normalized = normalizeKarat(karat);
   return normalized !== '' && whitelist.includes(normalized);
 }
