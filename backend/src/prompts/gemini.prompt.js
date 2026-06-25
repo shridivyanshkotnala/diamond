@@ -114,10 +114,10 @@ PATTERN F — Silver tag:
   → netWeight (silver), purity, labour
 
 PATTERN G — Delimited Stone Tag (Backslash separated):
-  Type\Weight\Rate or Type\Weight\Pieces\Rate
-  Example: "RD\6.72\30000"
+  Type\\Weight\\Rate or Type\\Weight\\Pieces\\Rate
+  Example: "RD\\6.72\\30000"
   → This is a Diamond. diamondWeight=6.72, diamondRate=30000. (RD = Round Diamond, so shape=RD)
-  Example: "CS\10.82\500"
+  Example: "CS\\10.82\\500"
   → This is a Colour Stone. coloredStoneWeight=10.82, coloredStoneRate=500.
   NOTE: The backslashes separate the values. Extract the explicit numeric rate into diamondRate or coloredStoneRate.
 
