@@ -1,4 +1,4 @@
-const { sendSuccess } = require('../utils/response.util');
+const { sendSuccess } = require('../utils/apiResponse');
 const rateCalculationService = require('../services/rateCalculation.service');
 const redisService = require('../services/redis.service');
 
