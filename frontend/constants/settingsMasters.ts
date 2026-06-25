@@ -18,7 +18,7 @@ export const MASTER_SECTION_ITEMS: MasterNavItem[] = [
   {
     id: 'section-formulas',
     title: 'Formulas',
-    subtitle: 'Gold, Diamond, Colorstone and Labour charge formulas',
+    subtitle: 'Gold amount calculation formulas',
     route: '/dashboard/masters/formulas',
   },
 ];
