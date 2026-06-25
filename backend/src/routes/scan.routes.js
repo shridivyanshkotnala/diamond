@@ -31,4 +31,8 @@ router.post('/:scanId/clarification', validate(clarificationSchema), scanControl
 router.get('/:scanId/review', scanController.getReview);
 router.post('/:scanId/review', scanController.submitReview);
 
+const calculationController = require('../controllers/calculation.controller');
+const { authenticateJWT } = require('../middleware/auth.middleware');
+router.post('/:scanId/calculate', authenticateJWT, calculationController.calculateMRP);
+
 module.exports = router;
