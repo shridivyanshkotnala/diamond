@@ -228,18 +228,26 @@ SECTION 9: REQUIRED OUTPUT JSON SCHEMA
     "labourChargeType":     { "value": "", "confidence": 0 },
     "labourPercentage":     { "value": "", "confidence": 0 },
     "labourAmount":         { "value": "", "confidence": 0 },
-    "diamondWeight":        { "value": "", "confidence": 0 },
-    "diamondPieces":        { "value": "", "confidence": 0 },
-    "diamondRate":          { "value": "", "confidence": 0 },
-    "diamondColor":         { "value": "", "confidence": 0 },
-    "diamondClarity":       { "value": "", "confidence": 0 },
-    "diamondQuality":       { "value": "", "confidence": 0 },
-    "coloredStoneWeight":   { "value": "", "confidence": 0 },
-    "coloredStonePieces":   { "value": "", "confidence": 0 },
-    "coloredStoneRate":     { "value": "", "confidence": 0 },
-    "coloredStoneColor":    { "value": "", "confidence": 0 },
-    "coloredStoneClarity":  { "value": "", "confidence": 0 },
-    "coloredStoneQuality":  { "value": "", "confidence": 0 }
+    "diamonds": [
+      {
+        "weight": { "value": "", "confidence": 0 },
+        "pieces": { "value": "", "confidence": 0 },
+        "rate": { "value": "", "confidence": 0 },
+        "quality": { "value": "", "confidence": 0 },
+        "color": { "value": "", "confidence": 0 },
+        "clarity": { "value": "", "confidence": 0 }
+      }
+    ],
+    "colorstones": [
+      {
+        "weight": { "value": "", "confidence": 0 },
+        "pieces": { "value": "", "confidence": 0 },
+        "rate": { "value": "", "confidence": 0 },
+        "quality": { "value": "", "confidence": 0 },
+        "color": { "value": "", "confidence": 0 },
+        "clarity": { "value": "", "confidence": 0 }
+      }
+    ]
   },
   "unknownFields": [
     {

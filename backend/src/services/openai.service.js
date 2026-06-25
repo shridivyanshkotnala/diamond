@@ -55,7 +55,32 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
     });
 
     const responseText = response.choices[0].message.content;
-    return JSON.parse(responseText);
+    const parsedData = JSON.parse(responseText);
+
+    // Add backward compatibility for frontend by flattening the first stone
+    if (parsedData.structuredData) {
+      if (parsedData.structuredData.diamonds && parsedData.structuredData.diamonds.length > 0) {
+        const firstDia = parsedData.structuredData.diamonds[0];
+        parsedData.structuredData.diamondWeight = firstDia.weight || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondPieces = firstDia.pieces || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondRate = firstDia.rate || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondQuality = firstDia.quality || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondColor = firstDia.color || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondClarity = firstDia.clarity || { value: '', confidence: 0 };
+      }
+
+      if (parsedData.structuredData.colorstones && parsedData.structuredData.colorstones.length > 0) {
+        const firstCs = parsedData.structuredData.colorstones[0];
+        parsedData.structuredData.coloredStoneWeight = firstCs.weight || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStonePieces = firstCs.pieces || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStoneRate = firstCs.rate || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStoneQuality = firstCs.quality || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStoneColor = firstCs.color || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStoneClarity = firstCs.clarity || { value: '', confidence: 0 };
+      }
+    }
+
+    return parsedData;
   } catch (err) {
     console.error('[OpenAI Error]', err);
     return { error: 'OpenAI API failed', raw: err.message };

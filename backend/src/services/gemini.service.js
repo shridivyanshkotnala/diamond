@@ -80,7 +80,28 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
 
   const responseText = response.text;
   try {
-    return JSON.parse(responseText);
+    const parsedData = JSON.parse(responseText);
+    
+    // Add backward compatibility for frontend by flattening the first stone
+    if (parsedData.structuredData) {
+      if (parsedData.structuredData.diamonds && parsedData.structuredData.diamonds.length > 0) {
+        const firstDia = parsedData.structuredData.diamonds[0];
+        parsedData.structuredData.diamondWeight = firstDia.weight || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondPieces = firstDia.pieces || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondRate = firstDia.rate || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondQuality = firstDia.quality || { value: '', confidence: 0 };
+      }
+
+      if (parsedData.structuredData.colorstones && parsedData.structuredData.colorstones.length > 0) {
+        const firstCs = parsedData.structuredData.colorstones[0];
+        parsedData.structuredData.coloredStoneWeight = firstCs.weight || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStonePieces = firstCs.pieces || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStoneRate = firstCs.rate || { value: '', confidence: 0 };
+        parsedData.structuredData.coloredStoneQuality = firstCs.quality || { value: '', confidence: 0 };
+      }
+    }
+    
+    return parsedData;
   } catch (e) {
     return { error: 'Failed to parse JSON', raw: responseText };
   }
