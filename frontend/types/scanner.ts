@@ -117,6 +117,7 @@ export interface ScanItemData {
   diamondQuality: string;
   diamondRate: string;
   diamondPieces: string;
+  diamondShape: string;
   colorstoneWeight: string;
   colorstoneColor: string;
   colorstoneClarity: string;
@@ -133,6 +134,7 @@ export type StoneKind = 'diamond' | 'colorstone';
 export interface StoneEntry {
   stoneType: StoneKind;
   weight: string;
+  shape?: string;
   color: string;
   clarity: string;
   quality: string;

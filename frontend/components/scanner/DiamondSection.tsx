@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
-import { View } from 'react-native';
 
+import { FormFieldGrid, FormFieldGridItem } from '@/components/scanner/FormFieldGrid';
 import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
 import { QualityField } from '@/components/scanner/QualityField';
@@ -11,6 +11,7 @@ import { buildQuality } from '@/utils/qualityUtils';
 
 export interface DiamondSectionValues {
   weight: string;
+  shape: string;
   color: string;
   clarity: string;
   quality: string;
@@ -73,37 +74,50 @@ export function DiamondSection({
 
   return (
     <>
-      <FormSection title={title}>
-        <View className="flex-row flex-wrap justify-between">
-          <View className="mb-1 w-[48%]">
+      <FormSection title={title} variant="card">
+        <FormFieldGrid>
+          <FormFieldGridItem>
             <FormInput
               label="Diamond Weight (ct)"
               value={values.weight}
               onChangeText={(weight) => onChange({ weight })}
               editable={!inputsDisabled}
               placeholder="e.g. 0.46"
+              containerClassName="mb-2.5"
             />
-          </View>
-          <View className="mb-1 w-[48%]">
+          </FormFieldGridItem>
+          <FormFieldGridItem>
+            <FormInput
+              label="Diamond Shape"
+              value={values.shape}
+              onChangeText={(shape) => onChange({ shape: shape.toUpperCase() })}
+              editable={!inputsDisabled}
+              placeholder="e.g. RD"
+              containerClassName="mb-2.5"
+            />
+          </FormFieldGridItem>
+          <FormFieldGridItem>
             <FormInput
               label="Diamond Color"
               value={values.color}
               onChangeText={handleColorChange}
               editable={!inputsDisabled}
               placeholder="e.g. IJ"
+              containerClassName="mb-2.5"
             />
-          </View>
-          <View className="mb-1 w-[48%]">
+          </FormFieldGridItem>
+          <FormFieldGridItem>
             <FormInput
               label="Diamond Clarity"
               value={values.clarity}
               onChangeText={handleClarityChange}
               editable={!inputsDisabled}
               placeholder="e.g. VVS1"
+              containerClassName="mb-2.5"
             />
-          </View>
+          </FormFieldGridItem>
           <QualityField label="Diamond Quality" value={quality} />
-        </View>
+        </FormFieldGrid>
         <RateField label="Diamond Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
       </FormSection>
 

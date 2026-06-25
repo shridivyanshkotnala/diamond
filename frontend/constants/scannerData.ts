@@ -27,6 +27,7 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   diamondQuality: 'IJ VSSI',
   diamondRate: '9500',
   diamondPieces: '4',
+  diamondShape: '',
   colorstoneWeight: '',
   colorstoneColor: '',
   colorstoneClarity: '',

@@ -42,6 +42,7 @@ function flattenStoneField(raw: unknown): string {
 function hasStoneData(entry: StoneEntry): boolean {
   return Boolean(
     entry.weight ||
+      entry.shape ||
       entry.color ||
       entry.clarity ||
       entry.quality ||
@@ -66,6 +67,7 @@ function normalizeStoneEntry(raw: unknown, stoneType: StoneKind): StoneEntry {
   return {
     stoneType,
     weight: flattenStoneField(record.weight ?? record[`${prefix}Weight`]),
+    shape: flattenStoneField(record.shape ?? record.diamondShape),
     color,
     clarity,
     quality,
@@ -95,6 +97,7 @@ function stoneEntryFromScanData(scanData: ScanItemData, stoneType: StoneKind): S
     const entry: StoneEntry = {
       stoneType,
       weight: scanData.diamondWeight,
+      shape: scanData.diamondShape,
       color: scanData.diamondColor,
       clarity: scanData.diamondClarity,
       quality:
@@ -226,6 +229,7 @@ export function applyStoneEntriesToScanData(
 
   return {
     diamondWeight: primaryDiamond.weight,
+    diamondShape: primaryDiamond.shape ?? '',
     diamondColor: primaryDiamond.color,
     diamondClarity: primaryDiamond.clarity,
     diamondQuality: primaryDiamond.quality,
@@ -265,6 +269,7 @@ export function stoneEntriesToStructuredData(
   );
 
   if (flatFields.diamondWeight) result.diamondWeight = flatFields.diamondWeight;
+  if (flatFields.diamondShape) result.diamondShape = flatFields.diamondShape;
   if (flatFields.diamondColor) result.diamondColor = flatFields.diamondColor;
   if (flatFields.diamondClarity) result.diamondClarity = flatFields.diamondClarity;
   if (flatFields.diamondQuality) result.diamondQuality = flatFields.diamondQuality;

@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { FormFieldGridItem } from '@/components/scanner/FormFieldGrid';
 import { FormInput } from '@/components/scanner/FormInput';
 
 interface QualityFieldProps {
@@ -9,8 +10,14 @@ interface QualityFieldProps {
 
 export function QualityField({ label, value }: QualityFieldProps) {
   return (
-    <View className="mb-1 w-[48%]">
-      <FormInput label={label} value={value} editable={false} placeholder="Auto-generated" />
-    </View>
+    <FormFieldGridItem>
+      <FormInput
+        label={label}
+        value={value}
+        editable={false}
+        placeholder="Auto-generated"
+        containerClassName="mb-2.5"
+      />
+    </FormFieldGridItem>
   );
 }

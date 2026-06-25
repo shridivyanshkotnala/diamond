@@ -341,6 +341,7 @@ export function ReviewScannedResultsModal({
       {stoneBlocks.map((block) => {
         const sectionValues = {
           weight: block.entry.weight,
+          shape: block.entry.shape ?? '',
           color: block.entry.color,
           clarity: block.entry.clarity,
           quality: block.entry.quality,

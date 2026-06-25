@@ -10,6 +10,7 @@ interface FormInputProps {
   placeholder?: string;
   editable?: boolean;
   required?: boolean;
+  containerClassName?: string;
 }
 
 export function FormInput({
@@ -19,9 +20,10 @@ export function FormInput({
   placeholder,
   editable = true,
   required = false,
+  containerClassName = 'mb-3',
 }: FormInputProps) {
   return (
-    <View className="mb-3">
+    <View className={containerClassName}>
       <FieldLabel label={label} required={required} />
       <TextInput
         value={value}

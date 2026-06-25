@@ -142,6 +142,7 @@ export default function ManualEntryScreen() {
         <DiamondSection
           values={{
             weight: scanData.diamondWeight,
+            shape: scanData.diamondShape,
             color: scanData.diamondColor,
             clarity: scanData.diamondClarity,
             quality: scanData.diamondQuality,
@@ -150,6 +151,7 @@ export default function ManualEntryScreen() {
           onChange={(values) =>
             handleDiamondChange({
               ...(values.weight !== undefined ? { diamondWeight: values.weight } : {}),
+              ...(values.shape !== undefined ? { diamondShape: values.shape } : {}),
               ...(values.color !== undefined ? { diamondColor: values.color } : {}),
               ...(values.clarity !== undefined ? { diamondClarity: values.clarity } : {}),
               ...(values.quality !== undefined ? { diamondQuality: values.quality } : {}),

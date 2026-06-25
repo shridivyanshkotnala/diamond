@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
-import { View } from 'react-native';
 
+import { FormFieldGrid, FormFieldGridItem } from '@/components/scanner/FormFieldGrid';
 import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
 import { QualityField } from '@/components/scanner/QualityField';
@@ -73,37 +73,40 @@ export function ColorstoneSection({
 
   return (
     <>
-      <FormSection title={title}>
-        <View className="flex-row flex-wrap justify-between">
-          <View className="mb-1 w-[48%]">
+      <FormSection title={title} variant="card">
+        <FormFieldGrid>
+          <FormFieldGridItem>
             <FormInput
               label="CS Weight (ct)"
               value={values.weight}
               onChangeText={(weight) => onChange({ weight })}
               editable={!inputsDisabled}
               placeholder="e.g. 4.26"
+              containerClassName="mb-2.5"
             />
-          </View>
-          <View className="mb-1 w-[48%]">
+          </FormFieldGridItem>
+          <FormFieldGridItem>
             <FormInput
               label="CS Color"
               value={values.color}
               onChangeText={handleColorChange}
               editable={!inputsDisabled}
               placeholder="e.g. Red"
+              containerClassName="mb-2.5"
             />
-          </View>
-          <View className="mb-1 w-[48%]">
+          </FormFieldGridItem>
+          <FormFieldGridItem>
             <FormInput
               label="CS Clarity"
               value={values.clarity}
               onChangeText={handleClarityChange}
               editable={!inputsDisabled}
               placeholder="e.g. VVS"
+              containerClassName="mb-2.5"
             />
-          </View>
+          </FormFieldGridItem>
           <QualityField label="CS Quality" value={quality} />
-        </View>
+        </FormFieldGrid>
         <RateField label="CS Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
       </FormSection>
 

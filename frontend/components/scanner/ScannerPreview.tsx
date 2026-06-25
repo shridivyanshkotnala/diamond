@@ -1,23 +1,14 @@
 import { Text, View } from 'react-native';
 
 import type { ParsedScannerTag } from '@/types/scanner';
+import { DIAMOND_SHAPE_LABELS } from '@/constants/diamondShapes';
 
 interface ScannerPreviewProps {
   parsed: ParsedScannerTag | null;
   rawInput: string;
 }
 
-const SHAPE_LABELS: Record<string, string> = {
-  RD: 'Round Diamond',
-  RB: 'Round Brilliant',
-  PR: 'Princess',
-  EM: 'Emerald',
-  OV: 'Oval',
-  MQ: 'Marquise',
-  PS: 'Pear',
-  AS: 'Asscher',
-  CU: 'Cushion',
-};
+const SHAPE_LABELS = DIAMOND_SHAPE_LABELS;
 
 export function ScannerPreview({ parsed, rawInput }: ScannerPreviewProps) {
   if (!rawInput.trim()) return null;
