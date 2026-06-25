@@ -113,6 +113,14 @@ PATTERN F — Silver tag:
   SWt <v>  Purity <v>  Lab <v>
   → netWeight (silver), purity, labour
 
+PATTERN G — Delimited Stone Tag (Backslash separated):
+  Type\Weight\Rate or Type\Weight\Pieces\Rate
+  Example: "RD\6.72\30000"
+  → This is a Diamond. diamondWeight=6.72, diamondRate=30000. (RD = Round Diamond, so shape=RD)
+  Example: "CS\10.82\500"
+  → This is a Colour Stone. coloredStoneWeight=10.82, coloredStoneRate=500.
+  NOTE: The backslashes separate the values. Extract the explicit numeric rate into diamondRate or coloredStoneRate.
+
 ==============================================================
 SECTION 3: DIAMOND RATE & QUALITY FIELD RULES
 ==============================================================
@@ -126,7 +134,8 @@ Recognised clarity values: FL, IF, VVS, VVS1, VVS2, VS, VS1, VS2, SI, SI1, SI2, 
 
 DIAMOND RATE SPECIAL RULES:
 - The number immediately following 'DR' or 'Diamond' is Diamond PIECES, NOT rate.
-- Diamond Rate is represented by the colour grade letter code (e.g. GH, IJ, EF) — NOT a number.
+- Diamond Rate is usually represented by the colour grade letter code (e.g. GH, IJ, EF) — NOT a number.
+- EXCEPTION: If the tag uses a delimited format like "RD\\6.72\\30000", then the last number (30000) IS the numeric diamondRate. In this specific case, extract it as the rate.
 
 *** CRITICAL MANDATORY RULE — IJ DIAMOND RATE ***
 If the colour grade detected is 'IJ' (or 'lJ', 'IJ', '1J' due to OCR), you MUST:
