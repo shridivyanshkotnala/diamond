@@ -16,6 +16,13 @@ function getMetroHost(): string | null {
 }
 
 export function resolveApiBaseUrl(): string {
+  // 1. ALWAYS prioritize explicitly set .env variables first!
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
+
+  // 2. Fallbacks for local development
   if (__DEV__) {
     const metroHost = getMetroHost();
     if (metroHost && metroHost !== 'localhost' && metroHost !== '127.0.0.1') {
@@ -25,11 +32,6 @@ export function resolveApiBaseUrl(): string {
     if (Platform.OS === 'android') {
       return 'http://10.0.2.2:3000';
     }
-  }
-
-  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (envUrl) {
-    return envUrl.replace(/\/$/, '');
   }
 
   return 'http://localhost:3000';
