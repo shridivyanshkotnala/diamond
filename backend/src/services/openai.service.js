@@ -56,6 +56,10 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
 
     const responseText = response.choices[0].message.content;
     const parsedData = JSON.parse(responseText);
+    
+    console.log("=== AI RAW RESPONSE ===");
+    console.log(JSON.stringify(parsedData, null, 2));
+    console.log("=======================");
 
     // Add backward compatibility for frontend by flattening the first stone
     if (parsedData.structuredData) {
