@@ -1,8 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { ChevronDown, Pencil } from 'lucide-react-native';
 
-import type { JewelleryType } from '@/types/scanner';
-
 interface DataGridCellProps {
   label: string;
   value: string;
@@ -30,7 +28,7 @@ function DataGridCell({ label, value, showDropdown, onEdit }: DataGridCellProps)
 
 interface DataGridSectionProps {
   title: string;
-  badge: JewelleryType;
+  badge: string;
   items: [DataGridCellProps, DataGridCellProps, DataGridCellProps, DataGridCellProps];
 }
 

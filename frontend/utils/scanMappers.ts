@@ -46,6 +46,7 @@ const SCAN_ITEM_TO_API: Partial<Record<keyof ScanItemData, string>> = {
   netWt: 'netWeight',
   pureWt: 'pureWeight',
   tunch: 'purity',
+  goldRate: 'goldRate',
   diamondWeight: 'diamondWeight',
   diamondColor: 'diamondColor',
   diamondClarity: 'diamondClarity',
@@ -65,6 +66,7 @@ const API_TO_SCAN_ITEM: Record<string, keyof ScanItemData> = {
   netWeight: 'netWt',
   pureWeight: 'pureWt',
   purity: 'tunch',
+  goldRate: 'goldRate',
   diamondWeight: 'diamondWeight',
   diamondColor: 'diamondColor',
   diamondClarity: 'diamondClarity',
@@ -104,6 +106,8 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   result.labourPurityPercent = '';
   result.labourChargeAmount = '';
   result.labourChargeUnit = DEFAULT_LABOUR_CHARGE_UNIT;
+  result.customPurityPercent = '';
+  result.goldRate = '';
 
   for (const [apiKey, value] of Object.entries(data)) {
     if (apiKey === 'labour') continue;

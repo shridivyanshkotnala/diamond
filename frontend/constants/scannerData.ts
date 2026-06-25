@@ -21,6 +21,8 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   pureWt: '34.991',
   tunch: '91.6',
   karat: '22K',
+  customPurityPercent: '',
+  goldRate: '6500',
   diamondWeight: '1.20',
   diamondColor: 'IJ',
   diamondClarity: 'VSSI',
@@ -48,19 +50,25 @@ export const MOCK_SCAN_RESULT: ScanResultData = {
     netWt: '38.200 g',
     pureWt: '34.991 g',
     tunch: '91.6% (22kt)',
+    karat: '22K',
+    purityPercent: '91.6%',
   },
-  stoneType: {
-    type: 'Diamond',
-    rate: '₹9,590/ct',
-    quality: 'VVS1/F',
-    weight: '22 ct',
-    amount: '₹2,10,980',
-  },
+  stoneTypes: [
+    {
+      type: 'Diamond',
+      rate: '₹9,590/ct',
+      quality: 'VVS1/F',
+      weight: '22 ct',
+      amount: '₹2,10,980',
+    },
+  ],
   costSummary: {
     wastage: '1545',
     labour: '₹5,465',
     otherCharges: '₹10,256',
     total: '₹1,85,510',
+    goldBase: '₹2,27,442',
+    stoneTotal: '₹2,10,980',
   },
 };
 

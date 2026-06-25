@@ -171,6 +171,43 @@ export function resolveStoneEntryArrays(
   return { diamonds: resolvedDiamonds, colorstones: resolvedColorstones };
 }
 
+/** Display-only stone blocks: only entries with scanner data, no empty placeholders. */
+export function buildDisplayStoneBlocks(
+  diamonds: StoneEntry[],
+  colorstones: StoneEntry[],
+): SequentialStoneBlock[] {
+  const blocks: SequentialStoneBlock[] = [];
+  let sequenceIndex = 0;
+
+  for (let sourceIndex = 0; sourceIndex < diamonds.length; sourceIndex++) {
+    const entry = diamonds[sourceIndex];
+    if (!hasStoneData(entry)) continue;
+    blocks.push({
+      sequenceIndex,
+      displayTitle: `Stone Type ${sequenceIndex + 1} (${STONE_TYPE_LABELS.diamond})`,
+      stoneType: 'diamond',
+      entry,
+      sourceIndex,
+    });
+    sequenceIndex += 1;
+  }
+
+  for (let sourceIndex = 0; sourceIndex < colorstones.length; sourceIndex++) {
+    const entry = colorstones[sourceIndex];
+    if (!hasStoneData(entry)) continue;
+    blocks.push({
+      sequenceIndex,
+      displayTitle: `Stone Type ${sequenceIndex + 1} (${STONE_TYPE_LABELS.colorstone})`,
+      stoneType: 'colorstone',
+      entry,
+      sourceIndex,
+    });
+    sequenceIndex += 1;
+  }
+
+  return blocks;
+}
+
 export function buildSequentialStoneBlocks(
   diamonds: StoneEntry[],
   colorstones: StoneEntry[],

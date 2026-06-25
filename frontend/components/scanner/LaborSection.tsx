@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
@@ -11,8 +11,14 @@ import type { ScanItemData } from '@/types/scanner';
 import {
   hasActiveLabourCharge,
   hasActiveLabourPurity,
+  parseNumericLabourValue,
   validateLabour,
 } from '@/utils/labourUtils';
+import {
+  applyLabourRateToNetWeight,
+  resolveLabourInputMode,
+} from '@/utils/scanPriceCalculation';
+import { parseWeightValue } from '@/utils/formulaUtils';
 
 export interface LaborSectionValues {
   labourPurityPercent: string;
@@ -25,6 +31,7 @@ interface LaborSectionProps {
   onChange: (values: Partial<LaborSectionValues>) => void;
   showValidationError?: boolean;
   unitOptions?: LabourChargeUnit[];
+  netWeightGrams?: string;
 }
 
 function sanitizePurityInput(text: string): string {
@@ -96,18 +103,46 @@ function UnitDropdown({
   );
 }
 
+function formatInr(amount: number): string {
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+}
+
 export function LaborSection({
   values,
   onChange,
   showValidationError = false,
   unitOptions: unitOptionsProp,
+  netWeightGrams = '',
 }: LaborSectionProps) {
   const fetchedUnits = useLabourChargeUnits();
   const unitOptions = unitOptionsProp ?? fetchedUnits;
 
+  const laborMode = resolveLabourInputMode(values);
+  const usePercentageMode = laborMode === 'percentage';
+  const useFixedAmountMode = laborMode === 'fixedAmount';
+
   const purityDisabled = hasActiveLabourCharge(values);
   const chargeDisabled = hasActiveLabourPurity(values);
   const validationError = validateLabour(values);
+
+  const netWt = parseWeightValue(netWeightGrams);
+
+  const computedLaborAmount = useMemo(() => {
+    if (usePercentageMode) {
+      return 0;
+    }
+    if (useFixedAmountMode) {
+      const rate = parseNumericLabourValue(values.labourChargeAmount) ?? 0;
+      return applyLabourRateToNetWeight(netWt, rate, values.labourChargeUnit);
+    }
+    return 0;
+  }, [
+    usePercentageMode,
+    useFixedAmountMode,
+    netWt,
+    values.labourChargeAmount,
+    values.labourChargeUnit,
+  ]);
 
   const handlePurityChange = (text: string) => {
     const next = sanitizePurityInput(text);
@@ -147,7 +182,12 @@ export function LaborSection({
           purityDisabled ? 'opacity-45' : ''
         }`}
       >
-        <Text className="mb-2 text-sm font-semibold text-text-primary">% Purity</Text>
+        <Text className="mb-1 text-sm font-semibold text-text-primary">
+          Case I — % Purity Mode
+        </Text>
+        <Text className="mb-2 text-[10px] leading-4 text-text-muted">
+          Custom % overrides pure wt; labour charge prints as ₹0
+        </Text>
         <TextInput
           value={values.labourPurityPercent}
           onChangeText={handlePurityChange}
@@ -166,14 +206,19 @@ export function LaborSection({
           chargeDisabled ? 'opacity-45' : ''
         }`}
       >
-        <Text className="mb-2 text-sm font-semibold text-text-primary">Labour Amount</Text>
+        <Text className="mb-1 text-sm font-semibold text-text-primary">
+          Case II — Fixed Amount Mode
+        </Text>
+        <Text className="mb-2 text-[10px] leading-4 text-text-muted">
+          Labour = Net wt (gms) × rate per unit
+        </Text>
         <View className="flex-row items-center gap-2">
           <View className="h-11 min-w-0 flex-1 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
             <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
             <TextInput
               value={values.labourChargeAmount}
               onChangeText={handleChargeChange}
-              placeholder="Amount"
+              placeholder="e.g. 500"
               editable={!chargeDisabled}
               placeholderTextColor={Colors.placeholder}
               keyboardType="number-pad"
@@ -187,6 +232,25 @@ export function LaborSection({
             disabled={chargeDisabled}
           />
         </View>
+        {useFixedAmountMode && netWt > 0 ? (
+          <Text className="mt-2 text-[10px] text-text-muted">
+            {netWt} g × ₹{values.labourChargeAmount} ({values.labourChargeUnit})
+          </Text>
+        ) : null}
+      </View>
+
+      <View className="mt-4 rounded-input border border-primary/20 bg-primary/5 px-3.5 py-3">
+        <Text className="mb-1 text-xs font-semibold text-text-secondary">
+          Computed Labour Charge
+        </Text>
+        <Text className="text-lg font-bold text-text-primary">
+          {formatInr(computedLaborAmount)}
+        </Text>
+        {usePercentageMode ? (
+          <Text className="mt-1 text-[10px] text-text-muted">
+            Percentage purity mode active — labour forced to ₹0
+          </Text>
+        ) : null}
       </View>
 
       {showValidationError && validationError ? (

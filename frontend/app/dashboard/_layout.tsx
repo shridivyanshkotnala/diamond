@@ -18,6 +18,7 @@ export default function DashboardLayout() {
       <Stack.Screen name="purity-control" />
       <Stack.Screen name="subscription-manager" />
       <Stack.Screen name="scanner" options={{ headerShown: false }} />
+      <Stack.Screen name="wishlist/index" options={{ headerShown: false }} />
     </Stack>
   );
 }

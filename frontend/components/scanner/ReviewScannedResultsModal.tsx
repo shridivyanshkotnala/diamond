@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
-import { Check, ChevronDown, Pencil } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Check } from 'lucide-react-native';
 
-import { ColorstoneSection } from '@/components/scanner/ColorstoneSection';
-import { DiamondSection } from '@/components/scanner/DiamondSection';
-import { FieldLabel } from '@/components/scanner/FieldLabel';
-import { FormSection } from '@/components/scanner/FormSection';
-import { getLaborValuesFromScanData, LaborSection } from '@/components/scanner/LaborSection';
-import { Colors } from '@/constants/theme';
+import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
 import { useFormulaStore } from '@/store/formulaStore';
 import type { ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import {
@@ -18,112 +13,11 @@ import {
 } from '@/utils/formulaUtils';
 import { validateLabour } from '@/utils/labourUtils';
 import {
-  buildSequentialStoneBlocks,
   parseStoneArraysFromStructuredData,
   resolveStoneEntryArrays,
   sumStoneWeights,
   updateStoneEntryAtIndex,
 } from '@/utils/stoneSequenceUtils';
-
-interface ReviewFieldRowProps {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder?: string;
-  required?: boolean;
-  missing?: boolean;
-  editable?: boolean;
-}
-
-function ReviewFieldRow({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  required = false,
-  missing = false,
-  editable = true,
-}: ReviewFieldRowProps) {
-  return (
-    <View className="mb-3">
-      <FieldLabel label={label} required={required} />
-      <View
-        className={`h-11 flex-row items-center rounded-input border bg-surface-input px-3.5 ${
-          missing ? 'border-danger-text' : 'border-border'
-        }`}
-      >
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          editable={editable}
-          placeholderTextColor={Colors.placeholder}
-          className="flex-1 text-sm text-text-primary"
-        />
-        {editable && !missing ? <Pencil size={14} color="#757575" /> : null}
-      </View>
-    </View>
-  );
-}
-
-interface KaratDropdownRowProps {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (karat: string) => void;
-  required?: boolean;
-  missing?: boolean;
-}
-
-function KaratDropdownRow({
-  label,
-  value,
-  options,
-  onChange,
-  required = false,
-  missing = false,
-}: KaratDropdownRowProps) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <View className="mb-3">
-      <FieldLabel label={label} required={required} />
-      <Pressable
-        onPress={() => setOpen((prev) => !prev)}
-        className={`min-h-11 flex-row items-center justify-between rounded-input border bg-surface-input px-3.5 py-2 ${
-          missing ? 'border-danger-text' : 'border-border'
-        }`}
-      >
-        <Text className={`flex-1 text-sm ${value ? 'text-text-primary' : 'text-text-muted'}`}>
-          {value || 'Select karat'}
-        </Text>
-        <ChevronDown size={18} color="#757575" />
-      </Pressable>
-      {open ? (
-        <View className="mt-1 overflow-hidden rounded-input border border-border bg-white">
-          {options.map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              className={`px-3.5 py-3 ${value === option ? 'bg-[#E8F0EC]' : ''}`}
-            >
-              <Text
-                className={`text-sm ${
-                  value === option ? 'font-bold text-primary' : 'text-text-primary'
-                }`}
-              >
-                {option}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
 interface ReviewScannedResultsModalProps {
   scanData: ScanItemData;
@@ -179,11 +73,6 @@ export function ReviewScannedResultsModal({
     setRateErrors({});
   }, [stoneDataKey, jewelleryType, structuredData, scanData]);
 
-  const stoneBlocks = useMemo(
-    () => buildSequentialStoneBlocks(diamondEntries, colorstoneEntries, jewelleryType),
-    [diamondEntries, colorstoneEntries, jewelleryType],
-  );
-
   const hasRateError = Object.values(rateErrors).some(Boolean);
   const labourError = validateLabour(scanData);
   const canConfirm = Boolean(scanData.grossWt.trim()) && !hasRateError;
@@ -208,13 +97,7 @@ export function ReviewScannedResultsModal({
     if (karat && karat !== scanData.karat) {
       onFieldChange('karat', karat);
     }
-  }, [
-    activeFormula,
-    formula2Rules,
-    scanData.karat,
-    scanData.tunch,
-    onFieldChange,
-  ]);
+  }, [activeFormula, formula2Rules, scanData.karat, scanData.tunch, onFieldChange]);
 
   useEffect(() => {
     if (!useNetWtFormula) return;
@@ -274,115 +157,50 @@ export function ReviewScannedResultsModal({
     onConfirm();
   };
 
-  const showKaratDropdown =
+  const requiresKaratSelection =
     activeFormula === 'F2' &&
     (karatDropdownMode || !isKaratWhitelisted(scanData.karat, formula2Rules));
 
-  const resolvedKarat =
-    scanData.karat || resolveScannedKarat(scanData.karat, scanData.tunch);
-
   return (
     <View className="rounded-[20px] bg-white px-screen py-5 shadow-lg">
-      <Text className="mb-4 text-lg font-bold text-text-primary">Review Scanned Results</Text>
+      <Text className="mb-4 text-lg font-bold text-text-primary">
+        Scanner Result | Final Tab
+      </Text>
 
-      <FormSection title="Weight & Purity">
-        <ReviewFieldRow
-          label="Gross Wt."
-          value={scanData.grossWt}
-          onChangeText={(value) => onFieldChange('grossWt', value)}
-          placeholder="Enter missing value"
-          required
-          missing={!scanData.grossWt}
-        />
-        <ReviewFieldRow
-          label="Net Weight"
-          value={scanData.netWt}
-          onChangeText={(value) => onFieldChange('netWt', value)}
-          editable={!useNetWtFormula}
-        />
-        <Pressable
-          onPress={handleNetWtFormulaToggle}
-          className="mb-3 flex-row items-start gap-2.5 rounded-input border border-border bg-surface-muted px-3 py-3"
+      <Pressable
+        onPress={handleNetWtFormulaToggle}
+        className="mb-4 flex-row items-start gap-2.5 rounded-input border border-border bg-surface-muted px-3 py-3"
+      >
+        <View
+          className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
+            useNetWtFormula ? 'border-primary bg-primary' : 'border-border bg-white'
+          }`}
         >
-          <View
-            className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
-              useNetWtFormula ? 'border-primary bg-primary' : 'border-border bg-white'
-            }`}
-          >
-            {useNetWtFormula ? <Check size={12} color="#FFFFFF" /> : null}
-          </View>
-          <Text className="flex-1 text-xs leading-5 text-text-secondary">
-            Use Net Wt = gross wt - 0.2 x (dia wt + colorstone wt)
-          </Text>
-        </Pressable>
-        {showKaratDropdown ? (
-          <KaratDropdownRow
-            label="Karat"
-            value={scanData.karat}
-            options={formula2Rules}
-            onChange={(value) => onFieldChange('karat', value)}
-            required
-            missing={!scanData.karat}
-          />
-        ) : (
-          <ReviewFieldRow
-            label="Karat"
-            value={resolvedKarat}
-            onChangeText={(value) => onFieldChange('karat', value)}
-          />
-        )}
-        <ReviewFieldRow
-          label="Tunch (Purity)"
-          value={scanData.tunch}
-          onChangeText={(value) => onFieldChange('tunch', value)}
-        />
-      </FormSection>
+          {useNetWtFormula ? <Check size={12} color="#FFFFFF" /> : null}
+        </View>
+        <Text className="flex-1 text-xs leading-5 text-text-secondary">
+          Use Net Wt = gross wt - 0.2 x (dia wt + colorstone wt)
+        </Text>
+      </Pressable>
 
-      {stoneBlocks.map((block) => {
-        const sectionValues = {
-          weight: block.entry.weight,
-          shape: block.entry.shape ?? '',
-          color: block.entry.color,
-          clarity: block.entry.clarity,
-          quality: block.entry.quality,
-          rate: block.entry.rate,
-        };
+      {requiresKaratSelection && !scanData.karat ? (
+        <Text className="mb-3 text-xs text-danger-text">
+          Select a karat from Touch Purity before confirming.
+        </Text>
+      ) : null}
 
-        if (block.stoneType === 'diamond') {
-          return (
-            <DiamondSection
-              key={`stone-${block.sequenceIndex}-${block.sourceIndex}`}
-              title={block.displayTitle}
-              values={sectionValues}
-              onChange={(values) =>
-                handleStoneEntryChange('diamond', block.sourceIndex, values)
-              }
-              onRateErrorChange={(hasError) =>
-                handleStoneRateErrorChange(block.sequenceIndex, hasError)
-              }
-            />
-          );
-        }
-
-        return (
-          <ColorstoneSection
-            key={`stone-${block.sequenceIndex}-${block.sourceIndex}`}
-            title={block.displayTitle}
-            values={sectionValues}
-            onChange={(values) =>
-              handleStoneEntryChange('colorstone', block.sourceIndex, values)
-            }
-            onRateErrorChange={(hasError) =>
-              handleStoneRateErrorChange(block.sequenceIndex, hasError)
-            }
-          />
-        );
-      })}
-
-      <LaborSection
-        values={getLaborValuesFromScanData(scanData)}
-        onChange={(values) => onLaborChange(values)}
-        showValidationError={showLabourValidation || Boolean(labourError)}
+      <ScannerFinalTab
+        scanData={scanData}
+        structuredData={structuredData}
+        diamonds={diamondEntries}
+        colorstones={colorstoneEntries}
+        jewelleryType={jewelleryType}
+        editable
+        onFieldChange={onFieldChange}
+        onStoneEntryChange={handleStoneEntryChange}
+        onLaborChange={onLaborChange}
+        onRateErrorChange={handleStoneRateErrorChange}
+        showLabourValidation={showLabourValidation || Boolean(labourError)}
       />
 
       <View className="mt-2 flex-row gap-3">
@@ -394,7 +212,7 @@ export function ReviewScannedResultsModal({
         </Pressable>
         <Pressable
           onPress={handleConfirm}
-          disabled={confirming || !canConfirm}
+          disabled={confirming || !canConfirm || (requiresKaratSelection && !scanData.karat)}
           className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
         >
           {confirming ? (

@@ -184,6 +184,7 @@ export default function ManualEntryScreen() {
 
       <LaborSection
         values={getLaborValuesFromScanData(scanData)}
+        netWeightGrams={scanData.netWt}
         onChange={(values) => updateScanData(values)}
         showValidationError={showLabourValidation || Boolean(labourError)}
       />

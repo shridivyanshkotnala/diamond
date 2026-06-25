@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { Heart, Menu } from 'lucide-react-native';
 
 import { Colors, Spacing } from '@/constants/theme';
@@ -21,7 +21,10 @@ export function DashboardHeader() {
 
       <Text style={styles.brandTitle}>Pratham International</Text>
 
-      <Pressable style={styles.wishlistBtn}>
+      <Pressable
+        style={styles.wishlistBtn}
+        onPress={() => router.push('/dashboard/wishlist' as Href)}
+      >
         <Heart size={14} color={ACCENT_GOLD} fill={ACCENT_GOLD} />
         <Text style={styles.wishlistText}>Wishlist</Text>
       </Pressable>

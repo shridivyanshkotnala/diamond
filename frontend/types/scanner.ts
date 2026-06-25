@@ -111,6 +111,8 @@ export interface ScanItemData {
   pureWt: string;
   tunch: string;
   karat: string;
+  customPurityPercent: string;
+  goldRate: string;
   diamondWeight: string;
   diamondColor: string;
   diamondClarity: string;
@@ -178,6 +180,14 @@ export interface InvoiceLineItem {
   amount: number;
 }
 
+export interface ScanStoneSummary {
+  type: 'Diamond' | 'Colorstone';
+  rate: string;
+  quality: string;
+  weight: string;
+  amount: string;
+}
+
 export interface ScanResultData {
   netPrice: number;
   gstNote: string;
@@ -187,19 +197,17 @@ export interface ScanResultData {
     netWt: string;
     pureWt: string;
     tunch: string;
+    karat: string;
+    purityPercent: string;
   };
-  stoneType: {
-    type: JewelleryType;
-    rate: string;
-    quality: string;
-    weight: string;
-    amount: string;
-  };
+  stoneTypes: ScanStoneSummary[];
   costSummary: {
     wastage: string;
     labour: string;
     otherCharges: string;
     total: string;
+    goldBase: string;
+    stoneTotal: string;
   };
 }
 
