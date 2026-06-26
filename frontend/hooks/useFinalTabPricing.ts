@@ -3,7 +3,7 @@ import type { GoldRate } from '@/types/rates';
 import type { JewelleryType, ScanItemData, StructuredScanData, CalculateMrpPayload, CalculateMrpResponse } from '@/types/scanner';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
 import { buildDisplayStoneBlocks, parseStoneArraysFromStructuredData } from '@/utils/stoneSequenceUtils';
-import { formatIndianCurrency, formatWeightGrams, type FinalTabPricingResult, type StoneAmountRow } from '@/utils/scanPriceCalculation';
+import { parseNumericValue, formatIndianCurrency, formatWeightGrams, type FinalTabPricingResult, type StoneAmountRow } from '@/utils/scanPriceCalculation';
 import { calculateScanMrp } from '@/utils/scanApi';
 import { useScannerStore } from '@/store/scannerStore';
 
@@ -57,16 +57,16 @@ export function useFinalTabPricing({
     
     const payload: CalculateMrpPayload = {
       jewelleryType: selectedType,
-      netWt: Number(scanData.netWt) || 0,
+      netWt: parseNumericValue(scanData.netWt) || 0,
       purityKarat: resolvedKarat,
-      diamonds: diamonds.map(d => ({ weight: Number(d.weight) || 0, rate: Number(d.rate) || 0 })),
-      colorstones: colorstones.map(c => ({ weight: Number(c.weight) || 0, rate: Number(c.rate) || 0 })),
+      diamonds: diamonds.map(d => ({ weight: parseNumericValue(d.weight) || 0, rate: parseNumericValue(d.rate) || 0 })),
+      colorstones: colorstones.map(c => ({ weight: parseNumericValue(c.weight) || 0, rate: parseNumericValue(c.rate) || 0 })),
     };
 
     if (scanData.labourPurityPercent) {
-      payload.labourCharge = { type: 'PERCENTAGE', value: Number(scanData.labourPurityPercent) || 0 };
+      payload.labourCharge = { type: 'PERCENTAGE', value: parseNumericValue(scanData.labourPurityPercent) || 0 };
     } else if (scanData.labourChargeAmount) {
-      payload.labourCharge = { type: 'AMOUNT', value: Number(scanData.labourChargeAmount) || 0 };
+      payload.labourCharge = { type: 'AMOUNT', value: parseNumericValue(scanData.labourChargeAmount) || 0 };
     }
 
     calculateScanMrp(scanId, payload)
