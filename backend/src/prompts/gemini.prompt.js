@@ -120,13 +120,11 @@ PATTERN G — Delimited Stone Tag (Separated by \, /, |, or OCR mistakes like 1,
   → Colour Stone type="CS", weight="10.82", rate="500".
 
   *** CRITICAL OCR DELIMITER HALLUCINATION RULE ***
-  OCR often misreads the separators (/, \\, |) as the number "1" or letter "I" or "l".
-  Example Mistake: "RD16.72130000" or "RDI6.72I30000"
-  - After CS, RD, or any diamond abbreviation, there is generally a separator. Do NOT consider it as part of the weight! "RD16.72" is usually "RD" | "6.72".
-  - Carat weights ALMOST ALWAYS have exactly 2 decimal places (e.g., .54, .72).
-  - If you see a "1" or "I" immediately after the 2nd decimal digit, it is a SEPARATOR, NOT the number 1!
-  - Example: "RD12.541500" MUST BE SPLIT as "RD" | "2.54" | "500". The "1" after 2.54 is a delimiter.
-  - Example: "CS112.581200" MUST BE SPLIT as "CS" | "12.58" | "200".
+  OCR heavily misreads the separators (/, \\, |) as the number "1" or letter "I" or "l".
+  Example Mistake: "RD12.80130000" (from "RD|2.80|30000")
+  - RULE 1 (Leading 1): If a weight starts with "1" immediately following an abbreviation (like RD, CS) with no space (e.g., "RD12.80"), the "1" is a SEPARATOR. You MUST drop the leading "1". Extract weight as "2.80", NOT "12.80".
+  - RULE 2 (Trailing 1): Carat weights ALMOST ALWAYS have exactly 2 decimal places. If you see a "1" immediately after the 2nd decimal digit (e.g., "2.541500"), it is a SEPARATOR. Split it! Extract weight as "2.54" and rate as "500".
+  - Example "CS12.541500": Drop first 1 -> "2.541500". Drop 1 after two decimals -> weight "2.54", rate "500".
 
   CRITICAL: If there are multiple lines (e.g. two RD lines), you MUST create a SEPARATE object in the JSON array for EACH line! Do not combine them into one!
 
