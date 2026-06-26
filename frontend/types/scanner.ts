@@ -225,3 +225,27 @@ export interface ExtractionField {
   value: string;
   status: 'matched' | 'pending' | 'missing';
 }
+
+export interface CalculateMrpPayload {
+  jewelleryType: string;
+  netWt: number;
+  purityKarat: string;
+  labourCharge?: {
+    type: 'PERCENTAGE' | 'AMOUNT';
+    value: number;
+  };
+  diamonds: Array<{ weight: number; rate: number }>;
+  colorstones: Array<{ weight: number; rate: number }>;
+}
+
+export interface CalculateMrpResponse {
+  breakdown: {
+    diamondAmount: number;
+    colorstoneAmount: number;
+    pureWeight: number;
+    goldRateApplied: number;
+    goldAmount: number;
+    labourAmount: number;
+  };
+  finalMRP: number;
+}

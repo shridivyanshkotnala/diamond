@@ -13,6 +13,7 @@ import type {
   SubmitClarificationResponse,
   SubmitReviewResponse,
   StructuredScanData,
+  CalculateMrpResponse,
 } from '@/types/scanner';
 import type { JewelleryType, ScanMode } from '@/types/scanner';
 import { toApiJewelleryType, toApiScanType } from '@/utils/scanMappers';
@@ -191,4 +192,31 @@ export async function submitReview(
     method: 'POST',
     body: structuredData,
   });
+}
+
+export async function calculateScanMrp(
+  scanId: string,
+  payload: any,
+): Promise<CalculateMrpResponse> {
+  if (isDemoScanMode()) {
+    // Return dummy data in demo mode
+    return {
+      breakdown: {
+        diamondAmount: 0,
+        colorstoneAmount: 0,
+        pureWeight: 0,
+        goldRateApplied: 0,
+        goldAmount: 0,
+        labourAmount: 0,
+      },
+      finalMRP: 0,
+    };
+  }
+
+  const res = await apiRequest<{ data: CalculateMrpResponse }>(`/scans/${scanId}/calculate`, {
+    method: 'POST',
+    body: payload,
+  });
+  
+  return res.data;
 }
