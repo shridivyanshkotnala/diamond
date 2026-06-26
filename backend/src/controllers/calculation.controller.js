@@ -60,9 +60,17 @@ const calculateMRP = async (req, res, next) => {
     }
 
     // 5. Calculate Gold Amount
-    const baseGoldRatePer10g = liveRatesData.taxSettings?.scannerCalculationUse === 'cash' 
+    let baseGoldRatePer10g = liveRatesData.taxSettings?.scannerCalculationUse === 'cash' 
         ? liveRatesData.taxSettings.cashFinalRate 
         : liveRatesData.taxSettings.rtgsFinalRate;
+        
+    // Fallback if cache is old and doesn't contain pre-calculated final rates
+    if (baseGoldRatePer10g === undefined && liveRatesData.mcxLiveRate) {
+        const changeBy = liveRatesData.taxSettings?.scannerCalculationUse === 'cash'
+           ? (liveRatesData.taxSettings?.cashChangeBy || 0)
+           : (liveRatesData.taxSettings?.rtgsChangeBy || 0);
+        baseGoldRatePer10g = liveRatesData.mcxLiveRate + changeBy;
+    }
     
     const baseGoldRatePerGram = (baseGoldRatePer10g || 0) / 10;
 
