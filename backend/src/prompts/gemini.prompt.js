@@ -122,9 +122,12 @@ PATTERN G — Delimited Stone Tag (Separated by \, /, |, or OCR mistakes like 1,
   *** CRITICAL OCR DELIMITER HALLUCINATION RULE ***
   OCR heavily misreads the separators (/, \\, |) as the number "1" or letter "I" or "l".
   Example Mistake: "RD12.80130000" (from "RD|2.80|30000")
-  - RULE 1 (Leading 1): If a weight starts with "1" immediately following an abbreviation (like RD, CS) with no space (e.g., "RD12.80"), the "1" is a SEPARATOR. You MUST drop the leading "1". Extract weight as "2.80", NOT "12.80".
-  - RULE 2 (Trailing 1): Carat weights ALMOST ALWAYS have exactly 2 decimal places. If you see a "1" immediately after the 2nd decimal digit (e.g., "2.541500"), it is a SEPARATOR. Split it! Extract weight as "2.54" and rate as "500".
-  - Example "CS12.541500": Drop first 1 -> "2.541500". Drop 1 after two decimals -> weight "2.54", rate "500".
+  - RULE 1 (Leading 1/I/l): If a weight starts with "1", "I", or "l" immediately following an abbreviation (like RD, CS) with no space (e.g., "RD12.80" or "CSI10.82"), it is a SEPARATOR. You MUST drop it. Extract weight as "2.80" or "10.82".
+  - RULE 2 (Trailing Delimiter): Carat weights ALMOST ALWAYS have exactly 2 decimal places. Look at the character immediately following the 2nd decimal digit. 
+    - If there is NO explicit punctuation (like | or /) between the weight and rate, that immediate character ("1", "I", "l") is the SEPARATOR. You MUST drop it!
+    - Example A: "2.541500" -> The "1" after "4" is the separator. Drop it! Weight="2.54", Rate="500".
+    - Example B: "10.82I500" -> The "I" after "2" is the separator. Drop it! Weight="10.82", Rate="500".
+    - CAUTION (Real 1s): If there IS an explicit separator present (e.g., "2.54|1500" or "2.54/1500"), the "1" in "1500" is a real number. Do NOT drop it! Rate="1500".
 
   CRITICAL: If there are multiple lines (e.g. two RD lines), you MUST create a SEPARATE object in the JSON array for EACH line! Do not combine them into one!
 
@@ -281,7 +284,7 @@ Rules for unknownFields:
 
 const getUserPrompt = (jewelleryType, scanType, scannerSettings = {}) => {
   const typeContext = {
-    DIAMOND: `Focus on: grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, labour.
+    DIAMOND: `Focus on: grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, labour, and ANY colorstones (coloredStoneWeight, coloredStonePieces, coloredStoneRate).
 Diamond quality = colour grade (D/E/F/G/H/I/J or EF/FG/GH/HI/IJ) + clarity grade (VVS/VS/SI etc.) combined into one string.`,
     GOLD: `Focus on: grossWeight, netWeight, purity (Tunch/Karat), labour.
 Purity may appear as Tunch value (750/916/999) or Karat (18K/22K/24K).`,
