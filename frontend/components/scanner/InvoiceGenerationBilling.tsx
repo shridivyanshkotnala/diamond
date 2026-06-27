@@ -268,7 +268,7 @@ export function InvoiceGenerationBilling({
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
   const [ratesLoading, setRatesLoading] = useState(true);
   const [invoiceDateTime] = useState(() => formatInvoiceDateTime());
-  const [previewInvoiceNumber, setPreviewInvoiceNumber] = useState<string | null>(null);
+  const [previewInvoiceNumber, setPreviewInvoiceNumber] = useState<string>('Loading next number...');
 
   const [touched, setTouched] = useState({
     phone: false,
@@ -303,9 +303,16 @@ export function InvoiceGenerationBilling({
       try {
         const nextNumber = await apiFetchNextInvoiceNumber();
         if (cancelled) return;
-        setPreviewInvoiceNumber(nextNumber);
+        if (nextNumber) {
+          setPreviewInvoiceNumber(nextNumber);
+        } else {
+          setPreviewInvoiceNumber(resolveInvoiceNumber(scanId, scanData.sku));
+        }
       } catch (err) {
-        // fallback if fetch fails
+        if (!cancelled) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          setPreviewInvoiceNumber(`Error: ${errMsg.slice(0, 30)}`);
+        }
       }
     }
     void loadNextInvoiceNumber();
@@ -320,11 +327,7 @@ export function InvoiceGenerationBilling({
     [scanData.karat, scanData.tunch],
   );
 
-  // Use the fetched real preview if available, else the fallback local generator (which has ?????)
-  const invoiceNumber = useMemo(
-    () => previewInvoiceNumber || resolveInvoiceNumber(scanId, scanData.sku),
-    [previewInvoiceNumber, scanId, scanData.sku],
-  );
+  const invoiceNumber = previewInvoiceNumber;
 
   const stoneEntries = useMemo(() => {
     const blocks = buildDisplayStoneBlocks(diamonds, colorstones);
