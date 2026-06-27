@@ -118,20 +118,17 @@ export function formatInvoiceDateTime(date: Date = new Date()): string {
   });
 }
 
-export function resolveInvoiceNumber(scanId: string | null, sku: string): string {
-  if (scanId?.trim()) {
-    const suffix = scanId.replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
-    return `#INV-${suffix || 'SCAN'}`;
-  }
-
+/**
+ * Generates a client-side PREVIEW of the invoice number in the correct
+ * server format: INV-YYYY-MMDD-?????
+ * The real sequential number (00001, 00002…) is assigned by the server on submit.
+ */
+export function resolveInvoiceNumber(_scanId: string | null, _sku: string): string {
   const now = new Date();
-  const stamp = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0'),
-  ].join('');
-  const skuPart = (sku || 'ITEM').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase();
-  return `#INV-${stamp}-${skuPart}`;
+  const year = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `INV-${year}-${mm}${dd}-?????`;
 }
 
 export function prepareDisplayGoldRates(
