@@ -60,3 +60,14 @@ export async function apiFetchInvoices(): Promise<GenerateInvoiceResponse[]> {
   );
   return res.data?.invoices ?? [];
 }
+
+/**
+ * GET /api/v1/invoices/preview/next-number
+ * Returns the next sequence number for the UI preview (e.g. INV-2026-0627-00001)
+ */
+export async function apiFetchNextInvoiceNumber(): Promise<string> {
+  const res = await apiRequest<{ success: boolean; data: { nextNumber: string } }>(
+    '/invoices/preview/next-number',
+  );
+  return res.data?.nextNumber ?? '';
+}

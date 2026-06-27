@@ -9,6 +9,9 @@ router.use(authenticateJWT);
 // POST /api/v1/invoices/generate  – generate PDF invoice via PDFMonkey
 router.post('/generate', invoiceController.generateInvoice);
 
+// GET  /api/v1/invoices/preview/next-number - peek next invoice number
+router.get('/preview/next-number', invoiceController.getNextInvoiceNumber);
+
 // GET  /api/v1/invoices            – list invoices for business
 router.get('/', invoiceController.getInvoices);
 

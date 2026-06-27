@@ -35,6 +35,7 @@ import {
 } from '@/utils/invoiceCalculation';
 import { amountInWords } from '@/utils/numberToWords';
 import { fetchGoldRates } from '@/utils/ratesApi';
+import { apiFetchNextInvoiceNumber } from '@/utils/invoiceApi';
 import { formatIndianCurrency } from '@/utils/scanPriceCalculation';
 import { buildDisplayStoneBlocks } from '@/utils/stoneSequenceUtils';
 
@@ -267,6 +268,7 @@ export function InvoiceGenerationBilling({
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
   const [ratesLoading, setRatesLoading] = useState(true);
   const [invoiceDateTime] = useState(() => formatInvoiceDateTime());
+  const [previewInvoiceNumber, setPreviewInvoiceNumber] = useState<string | null>(null);
 
   const [touched, setTouched] = useState({
     phone: false,
@@ -296,6 +298,18 @@ export function InvoiceGenerationBilling({
     }
 
     void loadRates();
+
+    async function loadNextInvoiceNumber() {
+      try {
+        const nextNumber = await apiFetchNextInvoiceNumber();
+        if (cancelled) return;
+        setPreviewInvoiceNumber(nextNumber);
+      } catch (err) {
+        // fallback if fetch fails
+      }
+    }
+    void loadNextInvoiceNumber();
+
     return () => {
       cancelled = true;
     };
@@ -306,9 +320,10 @@ export function InvoiceGenerationBilling({
     [scanData.karat, scanData.tunch],
   );
 
+  // Use the fetched real preview if available, else the fallback local generator (which has ?????)
   const invoiceNumber = useMemo(
-    () => resolveInvoiceNumber(scanId, scanData.sku),
-    [scanId, scanData.sku],
+    () => previewInvoiceNumber || resolveInvoiceNumber(scanId, scanData.sku),
+    [previewInvoiceNumber, scanId, scanData.sku],
   );
 
   const stoneEntries = useMemo(() => {

@@ -1,6 +1,6 @@
 const Invoice = require('../models/invoice.model');
 const Business = require('../models/business.model');
-const { generateInvoiceNumber } = require('../models/invoiceCounter.model');
+const { generateInvoiceNumber, peekNextInvoiceNumber } = require('../models/invoiceCounter.model');
 const { generateInvoicePdf } = require('../services/pdfmonkey.service');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 
@@ -202,4 +202,17 @@ const getInvoice = async (req, res, next) => {
   }
 };
 
-module.exports = { generateInvoice, getInvoices, getInvoice };
+/**
+ * GET /api/v1/invoices/preview/next-number
+ * Returns the provisional next invoice number for the UI preview.
+ */
+const getNextInvoiceNumber = async (req, res, next) => {
+  try {
+    const nextNumber = await peekNextInvoiceNumber();
+    return sendSuccess(res, { nextNumber });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { generateInvoice, getInvoices, getInvoice, getNextInvoiceNumber };

@@ -32,4 +32,21 @@ async function generateInvoiceNumber() {
   return `INV-${year}-${mm}${dd}-${seq}`;
 }
 
-module.exports = { generateInvoiceNumber };
+/**
+ * Peeks at the next invoice number without incrementing the counter.
+ * Useful for showing a preview on the frontend.
+ */
+async function peekNextInvoiceNumber() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const dateKey = `${year}-${mm}${dd}`;
+
+  const counter = await InvoiceCounter.findOne({ dateKey });
+  const nextSeq = (counter ? counter.seq : 0) + 1;
+  const seq = String(nextSeq).padStart(5, '0');
+  return `INV-${year}-${mm}${dd}-${seq}`;
+}
+
+module.exports = { generateInvoiceNumber, peekNextInvoiceNumber };
