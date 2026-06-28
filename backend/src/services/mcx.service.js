@@ -32,6 +32,7 @@ const getLiveMcxRate24K = async () => {
     }
   } catch (error) {
     console.error('[MCX Service] Failed to fetch live MCX rate:', error.message);
+    require('fs').writeFileSync('d:\\Jewellary\\mcx_error.log', error.message + '\n' + error.stack);
     // Fallback if no cache and API fails
     return 160000;
   }
