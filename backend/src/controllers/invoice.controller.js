@@ -87,13 +87,15 @@ const generateInvoice = async (req, res, next) => {
       invoice_date: invoiceDate,
       place_of_supply,
       transport,
-      line_items: line_items.map((item) => ({
-        description: item.description ?? '',
-        note: item.note ?? '',
-        qty: Number(item.qty) || 0,
-        price: Number(item.price) || 0,
-        amount: Number(item.amount) || 0,
-      })),
+      line_items: line_items
+        .filter((item) => Number(item.qty) > 0 || Number(item.amount) > 0)
+        .map((item) => ({
+          description: item.description ?? '',
+          note: item.note ?? '',
+          qty: Number(item.qty) || 0,
+          price: Number(item.price) || 0,
+          amount: Number(item.amount) || 0,
+        })),
       subtotal: Number(subtotal) || 0,
       gst_rate: Number(gst_rate) || 0,
       gst_amount: Number(gst_amount) || 0,
