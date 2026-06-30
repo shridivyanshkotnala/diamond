@@ -90,8 +90,10 @@ export function StoneTypeRowCard({
   });
 
   useEffect(() => {
-    onRateErrorChange?.(rateNotFound);
-  }, [rateNotFound, onRateErrorChange]);
+    const rateValue = parseNumericLabourValue(values.rate) ?? 0;
+    const isError = rateNotFound && rateValue <= 0;
+    onRateErrorChange?.(isError);
+  }, [rateNotFound, values.rate, onRateErrorChange]);
 
   const handleColorChange = (color: string) => {
     onChange?.({ color, quality: buildQuality(color, values.clarity) });
