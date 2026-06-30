@@ -91,7 +91,7 @@ export default function ScanResultsScreen() {
 
   return (
     <ScanScreenWrapper
-      title="Scanner Result | Final Tab"
+      title="Scanner Result"
       className="bg-surface-muted"
       scanButtonVariant="green"
       onBack={isFromWishlist ? () => router.push('/dashboard/wishlist' as Href) : undefined}

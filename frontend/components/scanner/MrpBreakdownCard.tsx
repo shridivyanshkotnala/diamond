@@ -41,7 +41,7 @@ export function MrpBreakdownCard({
       <BreakdownRow label="Gold Base Price" value={goldBase} />
       <BreakdownRow label="Stone Total" value={stoneTotal} />
       <BreakdownRow label="Labour" value={labour} />
-      <BreakdownRow label="Ultimate MRP" value={ultimateMrp} bold />
+      <BreakdownRow label="Total MRP" value={ultimateMrp} bold />
     </View>
   );
 }
