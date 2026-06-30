@@ -4,6 +4,7 @@ import {
   Alert,
   ImageBackground,
   ScrollView,
+  Text,
   View,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
