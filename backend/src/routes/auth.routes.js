@@ -26,5 +26,6 @@ router.post('/business/create-password', validate(createPasswordSchema), authCon
 router.post('/business/login', validate(loginSchema), authController.login);
 router.post('/employee/login', validate(employeeLoginSchema), authController.loginEmployee);
 router.post('/change-password', authenticateJWT, validate(changePasswordSchema), authController.changePassword);
+router.post('/refresh', authController.refreshToken);
 
 module.exports = router;

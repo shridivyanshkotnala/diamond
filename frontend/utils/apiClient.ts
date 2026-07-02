@@ -21,6 +21,56 @@ function getNetworkErrorMessage(): string {
   return 'Cannot reach the server. If you are on a phone, set EXPO_PUBLIC_API_URL to your computer IP (e.g. http://192.168.1.3:3000) and make sure the backend is running.';
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function handleTokenRefresh(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const state = useAuthStore.getState();
+      const refreshToken = state.refreshToken;
+      
+      if (!refreshToken) {
+        state.logout();
+        return null;
+      }
+
+      const response = await fetch(getApiUrl('/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        state.logout();
+        return null;
+      }
+
+      const body = await response.json();
+      if (body.success && body.data?.accessToken) {
+        state.setAuthToken(body.data.accessToken);
+        if (body.data.refreshToken) {
+          state.setRefreshToken(body.data.refreshToken);
+        }
+        return body.data.accessToken;
+      }
+
+      state.logout();
+      return null;
+    } catch (err) {
+      useAuthStore.getState().logout();
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, skipJson, headers: customHeaders, ...rest } = options;
   const token = useAuthStore.getState().authToken;
@@ -58,6 +108,28 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     } catch {
       errorBody = await response.text();
     }
+    if (response.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
+      const newAccessToken = await handleTokenRefresh();
+      if (newAccessToken) {
+        // Retry original request with new token
+        headers.set('Authorization', `Bearer ${newAccessToken}`);
+        try {
+          response = await fetch(url, {
+            ...rest,
+            headers,
+            body: requestBody,
+          });
+          
+          if (response.ok) {
+            if (skipJson || response.status === 204) return undefined as T;
+            return (await response.json()) as T;
+          }
+        } catch {
+          throw new ApiError(getNetworkErrorMessage());
+        }
+      }
+    }
+
     const message =
       typeof errorBody === 'object' && errorBody !== null
         ? typeof (errorBody as { message?: unknown }).message === 'string'

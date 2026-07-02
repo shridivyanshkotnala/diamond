@@ -9,6 +9,7 @@ export type UserRole = 'business' | 'employee' | null;
 interface AuthState {
   isAuthenticated: boolean;
   authToken: string | null;
+  refreshToken: string | null;
   userRole: UserRole;
   loggedInEmployeeId: string | null;
   rememberMe: boolean;
@@ -20,6 +21,7 @@ interface AuthState {
   _hasHydrated: boolean;
   setAuthenticated: (value: boolean) => void;
   setAuthToken: (token: string | null) => void;
+  setRefreshToken: (token: string | null) => void;
   setUserRole: (role: UserRole) => void;
   setLoggedInEmployee: (id: string | null) => void;
   setRememberMe: (value: boolean) => void;
@@ -37,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       isAuthenticated: false,
       authToken: null,
+      refreshToken: null,
       userRole: null,
       loggedInEmployeeId: null,
       rememberMe: false,
@@ -48,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
       _hasHydrated: false,
       setAuthenticated: (value) => set({ isAuthenticated: value }),
       setAuthToken: (token) => set({ authToken: token }),
+      setRefreshToken: (token) => set({ refreshToken: token }),
       setUserRole: (role) => set({ userRole: role }),
       setLoggedInEmployee: (id) => set({ loggedInEmployeeId: id }),
       setRememberMe: (value) => set({ rememberMe: value }),
@@ -62,6 +66,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           isAuthenticated: false,
           authToken: null,
+          refreshToken: null,
           userRole: null,
           loggedInEmployeeId: null,
         }),
@@ -73,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         authToken: state.authToken,
+        refreshToken: state.refreshToken,
         userRole: state.userRole,
         loggedInEmployeeId: state.loggedInEmployeeId,
         rememberMe: state.rememberMe,

@@ -38,6 +38,7 @@ export default function EmployeeLoginScreen() {
     savedEmployeeId,
     setAuthenticated,
     setAuthToken,
+    setRefreshToken,
     setSavedEmployeeContact,
     setUserRole,
     setLoggedInEmployee,
@@ -82,6 +83,9 @@ export default function EmployeeLoginScreen() {
           );
 
           setAuthToken(apiResult.data.accessToken);
+          if (apiResult.data.refreshToken) {
+            setRefreshToken(apiResult.data.refreshToken);
+          }
           setUserRole('employee');
           setLoggedInEmployee(matchedEmployee?.id ?? null);
           setAuthenticated(true);
@@ -104,6 +108,9 @@ export default function EmployeeLoginScreen() {
         );
 
         setAuthToken(apiResult.data.accessToken);
+        if (apiResult.data.refreshToken) {
+          setRefreshToken(apiResult.data.refreshToken);
+        }
         setUserRole('employee');
         setLoggedInEmployee(matchedEmployee?.id ?? null);
         setAuthenticated(true);

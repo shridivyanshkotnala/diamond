@@ -34,6 +34,7 @@ export default function BusinessLoginScreen() {
     registration,
     setAuthenticated,
     setAuthToken,
+    setRefreshToken,
     setSavedCredentials,
     setUserRole,
     setLoggedInEmployee,
@@ -60,9 +61,23 @@ export default function BusinessLoginScreen() {
       const result = await loginBusiness(email, password);
       if (result.success && result.data) {
         setAuthToken(result.data.accessToken);
+        if (result.data.refreshToken) {
+          setRefreshToken(result.data.refreshToken);
+        }
         setUserRole('business');
         setLoggedInEmployee(null);
         setAuthenticated(true);
+        
+        const { updateRegistration } = useAuthStore.getState();
+        updateRegistration({
+          businessName: result.data.businessName || '',
+          gstNumber: result.data.gstNumber || '',
+          businessType: result.data.businessType || '',
+          address: result.data.address || '',
+          phone: result.data.phone || '',
+          email: result.data.email || '',
+        });
+
         if (rememberMe) {
           setSavedCredentials(email.trim().toLowerCase(), savedPhone);
         }

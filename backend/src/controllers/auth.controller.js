@@ -113,6 +113,20 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+const refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken: token } = req.body;
+    if (!token) {
+      throw new Error('UNAUTHORIZED');
+    }
+    const authService = require('../services/auth.service');
+    const data = authService.refreshTokens(token);
+    sendSuccess(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   verifyGst,
   confirmGst,
@@ -124,4 +138,5 @@ module.exports = {
   login,
   loginEmployee,
   changePassword,
+  refreshToken,
 };

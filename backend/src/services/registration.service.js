@@ -174,12 +174,21 @@ const login = async (email, password) => {
 
   const tokens = authService.generateTokens(user.businessId.toString(), user._id.toString(), user.role);
 
+  const Business = require('../models/business.model');
+  const business = await Business.findById(user.businessId);
+
   return {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     businessId: user.businessId.toString(),
     userId: user._id.toString(),
     role: user.role,
+    businessName: business ? (business.tradeName || business.legalName) : undefined,
+    gstNumber: business ? business.gstNumber : undefined,
+    businessType: business ? (business.companyType || business.businessType) : undefined,
+    address: business ? business.address : undefined,
+    phone: user.phone,
+    email: user.email,
   };
 };
 

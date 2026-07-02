@@ -250,7 +250,14 @@ export async function createBusinessPassword(payload: {
 
 export async function loginBusiness(email: string, password: string): Promise<{
   success: boolean;
-  data?: BusinessLoginResponse;
+  data?: BusinessLoginResponse & { 
+    businessName?: string;
+    gstNumber?: string;
+    businessType?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+  };
   error?: string;
 }> {
   try {
@@ -267,12 +274,30 @@ export async function loginBusiness(email: string, password: string): Promise<{
     }
     const accessToken = readString(unwrapped, ['accessToken', 'token']);
     const refreshToken = readString(unwrapped, ['refreshToken']);
+    const businessName = readString(unwrapped, ['businessName']);
+    const gstNumber = readString(unwrapped, ['gstNumber']);
+    const businessType = readString(unwrapped, ['businessType']);
+    const address = readString(unwrapped, ['address']);
+    const phone = readString(unwrapped, ['phone']);
+    const emailResp = readString(unwrapped, ['email']);
 
     if (!accessToken) {
       return { success: false, error: 'Login response missing access token.' };
     }
 
-    return { success: true, data: { accessToken, refreshToken } };
+    return { 
+      success: true, 
+      data: { 
+        accessToken, 
+        refreshToken,
+        businessName,
+        gstNumber,
+        businessType,
+        address,
+        phone,
+        email: emailResp
+      } 
+    };
   } catch (error) {
     return {
       success: false,
