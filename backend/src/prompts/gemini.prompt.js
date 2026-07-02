@@ -86,14 +86,14 @@ PATTERN B — Diamond tag compact (back):
 PATTERN B2 — Diamond tag with two numbers before grade (spaced):
   DR <pieces> <diamondWeight> <number1> <number2> <colourGrade> <clarityGrade>
   Example: "DR 16 0.24 10 14 IJ VSSI"
-  → diamondPieces=16, diamondWeight=0.24, purity=14K, diamondRate="20000" (IJ rule), diamondQuality="VSSI"
+  → diamondPieces=16, diamondWeight=0.24, purity=14K, diamondRate="IJ", diamondQuality="IJ VSSI"
   Rule: Among the numbers between diamondWeight and colourGrade, the one that equals 14 / 18 / 22 = purity. Others are internal codes — ignore.
 
 PATTERN B3 — Diamond tag with COMBINED purity+code as single token (no space):
   DR <pieces> <diamondWeight> <combinedToken> <colourGrade> <clarityGrade>
   Example: "DR 16 0.24 1014 IJ YSSI"  ← 1014 = internal code (10) + purity (14) printed together
   → SPLIT "1014": last two digits "14" = purity=14K, prefix "10" = internal code (ignore)
-  → diamondPieces=16, diamondWeight=0.24, purity="14K", diamondRate="20000" (IJ rule), diamondQuality="VSSI" (YSSI normalised)
+  → diamondPieces=16, diamondWeight=0.24, purity="14K", diamondRate="IJ", diamondQuality="IJ VSSI" (YSSI normalised)
   IMPORTANT: Any 4-digit token where the last 2 digits are 14, 18, or 22 → split it. Last 2 digits = purity, rest = code.
 
 PATTERN C — Full diamond tag (front + back):

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { LabourChargeResultSection } from '@/components/scanner/LabourChargeResultSection';
-import { LaborSection, type LaborSectionValues } from '@/components/scanner/LaborSection';
 import { MrpBreakdownCard } from '@/components/scanner/MrpBreakdownCard';
 import { PriceCard } from '@/components/scanner/PriceCard';
 import { RawMaterialGoldSectionInteractive } from '@/components/scanner/RawMaterialGoldSection';
@@ -30,7 +29,6 @@ interface ScannerFinalTabProps {
     sourceIndex: number,
     values: Partial<StoneEntry>,
   ) => void;
-  onLaborChange?: (values: Partial<LaborSectionValues>) => void;
   onRateErrorChange?: (sequenceIndex: number, hasError: boolean) => void;
   showLabourValidation?: boolean;
   gstNote?: string;
@@ -46,7 +44,6 @@ export function ScannerFinalTab({
   editable = false,
   onFieldChange,
   onStoneEntryChange,
-  onLaborChange,
   onRateErrorChange,
   showLabourValidation = false,
   gstNote = 'MRP = Gold + Stones + Labour (client-side)',
@@ -128,20 +125,7 @@ export function ScannerFinalTab({
           ))
         : <StoneTypeSequence rows={pricing.stoneRows} />}
 
-      {editable ? (
-        <LaborSection
-          values={{
-            labourPurityPercent: scanData.labourPurityPercent,
-            labourChargeAmount: scanData.labourChargeAmount,
-            labourChargeUnit: scanData.labourChargeUnit,
-          }}
-          netWeightGrams={scanData.netWt}
-          onChange={(values) => onLaborChange?.(values)}
-          showValidationError={showLabourValidation}
-        />
-      ) : (
-        <LabourChargeResultSection pricing={pricing} />
-      )}
+      <LabourChargeResultSection pricing={pricing} />
 
       {!editable ? (
         <MrpBreakdownCard

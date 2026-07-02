@@ -1,6 +1,7 @@
 const { sendSuccess } = require('../utils/apiResponse');
 const rateCalculationService = require('../services/rateCalculation.service');
 const redisService = require('../services/redis.service');
+const LabourRate = require('../models/labourRate.model');
 
 const calculateMRP = async (req, res, next) => {
   try {
@@ -10,7 +11,6 @@ const calculateMRP = async (req, res, next) => {
       netWt, 
       purityKarat, 
       customPurityPercent,
-      labourCharge, 
       diamonds, 
       colorstones 
     } = req.body;
@@ -24,6 +24,10 @@ const calculateMRP = async (req, res, next) => {
     const normalizedKarat = purityKarat ? purityKarat.replace(/t$/i, '').toUpperCase() : '';
     const karatData = liveRatesData.karatRates.find(r => r.carat.replace(/t$/i, '').toUpperCase() === normalizedKarat);
     const karatPurityPercent = karatData ? karatData.purity : 0;
+
+    // Fetch global labour rate for this business
+    const globalLabour = await LabourRate.findOne({ businessId });
+    const labourCharge = globalLabour ? { type: globalLabour.chargeType, value: globalLabour.value } : null;
 
     let effectivePurityPercent = karatPurityPercent;
     if (customPurityPercent) {
@@ -93,7 +97,8 @@ const calculateMRP = async (req, res, next) => {
         pureWeight,
         goldRateApplied: baseGoldRatePerGram,
         goldAmount,
-        labourAmount
+        labourAmount,
+        labourChargeType: labourCharge ? labourCharge.type : 'NONE'
       },
       finalMRP
     };

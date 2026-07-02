@@ -64,11 +64,7 @@ export function useFinalTabPricing({
       colorstones: colorstones.map(c => ({ weight: parseNumericValue(c.weight) || 0, rate: parseNumericValue(c.rate) || 0 })),
     };
 
-    if (scanData.labourPurityPercent) {
-      payload.labourCharge = { type: 'PERCENTAGE', value: parseNumericValue(scanData.labourPurityPercent) || 0 };
-    } else if (scanData.labourChargeAmount) {
-      payload.labourCharge = { type: 'AMOUNT', value: parseNumericValue(scanData.labourChargeAmount) || 0 };
-    }
+
 
     calculateScanMrp(scanId, payload)
       .then((res: CalculateMrpResponse) => {
@@ -105,9 +101,9 @@ export function useFinalTabPricing({
           goldBasePriceDisplay: formatIndianCurrency(res.breakdown.goldAmount),
           stoneRows,
           totalStoneAmount: res.breakdown.diamondAmount + res.breakdown.colorstoneAmount,
-          labourInputMode: payload.labourCharge ? (payload.labourCharge.type === 'PERCENTAGE' ? 'percentage' : 'fixedAmount') : 'none',
-          usePercentageMode: payload.labourCharge?.type === 'PERCENTAGE',
-          useFixedAmountMode: payload.labourCharge?.type === 'AMOUNT',
+          labourInputMode: res.breakdown.labourChargeType === 'PERCENTAGE' ? 'percentage' : res.breakdown.labourChargeType === 'AMOUNT' ? 'fixedAmount' : 'none',
+          usePercentageMode: res.breakdown.labourChargeType === 'PERCENTAGE',
+          useFixedAmountMode: res.breakdown.labourChargeType === 'AMOUNT',
           labourAmount: res.breakdown.labourAmount,
           labourDisplay: formatIndianCurrency(res.breakdown.labourAmount),
           ultimateMrp: res.finalMRP,

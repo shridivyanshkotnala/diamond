@@ -247,6 +247,7 @@ export interface CalculateMrpResponse {
     goldRateApplied: number;
     goldAmount: number;
     labourAmount: number;
+    labourChargeType: string;
   };
   finalMRP: number;
 }

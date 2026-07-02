@@ -7,7 +7,7 @@ import { ColorstoneSection } from '@/components/scanner/ColorstoneSection';
 import { DiamondSection } from '@/components/scanner/DiamondSection';
 import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
-import { getLaborValuesFromScanData, LaborSection } from '@/components/scanner/LaborSection';
+
 import { JewelleryTypeSelector } from '@/components/scanner/JewelleryTypeSelector';
 import { PrimaryGreenButton } from '@/components/scanner/PrimaryGreenButton';
 import { ScanScreenWrapper } from '@/components/scanner/ScanScreenWrapper';
@@ -17,7 +17,7 @@ import { ToastNotification } from '@/components/scanner/ToastNotification';
 import { useScannerStore } from '@/store/scannerStore';
 import type { ScanItemData } from '@/types/scanner';
 import { parseScannerTag } from '@/utils/scannerTagParser';
-import { validateLabour } from '@/utils/labourUtils';
+
 
 export default function ManualEntryScreen() {
   const router = useRouter();
@@ -52,14 +52,10 @@ export default function ManualEntryScreen() {
   );
 
   const hasRateError = diamondRateError || colorstoneRateError;
-  const labourError = validateLabour(scanData);
   const canContinue = !hasRateError;
 
   const handleContinue = () => {
-    if (labourError) {
-      setShowLabourValidation(true);
-      return;
-    }
+    if (!canContinue) return;
     router.push('/dashboard/scanner/formula-flow');
   };
 
@@ -182,12 +178,6 @@ export default function ManualEntryScreen() {
         onRateErrorChange={setColorstoneRateError}
       />
 
-      <LaborSection
-        values={getLaborValuesFromScanData(scanData)}
-        netWeightGrams={scanData.netWt}
-        onChange={(values) => updateScanData(values)}
-        showValidationError={showLabourValidation || Boolean(labourError)}
-      />
 
       {hasRateError ? (
         <Text className="mb-4 text-center text-xs text-danger-text">

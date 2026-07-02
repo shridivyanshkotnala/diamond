@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
 import { Colors, Radius } from '@/constants/theme';
@@ -38,7 +38,12 @@ export function StoneOptionSelect({
         <ChevronDown size={16} color={Colors.textMuted} />
       </Pressable>
       {open ? (
-        <View style={styles.menu}>
+        <ScrollView 
+          style={styles.menu} 
+          nestedScrollEnabled 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {allowClear ? (
             <Pressable
               onPress={() => {
@@ -64,7 +69,7 @@ export function StoneOptionSelect({
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>

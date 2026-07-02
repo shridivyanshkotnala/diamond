@@ -31,7 +31,6 @@ import {
   applyStoneEntriesToScanData,
   stoneEntriesToStructuredData,
 } from '@/utils/stoneSequenceUtils';
-import { validateLabour } from '@/utils/labourUtils';
 
 const SCANNER_BG =
   'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80';
@@ -162,13 +161,6 @@ export default function ReviewResultsScreen() {
     [setStructuredData, updateScanData],
   );
 
-  const handleLaborChange = useCallback((values: Partial<ScanItemData>) => {
-    const updated = { ...useScannerStore.getState().scanData, ...values };
-    updateScanData(values);
-    setStructuredData(
-      scanItemToStructuredData(updated, useScannerStore.getState().structuredData),
-    );
-  }, [updateScanData, setStructuredData]);
 
   const handleReScan = () => {
     setScanSide('front');
@@ -177,7 +169,6 @@ export default function ReviewResultsScreen() {
 
   const handleConfirm = async () => {
     if (!scanId) return;
-    if (validateLabour(scanData)) return;
 
     const payload = scanItemToStructuredData(scanData, structuredData);
     setSubmitting(true);
@@ -219,7 +210,6 @@ export default function ReviewResultsScreen() {
                   jewelleryType={selectedType}
                   onFieldChange={handleFieldChange}
                   onStoneEntriesChange={handleStoneEntriesChange}
-                  onLaborChange={handleLaborChange}
                   onReScan={handleReScan}
                   onConfirm={handleConfirm}
                   confirming={submitting}

@@ -61,12 +61,7 @@ const CARAT_ORDER = ['22Kt', '20Kt', '18Kt', '14Kt', '9Kt'];
 
 type RatesTab = 'gold' | 'diamond' | 'colorstone' | 'labour';
 
-const TAB_BREADCRUMB: Record<RatesTab, string> = {
-  gold: 'Settings ΓåÆ Masters ΓåÆ Rates ΓåÆ Gold',
-  diamond: 'Settings ΓåÆ Masters ΓåÆ Rates ΓåÆ Diamond',
-  colorstone: 'Settings ΓåÆ Masters ΓåÆ Rates ΓåÆ Colorstone',
-  labour: 'Settings ΓåÆ Masters ΓåÆ Rates ΓåÆ Labour Charges',
-};
+
 
 const TAB_SCREEN_TITLE: Record<RatesTab, string> = {
   gold: 'Gold Rates',
@@ -341,10 +336,7 @@ export default function MarketRatesScreen() {
         contentContainerStyle={screenStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <PageHeader
-          title={TAB_SCREEN_TITLE[activeTab]}
-          subtitle={TAB_BREADCRUMB[activeTab]}
-        />
+        <PageHeader title={TAB_SCREEN_TITLE[activeTab]} />
 
         {loading && activeTab === 'gold' ? (
           <View style={styles.loadingWrap}>

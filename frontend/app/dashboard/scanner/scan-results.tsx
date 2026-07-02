@@ -61,12 +61,8 @@ export default function ScanResultsScreen() {
     selectedKarat,
   });
 
-  // Derive tag code once so duplicate detection is reactive.
-  const currentTagCode = buildTagCode(selectedType, scanData.sku);
-  const alreadyInWishlist = !isFromWishlist && isInWishlist(currentTagCode);
-
   const handleAddToWishlist = async () => {
-    if (addingToWishlist || alreadyInWishlist) return;
+    if (addingToWishlist) return;
 
     setAddingToWishlist(true);
     try {
@@ -99,18 +95,14 @@ export default function ScanResultsScreen() {
         <View className="flex-row gap-3">
           {!isFromWishlist ? (
             <OutlineButton
-              title={
-                alreadyInWishlist ? 'Added ✓' :
-                addingToWishlist  ? 'Adding...' :
-                'Add to Wishlist'
-              }
+              title={addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
               onPress={handleAddToWishlist}
               icon={
-                alreadyInWishlist
-                  ? <CheckCircle size={18} color="#1A332E" />
-                  : addingToWishlist
-                    ? <ActivityIndicator size={16} color="#1A332E" />
-                    : <Heart size={18} color="#1A332E" />
+                addingToWishlist ? (
+                  <ActivityIndicator size={16} color="#1A332E" />
+                ) : (
+                  <Heart size={18} color="#1A332E" />
+                )
               }
             />
           ) : null}

@@ -48,9 +48,9 @@ export function GoldRatesTable({ rates, onEdit, onIncreaseBy }: GoldRatesTablePr
               <Pressable onPress={() => onEdit(rate)} style={styles.actionBtn}>
                 <Text style={styles.actionText}>Edit</Text>
               </Pressable>
-              <Pressable onPress={() => onIncreaseBy(rate)} style={styles.actionBtnOutline}>
+              {/* <Pressable onPress={() => onIncreaseBy(rate)} style={styles.actionBtnOutline}>
                 <Text style={styles.actionTextOutline}>Increase By</Text>
-              </Pressable>
+              </Pressable> */}
             </View>
           </View>
         ))}
@@ -118,7 +118,8 @@ export function GoldEditModalFields({
         keyboardType="number-pad"
         placeholder="150000"
         placeholderTextColor={Colors.placeholder}
-        style={[styles.input, finalRateError ? styles.inputError : null]}
+        editable={false}
+        style={[styles.input, styles.inputDisabled, finalRateError ? styles.inputError : null]}
       />
       {finalRateError ? <Text style={styles.errorText}>{finalRateError}</Text> : null}
     </View>
@@ -274,6 +275,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 16,
     color: Colors.textPrimary,
+  },
+  inputDisabled: {
+    backgroundColor: '#F5F5F5',
+    color: Colors.textMuted,
   },
   inputError: { borderColor: '#D93025' },
   errorText: { fontSize: 12, color: '#D93025', marginTop: 4 },
