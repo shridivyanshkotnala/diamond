@@ -20,6 +20,10 @@ export type ApiEmployeePermissions = {
   employeeManager: boolean;
   tunchPurity: boolean;
   invoiceFormat: boolean;
+  editRateGold: boolean;
+  editRateDiamond: boolean;
+  editRateColorstone: boolean;
+  editRateLabour: boolean;
 };
 
 const MATRIX_KEYS = Object.keys(DEFAULT_MATRIX_VALUES) as MatrixKey[];
@@ -71,6 +75,10 @@ export function mapDraftPermissionsToApi(permissions: EmployeePermissions): ApiE
     employeeManager: false,
     tunchPurity: permissions.settings_purity,
     invoiceFormat: permissions.settings_invoice,
+    editRateGold: permissions.edit_rate_gold,
+    editRateDiamond: permissions.edit_rate_diamond,
+    editRateColorstone: permissions.edit_rate_colorstone,
+    editRateLabour: permissions.edit_rate_labour,
   };
 }
 
@@ -92,6 +100,10 @@ export function mapApiPermissionsToEmployee(apiPermissions: Partial<ApiEmployeeP
   permissions.settings_inventory = Boolean(apiPermissions.inventoryManager);
   permissions.settings_purity = Boolean(apiPermissions.tunchPurity);
   permissions.settings_invoice = Boolean(apiPermissions.invoiceFormat);
+  permissions.edit_rate_gold = apiPermissions.editRateGold ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_gold;
+  permissions.edit_rate_diamond = apiPermissions.editRateDiamond ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_diamond;
+  permissions.edit_rate_colorstone = apiPermissions.editRateColorstone ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_colorstone;
+  permissions.edit_rate_labour = apiPermissions.editRateLabour ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_labour;
 
   return permissions;
 }
@@ -118,6 +130,7 @@ export function mapApiEmployeeToEmployee(raw: Record<string, unknown>): Employee
     gender: 'Male',
     password: '',
     permissions: mapApiPermissionsToEmployee(apiPermissions),
+    isActive: typeof raw.isActive === 'boolean' ? raw.isActive : true,
   };
 }
 
@@ -167,6 +180,44 @@ export async function createEmployeeDraft(payload: {
     return {
       success: false,
       error: error instanceof ApiError ? error.message : 'Failed to create employee draft.',
+    };
+  }
+}
+
+export async function updateEmployeeApi(
+  id: string,
+  payload: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    permissions?: EmployeePermissions;
+    isActive?: boolean;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const body: Record<string, any> = {};
+    if (payload.name) body.name = payload.name.trim();
+    if (payload.phone) body.phone = payload.phone.replace(/\D/g, '').slice(-10);
+    if (payload.email) body.email = payload.email.trim().toLowerCase();
+    if (payload.permissions) body.permissions = mapDraftPermissionsToApi(payload.permissions);
+    if (typeof payload.isActive === 'boolean') body.isActive = payload.isActive;
+
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>(`/employees/${id}`, {
+      method: 'PUT',
+      body,
+    });
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Failed to update employee.'),
+      };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Failed to update employee.',
     };
   }
 }
@@ -237,4 +288,25 @@ export function buildEmployeeDraftPayload(draft: EmployeeDraft) {
       `${draft.fullName.split(' ')[0]?.toLowerCase() || 'employee'}@pratham.gmail.com`,
     permissions: draft.permissions,
   };
+}
+
+export async function deleteEmployeeApi(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>(`/employees/${id}`, {
+      method: 'DELETE',
+    });
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Failed to delete employee.'),
+      };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Failed to delete employee.',
+    };
+  }
 }

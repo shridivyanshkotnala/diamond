@@ -10,7 +10,7 @@ export function formatLabourRateDisplay(rate: LabourRate | null): string {
   if (rate.chargeType === 'PERCENTAGE') {
     return `${rate.value}% purity of gold`;
   }
-  return `₹ ${rate.value.toLocaleString('en-IN')}`;
+  return `₹ ${rate.value.toLocaleString('en-IN')} (${rate.rupeesUnit || 'Per Gram'})`;
 }
 
 export function validateLabourRateAmount(value: string): string | null {
@@ -42,10 +42,6 @@ export function validateLabourRateForm(
   const hasAmount = Boolean(amount.trim());
   const hasPercentage = Boolean(percentage.trim());
 
-  if (!hasAmount && !hasPercentage) {
-    return { amount: 'Enter amount or purity percentage.' };
-  }
-
   if (hasAmount && hasPercentage) {
     return { amount: 'Fill only one field — amount or purity %.' };
   }
@@ -64,14 +60,26 @@ export function validateLabourRateForm(
 export function labourRateFormToPayload(
   amount: string,
   percentage: string,
-): { chargeType: LabourChargeType; value: number } | null {
+  rupeesUnit?: 'Per Gram' | 'Per 10 Gram',
+): { chargeType: LabourChargeType; value: number; rupeesUnit?: 'Per Gram' | 'Per 10 Gram' } | null {
   const errors = validateLabourRateForm(amount, percentage);
   if (errors) return null;
 
-  if (amount.trim()) {
+  const hasAmount = Boolean(amount.trim());
+  const hasPercentage = Boolean(percentage.trim());
+
+  if (!hasAmount && !hasPercentage) {
+    return {
+      chargeType: 'NONE' as LabourChargeType,
+      value: 0,
+    };
+  }
+
+  if (hasAmount) {
     return {
       chargeType: 'AMOUNT',
       value: Number(amount.replace(/[^\d.]/g, '')),
+      rupeesUnit,
     };
   }
 
@@ -84,10 +92,11 @@ export function labourRateFormToPayload(
 export function labourRateToFormValues(rate: LabourRate | null): {
   amount: string;
   percentage: string;
+  rupeesUnit: 'Per Gram' | 'Per 10 Gram';
 } {
-  if (!rate) return { amount: '', percentage: '' };
+  if (!rate) return { amount: '', percentage: '', rupeesUnit: 'Per Gram' };
   if (rate.chargeType === 'AMOUNT') {
-    return { amount: String(rate.value), percentage: '' };
+    return { amount: String(rate.value), percentage: '', rupeesUnit: rate.rupeesUnit || 'Per Gram' };
   }
-  return { amount: '', percentage: String(rate.value) };
+  return { amount: '', percentage: String(rate.value), rupeesUnit: 'Per Gram' };
 }

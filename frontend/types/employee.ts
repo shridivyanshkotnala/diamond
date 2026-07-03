@@ -14,7 +14,13 @@ export type ExtraPermissionKey =
   | 'edit_formulae'
   | 'revoke_access';
 
-export type EmployeePermissionKey = MatrixKey | ExtraPermissionKey | SettingsPermissionKey;
+export type RateEditPermissionKey =
+  | 'edit_rate_gold'
+  | 'edit_rate_diamond'
+  | 'edit_rate_colorstone'
+  | 'edit_rate_labour';
+
+export type EmployeePermissionKey = MatrixKey | ExtraPermissionKey | SettingsPermissionKey | RateEditPermissionKey;
 
 export type EmployeePermissions = Record<EmployeePermissionKey, boolean>;
 
@@ -28,6 +34,7 @@ export interface Employee {
   gender: EmployeeGender;
   password: string;
   permissions: EmployeePermissions;
+  isActive?: boolean;
 }
 
 export interface EmployeeDraft {

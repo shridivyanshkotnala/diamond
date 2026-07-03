@@ -14,6 +14,11 @@ const wishlistSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    userId: {
+      type: String,
+      required: true,
+      index: true,
+    },
   
     itemId: {
       type: String,
@@ -56,8 +61,8 @@ const wishlistSchema = new mongoose.Schema(
   }
 );
 
-// Compound indices for efficient lookups and uniqueness per business
-wishlistSchema.index({ businessId: 1, createdAt: -1 });
-wishlistSchema.index({ businessId: 1, itemId: 1 }, { unique: true });
+// Compound indices for efficient lookups and uniqueness per user within a business
+wishlistSchema.index({ businessId: 1, userId: 1, createdAt: -1 });
+wishlistSchema.index({ businessId: 1, userId: 1, itemId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Wishlist', wishlistSchema);

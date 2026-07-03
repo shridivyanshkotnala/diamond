@@ -72,10 +72,12 @@ export interface LabourRate {
   id?: string;
   chargeType: LabourChargeType;
   value: number;
+  rupeesUnit?: 'Per Gram' | 'Per 10 Gram';
   updatedAt?: string;
 }
 
 export interface UpsertLabourRatePayload {
   chargeType: LabourChargeType;
   value: number;
+  rupeesUnit?: 'Per Gram' | 'Per 10 Gram';
 }

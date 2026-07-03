@@ -112,7 +112,62 @@ const getEmployees = async (req, res) => {
   }
 };
 
+const updateEmployee = async (req, res) => {
+  try {
+    const { id } = req.params; // This is the employeeId
+    const { name, phone, email, permissions, isActive } = req.body;
+    const businessId = req.user.businessId;
+
+    const updateData = { name, phone, email, permissions };
+    if (typeof isActive === 'boolean') {
+      updateData.isActive = isActive;
+    }
+
+    const updated = await Employee.findOneAndUpdate(
+      { _id: id, businessId },
+      updateData,
+      { returnDocument: 'after' }
+    ).select('-passwordHash');
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Employee updated successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('Update Employee Error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+const deleteEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const businessId = req.user.businessId;
+
+    const result = await Employee.deleteOne({ _id: id, businessId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Employee deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete Employee Error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   createEmployee,
-  getEmployees
+  getEmployees,
+  updateEmployee,
+  deleteEmployee
 };

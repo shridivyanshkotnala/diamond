@@ -44,7 +44,7 @@ export default function DashboardMatricesScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      applyValues(draft);
+      await applyValues(draft);
       router.back();
     } finally {
       setSaving(false);

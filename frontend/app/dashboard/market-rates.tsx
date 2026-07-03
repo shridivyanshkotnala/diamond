@@ -89,7 +89,7 @@ function parseTabParam(tab?: string): RatesTab {
 }
 
 export default function MarketRatesScreen() {
-  const allowed = useRequireMarketRatesAccess();
+  const access = useRequireMarketRatesAccess();
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const activeTab = useMemo(() => parseTabParam(tab), [tab]);
@@ -163,12 +163,12 @@ export default function MarketRatesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (allowed && activeTab === 'gold') void loadRates();
-    }, [allowed, activeTab, loadRates]),
+      if (access.hasAnyAccess && activeTab === 'gold') void loadRates();
+    }, [access.hasAnyAccess, activeTab, loadRates]),
   );
 
   useEffect(() => {
-    if (!allowed || activeTab !== 'gold') return;
+    if (!access.hasAnyAccess || activeTab !== 'gold') return;
     
     // Auto-refresh the dashboard every 60 seconds to pull the latest MCX rates
     const intervalId = setInterval(() => {
@@ -176,9 +176,9 @@ export default function MarketRatesScreen() {
     }, 60000);
     
     return () => clearInterval(intervalId);
-  }, [allowed, activeTab, loadRates]);
+  }, [access.hasAnyAccess, activeTab, loadRates]);
 
-  if (!allowed) return null;
+  if (!access.hasAnyAccess) return null;
 
   const openGoldEdit = (rate: GoldRate) => {
     setEditingGold(rate);
@@ -338,42 +338,67 @@ export default function MarketRatesScreen() {
       >
         <PageHeader title={TAB_SCREEN_TITLE[activeTab]} />
 
-        {loading && activeTab === 'gold' ? (
+        {loading && activeTab === 'gold' && access.canEditGold ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={BUTTON_GREEN} />
             <Text style={styles.loadingText}>Loading ratesΓÇª</Text>
           </View>
         ) : activeTab === 'gold' ? (
-          <View style={screenStyles.screenSection}>
-            <McxLiveBanner mcxLiveRate={mcxLiveRate} />
-            <GoldTaxSettingsRow onPress={() => setTaxSettingsVisible(true)} />
-            <ScannerCalculationPicker
-              value={scannerCalculationUse}
-              onChange={handleScannerCalculationChange}
-            />
-            <Text style={styles.sectionTitle}>Gold Karat Rates</Text>
-            {displayGoldRates.length > 0 ? (
-              <GoldRatesTable
-                rates={displayGoldRates}
-                onEdit={openGoldEdit}
-                onIncreaseBy={openGoldIncrease}
+          access.canEditGold ? (
+            <View style={screenStyles.screenSection}>
+              <McxLiveBanner mcxLiveRate={mcxLiveRate} />
+              <GoldTaxSettingsRow onPress={() => setTaxSettingsVisible(true)} />
+              <ScannerCalculationPicker
+                value={scannerCalculationUse}
+                onChange={handleScannerCalculationChange}
               />
-            ) : (
-              <View style={screenStyles.emptyCard}>
-                <Text style={screenStyles.emptyText}>
-                  Unable to load gold rates. Pull down to refresh.
-                </Text>
-              </View>
-            )}
-          </View>
+              <Text style={styles.sectionTitle}>Gold Karat Rates</Text>
+              {displayGoldRates.length > 0 ? (
+                <GoldRatesTable
+                  rates={displayGoldRates}
+                  onEdit={openGoldEdit}
+                  onIncreaseBy={openGoldIncrease}
+                />
+              ) : (
+                <View style={screenStyles.emptyCard}>
+                  <Text style={screenStyles.emptyText}>
+                    Unable to load gold rates. Pull down to refresh.
+                  </Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={screenStyles.emptyCard}>
+              <Text style={screenStyles.emptyText}>
+                You do not have permission to view or edit Gold Rates.
+              </Text>
+            </View>
+          )
         ) : activeTab === 'labour' ? (
-          <View style={screenStyles.screenSection}>
-            <LabourRatesPanel onToast={showToast} />
-          </View>
+          access.canEditLabour ? (
+            <View style={screenStyles.screenSection}>
+              <LabourRatesPanel onToast={showToast} />
+            </View>
+          ) : (
+            <View style={screenStyles.emptyCard}>
+              <Text style={screenStyles.emptyText}>
+                You do not have permission to view or edit Labour Charges.
+              </Text>
+            </View>
+          )
         ) : activeTab === 'diamond' || activeTab === 'colorstone' ? (
-          <View style={screenStyles.screenSection}>
-            <StoneRatesPanel stoneType={activeTab} onToast={showToast} />
-          </View>
+          (activeTab === 'diamond' && access.canEditDiamond) ||
+          (activeTab === 'colorstone' && access.canEditColorstone) ? (
+            <View style={screenStyles.screenSection}>
+              <StoneRatesPanel stoneType={activeTab} onToast={showToast} />
+            </View>
+          ) : (
+            <View style={screenStyles.emptyCard}>
+              <Text style={screenStyles.emptyText}>
+                You do not have permission to view or edit {activeTab === 'diamond' ? 'Diamond' : 'Colorstone'} Rates.
+              </Text>
+            </View>
+          )
         ) : null}
       </ScrollView>
 

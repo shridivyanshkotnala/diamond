@@ -11,7 +11,10 @@ interface EmployeeListCardProps {
 }
 
 export function EmployeeListCard({ employee, onPress }: EmployeeListCardProps) {
-  const initial = employee.fullName.charAt(0).toUpperCase();
+  const nameParts = employee.fullName.trim().split(/\s+/);
+  const initial = nameParts.length > 1 
+    ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+    : employee.fullName.charAt(0).toUpperCase();
 
   return (
     <Pressable onPress={onPress} style={styles.card}>

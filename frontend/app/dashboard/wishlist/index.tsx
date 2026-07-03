@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 're
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { WishlistCard } from '@/components/wishlist/WishlistCard';
 import { WishlistScreenHeader } from '@/components/wishlist/WishlistScreenHeader';
@@ -77,6 +78,7 @@ export default function WishlistScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <BackgroundPattern />
       <WishlistScreenHeader onClearWishlist={handleClearWishlist} />
 
       {isLoading ? (
@@ -116,7 +118,7 @@ export default function WishlistScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: '#F9FAFB',
   },
   scroll: {
     flex: 1,
@@ -124,6 +126,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.screenHorizontal,
     paddingBottom: 120,
+    paddingTop: Spacing.lg,
   },
   loadingWrap: {
     flex: 1,

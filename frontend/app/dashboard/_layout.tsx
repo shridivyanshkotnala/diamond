@@ -1,6 +1,14 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { useMatricesStore } from '@/store/matricesStore';
 
 export default function DashboardLayout() {
+  const fetchValues = useMatricesStore((s) => s.fetchValues);
+
+  useEffect(() => {
+    void fetchValues();
+  }, [fetchValues]);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />

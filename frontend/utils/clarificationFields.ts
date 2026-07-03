@@ -1,5 +1,4 @@
 import type { ApiJewelleryType, JewelleryType } from '@/types/scanner';
-import { toApiJewelleryType } from '@/utils/scanMappers';
 
 const COMMON_FIELDS = ['grossWeight', 'netWeight', 'purity', 'labour', 'other'] as const;
 
@@ -114,5 +113,9 @@ export function getJewelleryTypeFromApi(apiType?: string | null): JewelleryType 
 }
 
 export function jewelleryTypeToApi(type: JewelleryType): ApiJewelleryType {
-  return toApiJewelleryType(type);
+  const map: Record<JewelleryType, ApiJewelleryType> = {
+    Diamond: 'DIAMOND',
+    Gold: 'GOLD',
+  };
+  return map[type] ?? 'DIAMOND';
 }

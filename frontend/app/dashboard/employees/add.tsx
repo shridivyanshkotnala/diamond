@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,6 +22,7 @@ import { GENDER_OPTIONS } from '@/constants/employeeData';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useEmployeeDraftStore } from '@/store/employeeDraftStore';
 import { useEmployeeStore } from '@/store/employeeStore';
+import { updateEmployeeApi } from '@/utils/employeeApi';
 import { validateEmail, validatePhone } from '@/utils/validation';
 
 const BUTTON_GREEN = '#1B3022';
@@ -34,9 +37,10 @@ export default function AddEmployeeScreen() {
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee);
 
   const [showGender, setShowGender] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const nextErrors = {
       fullName: !draft.fullName.trim() ? 'Full name is required' : null,
       phone: validatePhone(draft.phone),
@@ -47,14 +51,32 @@ export default function AddEmployeeScreen() {
     if (Object.values(nextErrors).some(Boolean)) return;
 
     if (mode === 'edit' && editEmployeeId) {
-      updateEmployee(editEmployeeId, {
-        fullName: draft.fullName,
-        phone: draft.phone,
-        email: draft.email,
-        gender: draft.gender,
-        designation: draft.designation,
-      });
-      router.back();
+      setSaving(true);
+      try {
+        const result = await updateEmployeeApi(editEmployeeId, {
+          name: draft.fullName,
+          phone: draft.phone,
+          email: draft.email,
+        });
+
+        if (!result.success) {
+          Alert.alert('Error', result.error ?? 'Failed to update employee details');
+          return;
+        }
+
+        updateEmployee(editEmployeeId, {
+          fullName: draft.fullName,
+          phone: draft.phone,
+          email: draft.email,
+          gender: draft.gender,
+          designation: draft.designation,
+        });
+        router.back();
+      } catch (err) {
+        Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update employee');
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -151,8 +173,17 @@ export default function AddEmployeeScreen() {
             {errors.designation ? <Text style={styles.error}>{errors.designation}</Text> : null}
           </View>
 
-          <TouchableOpacity activeOpacity={0.9} onPress={handleContinue} style={styles.continueBtn}>
-            <Text style={styles.continueText}>Continue</Text>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={handleContinue}
+            disabled={saving}
+            style={[styles.continueBtn, saving && styles.continueBtnDisabled]}
+          >
+            {saving ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.continueText}>Continue</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -253,6 +284,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,
+  },
+  continueBtnDisabled: {
+    opacity: 0.7,
   },
   continueText: {
     fontSize: 16,

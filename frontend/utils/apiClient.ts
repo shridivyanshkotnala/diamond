@@ -45,7 +45,9 @@ async function handleTokenRefresh(): Promise<string | null> {
       });
 
       if (!response.ok) {
-        state.logout();
+        if (response.status === 401 || response.status === 403) {
+          state.logout();
+        }
         return null;
       }
 
@@ -61,7 +63,7 @@ async function handleTokenRefresh(): Promise<string | null> {
       state.logout();
       return null;
     } catch (err) {
-      useAuthStore.getState().logout();
+      // Do not log out on network errors to prevent unintentional session termination
       return null;
     } finally {
       refreshPromise = null;

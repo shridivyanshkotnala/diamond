@@ -19,6 +19,13 @@ const labourRateSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    rupeesUnit: {
+      type: String,
+      enum: ['Per Gram', 'Per 10 Gram'],
+      required: function () {
+        return this.chargeType === 'AMOUNT';
+      },
+    },
   },
   {
     timestamps: true,

@@ -18,6 +18,9 @@ import type { GoldRate } from '@/types/rates';
 import { ApiError } from '@/utils/apiClient';
 import { formatKaratLabel } from '@/utils/goldRateUtils';
 import { fetchGoldRates } from '@/utils/ratesApi';
+import { useMatricesStore } from '@/store/matricesStore';
+import { useSettingsAccess } from '@/hooks/useSettingsAccess';
+import type { MatrixKey } from '@/constants/dashboardMatrices';
 
 const CARAT_ORDER = ['22Kt', '20Kt', '18Kt', '14Kt', '9Kt'];
 
@@ -40,6 +43,13 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [mcxLiveRate, setMcxLiveRate] = useState<number | null>(null);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
+  const { employee, userRole } = useSettingsAccess();
+  const globalMatrixValues = useMatricesStore((s) => s.values);
+  
+  // Use employee's granular matrix permissions if logged in as employee, otherwise fallback to global device values
+  const matrixValues = userRole === 'employee' && employee 
+    ? employee.permissions 
+    : globalMatrixValues;
   
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
   const today = new Date();
@@ -107,7 +117,7 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <>
-              {mcxLiveRate != null ? (
+              {mcxLiveRate != null && matrixValues['24k_mcx'] ? (
                 <View style={styles.mcxTopCard}>
                   <Text style={styles.mcxTopLabel}>MCX Gold Rate (24 Kt)</Text>
                   <Text style={styles.mcxTopValue}>₹ {mcxLiveRate.toLocaleString('en-IN')}</Text>
@@ -115,25 +125,48 @@ export default function DashboardScreen() {
               ) : null}
 
               {sortedGoldRates.length > 0 ? (
-                sortedGoldRates.map((rate) => (
-                  <View key={rate.carat} style={styles.rateCard}>
-                    <View style={styles.rateCardHeader}>
-                      <Text style={styles.cardKaratLabel}>Gold ({formatKaratLabel(rate.carat)}) MCX</Text>
-                      <Text style={styles.cardMcxValue}>₹ {rate.mcxRate?.toLocaleString('en-IN') || 0}</Text>
-                    </View>
+                sortedGoldRates.map((rate) => {
+                  const karatPrefix = rate.carat.replace('Kt', 'k').toLowerCase();
+                  const showMcx = matrixValues[`${karatPrefix}_mcx` as MatrixKey];
+                  const showCash = matrixValues[`${karatPrefix}_cash` as MatrixKey];
+                  const showRtgs = matrixValues[`${karatPrefix}_rtgs` as MatrixKey];
+                  
+                  if (!showMcx && !showCash && !showRtgs) return null;
 
-                    <View style={styles.rateCardBody}>
-                      <View style={styles.rateBoxLeft}>
-                        <Text style={styles.cashRateValue}>₹ {rate.cashRate?.toLocaleString('en-IN') || 0}</Text>
-                        <Text style={styles.rateSubtitle}>(Cash Rate)</Text>
+                  return (
+                    <View key={rate.carat} style={styles.rateCard}>
+                      <View style={styles.rateCardHeader}>
+                        <Text style={styles.cardKaratLabel}>
+                          Gold ({formatKaratLabel(rate.carat)}){showMcx ? ' MCX' : ''}
+                        </Text>
+                        {showMcx && (
+                          <Text style={styles.cardMcxValue}>₹ {rate.mcxRate?.toLocaleString('en-IN') || 0}</Text>
+                        )}
                       </View>
-                      <View style={styles.rateBoxRight}>
-                        <Text style={styles.rtgsRateValue}>₹ {rate.rtgsRate?.toLocaleString('en-IN') || 0}</Text>
-                        <Text style={styles.rtgsRateSubtitle}>(RTGS Rate)</Text>
-                      </View>
+
+                      {(showCash || showRtgs) && (
+                        <View style={styles.rateCardBody}>
+                          {showCash && (
+                            <View style={!showRtgs ? styles.rateBoxRight : styles.rateBoxLeft}>
+                              <Text style={!showRtgs ? styles.rtgsRateValue : styles.cashRateValue}>
+                                ₹ {rate.cashRate?.toLocaleString('en-IN') || 0}
+                              </Text>
+                              <Text style={!showRtgs ? styles.rtgsRateSubtitle : styles.rateSubtitle}>
+                                (Cash Rate)
+                              </Text>
+                            </View>
+                          )}
+                          {showRtgs && (
+                            <View style={styles.rateBoxRight}>
+                              <Text style={styles.rtgsRateValue}>₹ {rate.rtgsRate?.toLocaleString('en-IN') || 0}</Text>
+                              <Text style={styles.rtgsRateSubtitle}>(RTGS Rate)</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
                     </View>
-                  </View>
-                ))
+                  );
+                })
               ) : (
                 <View style={styles.emptyWrap}>
                   <Text style={styles.emptyText}>No gold rates available</Text>

@@ -11,6 +11,10 @@ export const DEFAULT_EMPLOYEE_PERMISSIONS: EmployeePermissions = {
   settings_inventory: false,
   settings_purity: false,
   settings_invoice: false,
+  edit_rate_gold: true,
+  edit_rate_diamond: true,
+  edit_rate_colorstone: true,
+  edit_rate_labour: true,
 };
 
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;

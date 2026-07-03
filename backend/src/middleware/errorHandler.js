@@ -14,9 +14,11 @@ const errorHandler = (err, req, res, next) => {
     'PHONE_ALREADY_EXISTS': { status: 409, msg: 'This phone number is already associated with an account.' },
     'REGISTRATION_SESSION_EXPIRED': { status: 410, msg: 'Registration session expired. Please verify GST again.' },
     'UNAUTHORIZED': { status: 401, msg: 'Missing or invalid authentication token.' },
+    'REFRESH_TOKEN_EXPIRED': { status: 401, msg: 'Your session has expired. Please log in again.' },
     'FORBIDDEN': { status: 403, msg: 'You do not have permission to access this resource.' },
     'INVALID_CREDENTIALS': { status: 401, msg: 'Invalid email or password.' },
-    'INVALID_PHONE_CREDENTIALS': { status: 401, msg: 'Invalid phone number or password.' }
+    'INVALID_PHONE_CREDENTIALS': { status: 401, msg: 'Invalid phone number or password.' },
+    'INVALID_EMPLOYEE_CREDENTIALS': { status: 401, msg: 'Invalid Employee ID or password.' }
   };
 
   let statusCode = err.statusCode || 500;

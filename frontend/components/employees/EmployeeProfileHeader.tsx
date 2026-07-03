@@ -13,7 +13,10 @@ interface EmployeeProfileHeaderProps {
 }
 
 export function EmployeeProfileHeader({ employee, onEdit, onDelete }: EmployeeProfileHeaderProps) {
-  const initial = employee.fullName.charAt(0).toUpperCase();
+  const nameParts = employee.fullName.trim().split(/\s+/);
+  const initial = nameParts.length > 1 
+    ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+    : employee.fullName.charAt(0).toUpperCase();
 
   return (
     <View style={styles.card}>

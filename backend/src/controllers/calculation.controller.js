@@ -27,12 +27,20 @@ const calculateMRP = async (req, res, next) => {
 
     // Fetch global labour rate for this business
     const globalLabour = await LabourRate.findOne({ businessId });
-    const labourCharge = globalLabour ? { type: globalLabour.chargeType, value: globalLabour.value } : null;
+    const labourCharge = globalLabour 
+      ? { type: globalLabour.chargeType, value: globalLabour.value, rupeesUnit: globalLabour.rupeesUnit } 
+      : null;
 
     let effectivePurityPercent = karatPurityPercent;
     if (customPurityPercent) {
        effectivePurityPercent = parseFloat(customPurityPercent) || karatPurityPercent;
     }
+
+    const {
+      labourPurityPercent,
+      labourChargeAmount,
+      labourChargeUnit,
+    } = req.body;
 
     // 2. Calculate Diamond Amount
     let diamondAmount = 0;
@@ -59,15 +67,38 @@ const calculateMRP = async (req, res, next) => {
     let pureWeight = 0;
     let labourAmount = 0;
 
-    if (labourCharge?.type === 'PERCENTAGE') {
-      const labourPercent = parseFloat(labourCharge.value) || 0;
-      pureWeight = numericNetWt * (labourPercent / 100);
-      labourAmount = 0; // Labour is included in pure weight markup
+    if (labourCharge) {
+      if (labourCharge.type === 'PERCENTAGE') {
+        const labourPercent = parseFloat(labourCharge.value) || 0;
+        pureWeight = numericNetWt * (labourPercent / 100);
+        labourAmount = 0; // Labour is included in pure weight markup
+      } else {
+        pureWeight = numericNetWt * (effectivePurityPercent / 100);
+        const labourRatePerUnit = parseFloat(labourCharge.value) || 0;
+        if (labourCharge.rupeesUnit === 'Per 10 Gram') {
+          labourAmount = numericNetWt * (labourRatePerUnit / 10);
+        } else {
+          labourAmount = numericNetWt * labourRatePerUnit;
+        }
+      }
     } else {
-      // Labour is AMOUNT (per gram)
-      pureWeight = numericNetWt * (effectivePurityPercent / 100);
-      const labourRatePerGm = parseFloat(labourCharge?.value) || 0;
-      labourAmount = numericNetWt * labourRatePerGm;
+      // Fallback to manual entry from review screen
+      if (labourPurityPercent) {
+        const manualPurity = parseFloat(labourPurityPercent.replace(/[^0-9.]/g, '')) || 0;
+        pureWeight = numericNetWt * (manualPurity / 100);
+        labourAmount = 0;
+      } else if (labourChargeAmount) {
+        pureWeight = numericNetWt * (effectivePurityPercent / 100);
+        const manualRate = parseFloat(labourChargeAmount) || 0;
+        if (labourChargeUnit === 'Per 10 Gram') {
+          labourAmount = numericNetWt * (manualRate / 10);
+        } else {
+          labourAmount = numericNetWt * manualRate;
+        }
+      } else {
+        pureWeight = numericNetWt * (effectivePurityPercent / 100);
+        labourAmount = 0;
+      }
     }
 
     // 5. Calculate Gold Amount
@@ -98,7 +129,7 @@ const calculateMRP = async (req, res, next) => {
         goldRateApplied: baseGoldRatePerGram,
         goldAmount,
         labourAmount,
-        labourChargeType: labourCharge ? labourCharge.type : 'NONE'
+        labourChargeType: labourCharge ? labourCharge.type : (labourPurityPercent ? 'PERCENTAGE' : (labourChargeAmount ? 'AMOUNT' : 'NONE'))
       },
       finalMRP
     };

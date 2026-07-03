@@ -12,7 +12,6 @@ export default function EmployeesLayout() {
       <Stack.Screen name="[id]" />
       <Stack.Screen name="add" />
       <Stack.Screen name="permissions" />
-      <Stack.Screen name="permissions-extra" />
       <Stack.Screen name="create-password" />
     </Stack>
   );

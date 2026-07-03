@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { getLaborValuesFromScanData, LaborSection } from '@/components/scanner/LaborSection';
 import { LabourChargeResultSection } from '@/components/scanner/LabourChargeResultSection';
 import { MrpBreakdownCard } from '@/components/scanner/MrpBreakdownCard';
 import { PriceCard } from '@/components/scanner/PriceCard';
@@ -125,7 +126,26 @@ export function ScannerFinalTab({
           ))
         : <StoneTypeSequence rows={pricing.stoneRows} />}
 
-      <LabourChargeResultSection pricing={pricing} />
+      {editable && pricing.labourInputMode === 'none' ? (
+        <LaborSection
+          values={getLaborValuesFromScanData(scanData)}
+          onChange={(values) => {
+            if (values.labourPurityPercent !== undefined) {
+              onFieldChange?.('labourPurityPercent', values.labourPurityPercent);
+            }
+            if (values.labourChargeAmount !== undefined) {
+              onFieldChange?.('labourChargeAmount', values.labourChargeAmount);
+            }
+            if (values.labourChargeUnit !== undefined) {
+              onFieldChange?.('labourChargeUnit', values.labourChargeUnit);
+            }
+          }}
+          showValidationError={showLabourValidation}
+          netWeightGrams={scanData.netWt}
+        />
+      ) : (
+        <LabourChargeResultSection pricing={pricing} />
+      )}
 
       {!editable ? (
         <MrpBreakdownCard

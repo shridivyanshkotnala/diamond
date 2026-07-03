@@ -38,7 +38,13 @@ export function canAccessSettingsItem(
   }
 
   if (itemId === 'masters' || itemId === 'market-rates') {
-    return permissions?.edit_market_prices === true;
+    return (
+      permissions?.edit_rate_gold === true ||
+      permissions?.edit_rate_diamond === true ||
+      permissions?.edit_rate_colorstone === true ||
+      permissions?.edit_rate_labour === true ||
+      permissions?.edit_formulae === true
+    );
   }
 
   if (OWNER_ONLY_SETTINGS_IDS.has(itemId)) {

@@ -290,6 +290,7 @@ function normalizeLabourRate(raw: Record<string, unknown>): LabourRate | null {
     id: readString(raw.id ?? raw._id),
     chargeType,
     value,
+    rupeesUnit: (readString(raw.rupeesUnit) as 'Per Gram' | 'Per 10 Gram') || undefined,
     updatedAt: readString(raw.updatedAt ?? raw.updated_at),
   };
 }

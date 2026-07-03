@@ -37,6 +37,7 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [percentage, setPercentage] = useState('');
+  const [rupeesUnit, setRupeesUnit] = useState<'Per Gram' | 'Per 10 Gram'>('Per Gram');
   const [formErrors, setFormErrors] = useState<LabourRateFormErrors>({});
 
   const notify = (message: string, type: ToastType = 'info') => {
@@ -70,6 +71,7 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
     const values = labourRateToFormValues(labourRate);
     setAmount(values.amount);
     setPercentage(values.percentage);
+    setRupeesUnit(values.rupeesUnit);
     setFormErrors({});
     setModalVisible(true);
   };
@@ -106,7 +108,7 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
       return;
     }
 
-    const payload = labourRateFormToPayload(amount, percentage);
+    const payload = labourRateFormToPayload(amount, percentage, rupeesUnit);
     if (!payload) return;
 
     setSaving(true);
@@ -141,7 +143,6 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
   return (
     <>
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Labour Charges</Text>
         <View style={styles.row}>
           <Text style={styles.label}>Labour charges :</Text>
           <Text style={[styles.value, isEmpty && styles.valueEmpty]}>{displayValue}</Text>
@@ -161,12 +162,14 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
         visible={modalVisible}
         amount={amount}
         percentage={percentage}
+        rupeesUnit={rupeesUnit}
         amountDisabled={Boolean(percentage.trim())}
         percentageDisabled={Boolean(amount.trim())}
         errors={formErrors}
         saving={saving}
         onAmountChange={handleAmountChange}
         onPercentageChange={handlePercentageChange}
+        onRupeesUnitChange={setRupeesUnit}
         onClose={closeEdit}
         onSave={() => void handleSave()}
       />

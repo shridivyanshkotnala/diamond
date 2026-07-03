@@ -231,10 +231,9 @@ export interface CalculateMrpPayload {
   netWt: number;
   purityKarat: string;
   customPurityPercent?: number;
-  labourCharge?: {
-    type: 'PERCENTAGE' | 'AMOUNT';
-    value: number;
-  };
+  labourPurityPercent?: string;
+  labourChargeAmount?: string;
+  labourChargeUnit?: string;
   diamonds: Array<{ weight: number; rate: number }>;
   colorstones: Array<{ weight: number; rate: number }>;
 }

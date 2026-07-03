@@ -7,6 +7,9 @@ const { requirePermission } = require('../middleware/rbac.middleware');
 router.use(authenticateJWT);
 
 router.get('/formula', settingsController.getFormulaConfig);
-router.post('/formula', requirePermission('manageRates'), settingsController.updateFormulaConfig);
+router.post('/formula', requirePermission('manageFormulae'), settingsController.updateFormulaConfig);
+
+router.get('/matrices', settingsController.getDashboardMatrices);
+router.post('/matrices', requirePermission('homeDashboardMetricsControls'), settingsController.updateDashboardMatrices);
 
 module.exports = router;

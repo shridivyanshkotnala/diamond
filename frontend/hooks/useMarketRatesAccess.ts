@@ -5,24 +5,33 @@ import { useSettingsAccess } from '@/hooks/useSettingsAccess';
 
 export function useMarketRatesAccess() {
   const { userRole, employee } = useSettingsAccess();
-  const canEditMarketRates =
-    userRole === 'business' || employee?.permissions.edit_market_prices === true;
+  
+  const canEditGold = userRole === 'business' || employee?.permissions.edit_rate_gold === true;
+  const canEditDiamond = userRole === 'business' || employee?.permissions.edit_rate_diamond === true;
+  const canEditColorstone = userRole === 'business' || employee?.permissions.edit_rate_colorstone === true;
+  const canEditLabour = userRole === 'business' || employee?.permissions.edit_rate_labour === true;
+  
+  const hasAnyAccess = canEditGold || canEditDiamond || canEditColorstone || canEditLabour;
 
   return {
-    canEditMarketRates,
+    canEditGold,
+    canEditDiamond,
+    canEditColorstone,
+    canEditLabour,
     canViewMarketRates: true,
+    hasAnyAccess,
   };
 }
 
 export function useRequireMarketRatesAccess() {
   const router = useRouter();
-  const { canEditMarketRates } = useMarketRatesAccess();
+  const access = useMarketRatesAccess();
 
   useEffect(() => {
-    if (!canEditMarketRates) {
+    if (!access.hasAnyAccess) {
       router.replace('/dashboard/settings');
     }
-  }, [canEditMarketRates, router]);
+  }, [access.hasAnyAccess, router]);
 
-  return canEditMarketRates;
+  return access;
 }

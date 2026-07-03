@@ -207,13 +207,25 @@ const getLabourRate = async (req, res) => {
 
 const upsertLabourRate = async (req, res) => {
   try {
-    const { chargeType, value } = req.body;
+    const { chargeType, value, rupeesUnit } = req.body;
     const businessId = req.user.businessId;
 
-    if (!chargeType || value == null) {
+    if (!chargeType) {
       return res.status(400).json({
         success: false,
-        message: 'chargeType and value are required',
+        message: 'chargeType is required',
+      });
+    }
+
+    if (chargeType === 'NONE') {
+      await LabourRate.findOneAndDelete({ businessId });
+      return res.status(200).json({ success: true, data: null });
+    }
+
+    if (value == null) {
+      return res.status(400).json({
+        success: false,
+        message: 'value is required when setting a rate',
       });
     }
 
@@ -221,6 +233,13 @@ const upsertLabourRate = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'chargeType must be AMOUNT or PERCENTAGE',
+      });
+    }
+
+    if (chargeType === 'AMOUNT' && !['Per Gram', 'Per 10 Gram'].includes(rupeesUnit)) {
+      return res.status(400).json({
+        success: false,
+        message: 'rupeesUnit must be "Per Gram" or "Per 10 Gram" when chargeType is AMOUNT',
       });
     }
 
@@ -239,9 +258,16 @@ const upsertLabourRate = async (req, res) => {
       });
     }
 
+    const updateData = { chargeType, value: numericValue };
+    if (chargeType === 'AMOUNT') {
+      updateData.rupeesUnit = rupeesUnit;
+    } else {
+      updateData.$unset = { rupeesUnit: 1 };
+    }
+
     const labourRate = await LabourRate.findOneAndUpdate(
       { businessId },
-      { chargeType, value: numericValue },
+      updateData,
       { new: true, upsert: true },
     );
 

@@ -16,17 +16,6 @@ export function EmployeePermissionsPreview({ onEdit }: EmployeePermissionsPrevie
         <Text style={styles.permissionsTitle}>Employee Permissions</Text>
         <SquarePen size={16} color={Colors.textPrimary} />
       </Pressable>
-
-      <View style={styles.matricesSection}>
-        <Text style={styles.matricesTitle}>Dashboard Matrices</Text>
-        <Text style={styles.matricesSubtitle}>Price visibility on home screen</Text>
-        <View style={styles.previewRow}>
-          <Text style={styles.previewLabel}>24K With Tax</Text>
-          <View style={styles.checkbox}>
-            <Check size={14} color={Colors.white} strokeWidth={3} />
-          </View>
-        </View>
-      </View>
     </View>
   );
 }
@@ -59,38 +48,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  matricesSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  matricesTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  matricesSubtitle: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  previewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  previewLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: ACCENT_GOLD,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
 });

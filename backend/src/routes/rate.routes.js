@@ -9,23 +9,23 @@ router.use(authenticateJWT);
 // GET requests are open to all authenticated users (Employees + Owners)
 // Gold
 router.get('/gold', rateController.getGoldRates);
-router.post('/gold', requirePermission('manageRates'), rateController.updateGoldRate);
+router.post('/gold', requirePermission('editRateGold'), rateController.updateGoldRate);
 
 router.get('/gold/tax-settings', rateController.getGoldTaxSettings);
-router.post('/gold/tax-settings', requirePermission('manageRates'), rateController.updateGoldTaxSettings);
+router.post('/gold/tax-settings', requirePermission('editRateGold'), rateController.updateGoldTaxSettings);
 
 // Diamond
 router.get('/diamond', rateController.getDiamondRates);
-router.post('/diamond', requirePermission('manageRates'), rateController.addOrUpdateDiamondRate);
-router.delete('/diamond/:id', requirePermission('manageRates'), rateController.deleteDiamondRate);
+router.post('/diamond', requirePermission('editRateDiamond'), rateController.addOrUpdateDiamondRate);
+router.delete('/diamond/:id', requirePermission('editRateDiamond'), rateController.deleteDiamondRate);
 
 // Colourstone
 router.get('/colorstone', rateController.getColorstoneRates);
-router.post('/colorstone', requirePermission('manageRates'), rateController.addOrUpdateColorstoneRate);
-router.delete('/colorstone/:id', requirePermission('manageRates'), rateController.deleteColorstoneRate);
+router.post('/colorstone', requirePermission('editRateColorstone'), rateController.addOrUpdateColorstoneRate);
+router.delete('/colorstone/:id', requirePermission('editRateColorstone'), rateController.deleteColorstoneRate);
 
 // Labour
 router.get('/labour', rateController.getLabourRate);
-router.post('/labour', requirePermission('manageRates'), rateController.upsertLabourRate);
+router.post('/labour', requirePermission('editRateLabour'), rateController.upsertLabourRate);
 
 module.exports = router;

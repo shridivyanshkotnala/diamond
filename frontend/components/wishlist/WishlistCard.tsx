@@ -13,34 +13,36 @@ interface WishlistCardProps {
 
 export function WishlistCard({ item, onPress, onDelete }: WishlistCardProps) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      {/* ─── Header row: title + delete ─── */}
-      <View style={styles.headerRow}>
-        <View style={styles.titleGroup}>
-          <Text style={styles.title}>{item.title}</Text>
-        </View>
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          hitSlop={12}
-          style={styles.deleteBtn}
-        >
-          <Trash2 size={18} color="#E53935" />
-        </Pressable>
-      </View>
-
-      <View style={styles.bottomRow}>
-        {/* ─── Price badge ─── */}
-        <View style={styles.priceBadge}>
-          <Text style={styles.priceText}>{item.priceBadge}</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.cardPressed]}>
+      <View style={styles.card}>
+        {/* ─── Header: Title & Timestamp ─── */}
+        <View style={styles.headerRow}>
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.timestamp}>
+            {formatWishlistTimestamp(item.scanTimestamp || item.addedAt)}
+          </Text>
         </View>
 
-        {/* ─── Scan timestamp ─── */}
-        <Text style={styles.timestamp}>
-          {formatWishlistTimestamp(item.scanTimestamp || item.addedAt)}
-        </Text>
+        {/* ─── Divider ─── */}
+        <View style={styles.divider} />
+
+        {/* ─── Footer: Price & Actions ─── */}
+        <View style={styles.bottomRow}>
+          <View style={styles.priceBadge}>
+            <Text style={styles.priceText}>{item.priceBadge}</Text>
+          </View>
+
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            hitSlop={12}
+            style={styles.deleteBtn}
+          >
+            <Trash2 size={18} color="#E53935" />
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
@@ -49,16 +51,16 @@ export function WishlistCard({ item, onPress, onDelete }: WishlistCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.white,
-    borderRadius: Radius.card,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E8E8E8', // Explicitly visible subtle border
-    padding: Spacing.xl, // Increased padding
-    marginBottom: Spacing.lg,
+    borderColor: 'rgba(0,0,0,0.06)',
+    padding: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 3, // Stronger elevation for Android
+    elevation: 3,
   },
   cardPressed: {
     opacity: 0.7,
@@ -67,26 +69,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
-  },
-  titleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    flex: 1,
-    paddingRight: Spacing.sm,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.textPrimary,
+    marginRight: 12,
   },
-
-  deleteBtn: {
-    padding: 6,
-    backgroundColor: Colors.dangerBg,
-    borderRadius: 8,
+  timestamp: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.textMuted,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginBottom: 12,
   },
   bottomRow: {
     flexDirection: 'row',
@@ -95,21 +95,19 @@ const styles = StyleSheet.create({
   },
   priceBadge: {
     backgroundColor: Colors.primary,
-    borderRadius: Radius.badge,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-  
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   priceText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.white,
   },
-  timestamp: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.textMuted,
-    letterSpacing: 0.2,
+  deleteBtn: {
+    padding: 8,
+    backgroundColor: Colors.dangerBg,
+    borderRadius: 10,
   },
 });
 

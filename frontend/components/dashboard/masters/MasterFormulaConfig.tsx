@@ -88,7 +88,11 @@ function Formula2RowItem({
   };
 
   return (
-    <View style={styles.f2Row}>
+    <View style={[
+      styles.f2Row, 
+      { zIndex: 1000 - rowIndex },
+      dropdownOpen && { marginBottom: karatOptions.length * 38 }
+    ]}>
       <View style={styles.f2RowFormula}>
         <View style={styles.f2RowFormulaLine}>
           <Text style={styles.f2FormulaText}>Gold Amount = Rate of </Text>
@@ -192,7 +196,7 @@ function AddKaratPicker({ options, onSelect, onCancel }: AddKaratPickerProps) {
   if (options.length === 0) return null;
 
   return (
-    <View style={styles.addPickerCard}>
+    <View style={[styles.addPickerCard, open && { marginBottom: options.length * 38 }]}>
       <Text style={styles.addPickerLabel}>Select Karat</Text>
       <Pressable onPress={() => setOpen((prev) => !prev)} style={styles.karatDropdown}>
         <Text style={styles.karatDropdownText}>{selected}</Text>
@@ -305,11 +309,13 @@ export function MasterFormulaConfig({
           ))}
 
           {addingField ? (
-            <AddKaratPicker
-              options={addOptions}
-              onSelect={handleAddRow}
-              onCancel={() => setAddingField(false)}
-            />
+            <View style={{ zIndex: 10 }}>
+              <AddKaratPicker
+                options={addOptions}
+                onSelect={handleAddRow}
+                onCancel={() => setAddingField(false)}
+              />
+            </View>
           ) : (
             <Pressable
               onPress={() => !disabled && canAddMore && setAddingField(true)}
@@ -549,7 +555,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    marginTop: 180, // Provides enough scrollable distance so the dropdown doesn't overlap it
+    marginTop: Spacing.xxl, 
   },
   restoreBtn: {
     flex: 1,

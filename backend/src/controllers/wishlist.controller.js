@@ -9,8 +9,9 @@ const { sendSuccess } = require('../utils/apiResponse');
 const addToWishlist = async (req, res, next) => {
   try {
     const businessId = req.user?.businessId || req.user?._id;
-    if (!businessId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized – no business context' });
+    const userId = req.user?.userId;
+    if (!businessId || !userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized – missing business or user context' });
     }
 
     const { itemId, title, tagCode, totalMrp, priceBadge, scanTimestamp, snapshot } = req.body;
@@ -22,12 +23,13 @@ const addToWishlist = async (req, res, next) => {
       });
     }
 
-    // Upsert by itemId + businessId so duplicate taps are idempotent per business
+    // Upsert by itemId + businessId + userId so duplicate taps are idempotent per user
     const item = await Wishlist.findOneAndUpdate(
-      { itemId, businessId },
+      { itemId, businessId, userId },
       {
         $setOnInsert: {
           businessId,
+          userId,
           itemId,
           title,
           tagCode,
@@ -53,12 +55,13 @@ const addToWishlist = async (req, res, next) => {
 const getWishlist = async (req, res, next) => {
   try {
     const businessId = req.user?.businessId || req.user?._id;
-    if (!businessId) {
+    const userId = req.user?.userId;
+    if (!businessId || !userId) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const items = await Wishlist.find({ businessId }).sort({ createdAt: -1 }).lean();
-    console.log('Fetching wishlist for businessId:', businessId, 'Found:', items.length);
+    const items = await Wishlist.find({ businessId, userId }).sort({ createdAt: -1 }).lean();
+    console.log('Fetching wishlist for businessId:', businessId, 'userId:', userId, 'Found:', items.length);
 
     sendSuccess(res, { items });
   } catch (err) {
@@ -73,9 +76,10 @@ const getWishlist = async (req, res, next) => {
 const deleteWishlistItem = async (req, res, next) => {
   try {
     const businessId = req.user?.businessId || req.user?._id;
+    const userId = req.user?.userId;
     const { itemId } = req.params;
 
-    const result = await Wishlist.deleteOne({ itemId, businessId });
+    const result = await Wishlist.deleteOne({ itemId, businessId, userId });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ success: false, message: 'Wishlist item not found' });
@@ -94,11 +98,12 @@ const deleteWishlistItem = async (req, res, next) => {
 const clearWishlist = async (req, res, next) => {
   try {
     const businessId = req.user?.businessId || req.user?._id;
-    if (!businessId) {
+    const userId = req.user?.userId;
+    if (!businessId || !userId) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    await Wishlist.deleteMany({ businessId });
+    await Wishlist.deleteMany({ businessId, userId });
 
     sendSuccess(res, {});
   } catch (err) {

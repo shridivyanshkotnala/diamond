@@ -29,6 +29,7 @@ export default function ScanResultsScreen() {
   const demoResult = isDemoScanMode() ? MOCK_SCAN_RESULT : null;
 
   const [addingToWishlist, setAddingToWishlist] = useState(false);
+  const [hasAdded, setHasAdded] = useState(false);
 
   const wishlistItem = params.wishlistId ? getWishlistItem(String(params.wishlistId)) : undefined;
   const isFromWishlist = params.fromWishlist === '1' && Boolean(wishlistItem);
@@ -76,6 +77,7 @@ export default function ScanResultsScreen() {
         scanTimestamp: new Date().toISOString(),
       });
       await addWishlistItem(item);
+      setHasAdded(true);
       Alert.alert('Wishlist', 'Item added to your wishlist.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add item. Please try again.';
@@ -95,10 +97,13 @@ export default function ScanResultsScreen() {
         <View className="flex-row gap-3">
           {!isFromWishlist ? (
             <OutlineButton
-              title={addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
+              title={hasAdded ? 'Item Added' : addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
               onPress={handleAddToWishlist}
+              disabled={hasAdded || addingToWishlist}
               icon={
-                addingToWishlist ? (
+                hasAdded ? (
+                  <CheckCircle size={18} color="#1A332E" />
+                ) : addingToWishlist ? (
                   <ActivityIndicator size={16} color="#1A332E" />
                 ) : (
                   <Heart size={18} color="#1A332E" />
