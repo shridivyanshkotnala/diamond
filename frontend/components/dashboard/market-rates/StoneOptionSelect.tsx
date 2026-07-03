@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
 import { Colors, Radius } from '@/constants/theme';
@@ -38,38 +38,49 @@ export function StoneOptionSelect({
         <ChevronDown size={16} color={Colors.textMuted} />
       </Pressable>
       {open ? (
-        <ScrollView 
-          style={styles.menu} 
-          nestedScrollEnabled 
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {allowClear ? (
-            <Pressable
-              onPress={() => {
-                onChange('');
-                setOpen(false);
-              }}
-              style={styles.menuItem}
-            >
-              <Text style={styles.menuItemMuted}>None</Text>
-            </Pressable>
-          ) : null}
-          {options.map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              style={[styles.menuItem, value === option && styles.menuItemActive]}
-            >
-              <Text style={[styles.menuItemText, value === option && styles.menuItemTextActive]}>
-                {option}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View style={styles.menu}>
+          <FlatList
+            data={allowClear ? ['None', ...options] : options}
+            keyExtractor={(item) => item}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            renderItem={({ item }) => {
+              if (item === 'None') {
+                return (
+                  <Pressable
+                    onPress={() => {
+                      onChange('');
+                      setOpen(false);
+                    }}
+                    style={styles.menuItem}
+                  >
+                    <Text style={styles.menuItemMuted}>None</Text>
+                  </Pressable>
+                );
+              }
+              const option = item;
+              return (
+                <Pressable
+                  onPress={() => {
+                    onChange(option);
+                    setOpen(false);
+                  }}
+                  style={[styles.menuItem, value === option && styles.menuItemActive]}
+                >
+                  <Text
+                    style={[
+                      styles.menuItemText,
+                      value === option && styles.menuItemTextActive,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </Pressable>
+              );
+            }}
+          />
+        </View>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
