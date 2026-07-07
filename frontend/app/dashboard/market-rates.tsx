@@ -146,8 +146,14 @@ export default function MarketRatesScreen() {
 
   const mcxLiveRate = goldData?.mcxLiveRate ?? 0;
   const goldRates = goldData?.rates ?? [];
-  const supremeRtgsChange = goldData?.supremeChanges?.rtgsChange ?? 0;
-  const supremeCashChange = goldData?.supremeChanges?.cashChange ?? 0;
+  const supremeRtgsBase =
+    goldData?.supremeChanges?.supremeRtgs ??
+    mcxLiveRate + (goldData?.supremeChanges?.rtgsChange ?? 0);
+  const supremeCashBase =
+    goldData?.supremeChanges?.supremeCash ??
+    mcxLiveRate + (goldData?.supremeChanges?.cashChange ?? 0);
+  const supremeRtgsChange = supremeRtgsBase - mcxLiveRate;
+  const supremeCashChange = supremeCashBase - mcxLiveRate;
   const rtgsChange = goldData?.taxSettings?.rtgsChangeBy ?? 0;
   const cashChange = goldData?.taxSettings?.cashChangeBy ?? 0;
   const scannerCalculationUse: ScannerCalculationUse =
@@ -155,8 +161,8 @@ export default function MarketRatesScreen() {
 
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
 
-  const rtgsFinalRate = mcxLiveRate + supremeRtgsChange + rtgsChange;
-  const cashFinalRate = mcxLiveRate + supremeCashChange + cashChange;
+  const rtgsFinalRate = supremeRtgsBase + rtgsChange;
+  const cashFinalRate = supremeCashBase + cashChange;
 
   const activeBaseRate = useMemo(
     () => deriveActiveBaseRate(scannerCalculationUse, mcxLiveRate, rtgsFinalRate, cashFinalRate),

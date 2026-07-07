@@ -21,6 +21,7 @@ import type { GoldRate } from '@/types/rates';
 import type { ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import { getBusinessProfile, formatProfileValue } from '@/utils/businessProfile';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
+import type { ScannerCalculationUse } from '@/utils/goldRateUtils';
 import {
   GST_RATE_OPTIONS,
   buildGoldLineItemRow,
@@ -268,6 +269,11 @@ export function InvoiceGenerationBilling({
 
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
+  const [supremeRtgsChange, setSupremeRtgsChange] = useState(0);
+  const [supremeCashChange, setSupremeCashChange] = useState(0);
+  const [rtgsChange, setRtgsChange] = useState(0);
+  const [cashChange, setCashChange] = useState(0);
+  const [scannerCalculationUse, setScannerCalculationUse] = useState<ScannerCalculationUse>('rtgs');
   const [ratesLoading, setRatesLoading] = useState(true);
   const [invoiceDateTime] = useState(() => formatInvoiceDateTime());
   const [previewInvoiceNumber, setPreviewInvoiceNumber] = useState<string>('Loading next number...');
@@ -289,10 +295,28 @@ export function InvoiceGenerationBilling({
         if (cancelled) return;
         setGoldRates(response.rates);
         setMcxLiveRate(response.mcxLiveRate);
+        const supremeRtgsBase =
+          response.supremeChanges?.supremeRtgs ??
+          response.mcxLiveRate + (response.supremeChanges?.rtgsChange ?? 0);
+        const supremeCashBase =
+          response.supremeChanges?.supremeCash ??
+          response.mcxLiveRate + (response.supremeChanges?.cashChange ?? 0);
+        setSupremeRtgsChange(supremeRtgsBase - response.mcxLiveRate);
+        setSupremeCashChange(supremeCashBase - response.mcxLiveRate);
+        setRtgsChange(response.taxSettings?.rtgsChangeBy ?? 0);
+        setCashChange(response.taxSettings?.cashChangeBy ?? 0);
+        setScannerCalculationUse(
+          response.taxSettings?.scannerCalculationUse === 'cash' ? 'cash' : 'rtgs',
+        );
       } catch {
         if (!cancelled) {
           setGoldRates([]);
           setMcxLiveRate(0);
+          setSupremeRtgsChange(0);
+          setSupremeCashChange(0);
+          setRtgsChange(0);
+          setCashChange(0);
+          setScannerCalculationUse('rtgs');
         }
       } finally {
         if (!cancelled) setRatesLoading(false);
@@ -337,16 +361,33 @@ export function InvoiceGenerationBilling({
   }, [diamonds, colorstones]);
 
   const lineItemRows = useMemo(() => {
-    const { displayRates } = prepareDisplayGoldRates(goldRates, mcxLiveRate);
+    const { displayRates, activeBaseRate } = prepareDisplayGoldRates(
+      goldRates,
+      mcxLiveRate,
+      supremeRtgsChange + rtgsChange,
+      supremeCashChange + cashChange,
+      scannerCalculationUse,
+    );
     const goldRow = buildGoldLineItemRow({
       scanData,
       goldRates: displayRates,
-      activeBaseRate: mcxLiveRate,
+      activeBaseRate,
       selectedKarat,
     });
     const stoneRows = buildStoneLineItemRows(stoneEntries);
     return [goldRow, ...stoneRows].filter(row => row.price > 0 && row.qty > 0);
-  }, [goldRates, mcxLiveRate, scanData, selectedKarat, stoneEntries]);
+  }, [
+    goldRates,
+    mcxLiveRate,
+    supremeRtgsChange,
+    supremeCashChange,
+    rtgsChange,
+    cashChange,
+    scannerCalculationUse,
+    scanData,
+    selectedKarat,
+    stoneEntries,
+  ]);
 
   const subtotal = useMemo(() => computeInvoiceSubtotal(lineItemRows), [lineItemRows]);
   const gstAmount = useMemo(() => computeGstAmount(subtotal, gstRate), [subtotal, gstRate]);

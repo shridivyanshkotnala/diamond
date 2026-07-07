@@ -21,6 +21,7 @@ import {
 import { apiGenerateInvoice, type InvoiceLineItemPayload } from '@/utils/invoiceApi';
 import { amountInWords } from '@/utils/numberToWords';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
+import type { ScannerCalculationUse } from '@/utils/goldRateUtils';
 import { parseStoneArraysFromStructuredData } from '@/utils/stoneSequenceUtils';
 import { buildDisplayStoneBlocks } from '@/utils/stoneSequenceUtils';
 import { fetchGoldRates } from '@/utils/ratesApi';
@@ -30,6 +31,11 @@ export default function InvoicePreviewScreen() {
   const [generating, setGenerating] = useState(false);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
+  const [supremeRtgsChange, setSupremeRtgsChange] = useState(0);
+  const [supremeCashChange, setSupremeCashChange] = useState(0);
+  const [rtgsChange, setRtgsChange] = useState(0);
+  const [cashChange, setCashChange] = useState(0);
+  const [scannerCalculationUse, setScannerCalculationUse] = useState<ScannerCalculationUse>('rtgs');
 
   const scanData = useScannerStore((state) => state.scanData);
   const structuredData = useScannerStore((state) => state.structuredData);
@@ -49,6 +55,19 @@ export default function InvoicePreviewScreen() {
         if (cancelled) return;
         setGoldRates(response.rates);
         setMcxLiveRate(response.mcxLiveRate);
+        const supremeRtgsBase =
+          response.supremeChanges?.supremeRtgs ??
+          response.mcxLiveRate + (response.supremeChanges?.rtgsChange ?? 0);
+        const supremeCashBase =
+          response.supremeChanges?.supremeCash ??
+          response.mcxLiveRate + (response.supremeChanges?.cashChange ?? 0);
+        setSupremeRtgsChange(supremeRtgsBase - response.mcxLiveRate);
+        setSupremeCashChange(supremeCashBase - response.mcxLiveRate);
+        setRtgsChange(response.taxSettings?.rtgsChangeBy ?? 0);
+        setCashChange(response.taxSettings?.cashChangeBy ?? 0);
+        setScannerCalculationUse(
+          response.taxSettings?.scannerCalculationUse === 'cash' ? 'cash' : 'rtgs',
+        );
       })
       .catch(() => { /* keep zeros on error */ });
     return () => { cancelled = true; };
@@ -66,18 +85,36 @@ export default function InvoicePreviewScreen() {
 
   // Build line items (same logic as InvoiceGenerationBilling)
   const lineItemRows = useMemo(() => {
-    const { displayRates } = prepareDisplayGoldRates(goldRates, mcxLiveRate);
+    const { displayRates, activeBaseRate } = prepareDisplayGoldRates(
+      goldRates,
+      mcxLiveRate,
+      supremeRtgsChange + rtgsChange,
+      supremeCashChange + cashChange,
+      scannerCalculationUse,
+    );
     const goldRow = buildGoldLineItemRow({
       scanData,
       goldRates: displayRates,
-      activeBaseRate: mcxLiveRate,
+      activeBaseRate,
       selectedKarat,
     });
     const stoneBlocks = buildDisplayStoneBlocks(diamonds, colorstones);
     const stoneEntries = stoneBlocks.map((b) => b.entry);
     const stoneRows = buildStoneLineItemRows(stoneEntries);
     return [goldRow, ...stoneRows];
-  }, [goldRates, mcxLiveRate, scanData, selectedKarat, diamonds, colorstones]);
+  }, [
+    goldRates,
+    mcxLiveRate,
+    supremeRtgsChange,
+    supremeCashChange,
+    rtgsChange,
+    cashChange,
+    scannerCalculationUse,
+    scanData,
+    selectedKarat,
+    diamonds,
+    colorstones,
+  ]);
 
   const subtotal = useMemo(() => computeInvoiceSubtotal(lineItemRows), [lineItemRows]);
   const gstAmount = useMemo(() => computeGstAmount(subtotal, gstRate), [subtotal, gstRate]);
