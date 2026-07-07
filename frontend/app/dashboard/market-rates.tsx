@@ -152,8 +152,6 @@ export default function MarketRatesScreen() {
   const supremeCashBase =
     goldData?.supremeChanges?.supremeCash ??
     mcxLiveRate + (goldData?.supremeChanges?.cashChange ?? 0);
-  const supremeRtgsChange = supremeRtgsBase - mcxLiveRate;
-  const supremeCashChange = supremeCashBase - mcxLiveRate;
   const rtgsChange = goldData?.taxSettings?.rtgsChangeBy ?? 0;
   const cashChange = goldData?.taxSettings?.cashChangeBy ?? 0;
   const scannerCalculationUse: ScannerCalculationUse =
@@ -585,8 +583,8 @@ export default function MarketRatesScreen() {
       <GoldRateSettingsModal
         visible={taxSettingsVisible}
         mcxLiveRate={mcxLiveRate}
-        supremeRtgsChange={supremeRtgsChange}
-        supremeCashChange={supremeCashChange}
+        supremeRtgsRate={supremeRtgsBase}
+        supremeCashRate={supremeCashBase}
         rtgsChange={rtgsChange}
         cashChange={cashChange}
         rtgsFinalRate={rtgsFinalRate}
