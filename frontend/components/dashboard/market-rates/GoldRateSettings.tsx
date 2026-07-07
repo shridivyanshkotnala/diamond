@@ -216,8 +216,8 @@ function RateCard({
 interface GoldRateSettingsModalProps {
   visible: boolean;
   mcxLiveRate: number;
-  supremeRtgsRate: number;
-  supremeCashRate: number;
+  supremeRtgsChange: number;
+  supremeCashChange: number;
   rtgsChange: number;
   cashChange: number;
   rtgsFinalRate: number;
@@ -229,8 +229,8 @@ interface GoldRateSettingsModalProps {
 export function GoldRateSettingsModal({
   visible,
   mcxLiveRate,
-  supremeRtgsRate,
-  supremeCashRate,
+  supremeRtgsChange,
+  supremeCashChange,
   rtgsChange,
   cashChange,
   rtgsFinalRate,
@@ -267,15 +267,13 @@ export function GoldRateSettingsModal({
   const cashDraftChange = useMemo(() => signedValue(cashSign, cashAmount), [cashSign, cashAmount]);
   const hasChanges = !isSameNumber(rtgsDraftChange, savedRtgsChange) || !isSameNumber(cashDraftChange, savedCashChange);
 
-  const rtgsCurrentRate = useMemo(() => supremeRtgsRate, [supremeRtgsRate]);
-  const cashCurrentRate = useMemo(() => supremeCashRate, [supremeCashRate]);
-  const rtgsSupremeChange = useMemo(
-    () => rtgsCurrentRate - mcxLiveRate,
-    [rtgsCurrentRate, mcxLiveRate],
+  const rtgsCurrentRate = useMemo(
+    () => mcxLiveRate + supremeRtgsChange,
+    [mcxLiveRate, supremeRtgsChange],
   );
-  const cashSupremeChange = useMemo(
-    () => cashCurrentRate - mcxLiveRate,
-    [cashCurrentRate, mcxLiveRate],
+  const cashCurrentRate = useMemo(
+    () => mcxLiveRate + supremeCashChange,
+    [mcxLiveRate, supremeCashChange],
   );
   const rtgsLiveFinal = useMemo(
     () => rtgsCurrentRate + rtgsDraftChange,
@@ -343,26 +341,26 @@ export function GoldRateSettingsModal({
 
             <RateCard
               title="RTGS Rate"
-              subtitle={`Supreme change: ${formatInr(rtgsSupremeChange)}`}
+              subtitle=""
               icon={null}
               sign={rtgsSign}
               amount={rtgsAmount}
               currentRate={rtgsCurrentRate}
               finalRate={rtgsLiveFinal}
-              formula={'MCX + Supreme Change + Business Change'}
+              formula={''}
               onSignChange={setRtgsSign}
               onAmountChange={setRtgsAmount}
             />
 
             <RateCard
               title="Cash Rate"
-              subtitle={`Supreme change: ${formatInr(cashSupremeChange)}`}
+              subtitle=""
               icon={null}
               sign={cashSign}
               amount={cashAmount}
               currentRate={cashCurrentRate}
               finalRate={cashLiveFinal}
-              formula={'MCX + Supreme Change + Business Change'}
+              formula={''}
               onSignChange={setCashSign}
               onAmountChange={setCashAmount}
             />

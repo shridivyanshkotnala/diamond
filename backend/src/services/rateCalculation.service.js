@@ -35,7 +35,7 @@ const getLiveGoldRates = async (businessId) => {
       cashChange: supremeCache.cashChange || 0
     };
   } else {
-    const supreme = await SupremeChange.findOne();
+    const supreme = await SupremeChange.findOne().sort({ updatedAt: -1, createdAt: -1 });
     supremeChanges = {
       rtgsChange: supreme && typeof supreme.rtgsChange === 'number' ? supreme.rtgsChange : 0,
       cashChange: supreme && typeof supreme.cashChange === 'number' ? supreme.cashChange : 0

@@ -31,7 +31,7 @@ const fetchAndStoreMcxRate = async () => {
 
       // Recompute supreme rates from DB and update supreme cache so dependent services pick up new values
       try {
-        const supreme = await SupremeChange.findOne();
+        const supreme = await SupremeChange.findOne().sort({ updatedAt: -1, createdAt: -1 });
         const rtgsChange = (supreme && typeof supreme.rtgsChange === 'number') ? supreme.rtgsChange : 0;
         const cashChange = (supreme && typeof supreme.cashChange === 'number') ? supreme.cashChange : 0;
 

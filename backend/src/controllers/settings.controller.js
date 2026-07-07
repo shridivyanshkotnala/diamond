@@ -105,7 +105,7 @@ const getSupremeRates = async (req, res) => {
     const SupremeChange = require('../models/supremeChange.model');
 
     const mcx = await redisService.getMcxCache() || 160000;
-    const supreme = await SupremeChange.findOne();
+    const supreme = await SupremeChange.findOne().sort({ updatedAt: -1, createdAt: -1 });
 
     const rtgsChange = supreme && typeof supreme.rtgsChange === 'number' ? supreme.rtgsChange : 0;
     const cashChange = supreme && typeof supreme.cashChange === 'number' ? supreme.cashChange : 0;
@@ -127,12 +127,28 @@ const updateSupremeRates = async (req, res) => {
     const SupremeChange = require('../models/supremeChange.model');
     const redisService = require('../services/redis.service');
 
+    const toNumber = (value) => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : undefined;
+      }
+      return undefined;
+    };
+
+    const parsedRtgsChange = toNumber(rtgsChange);
+    const parsedCashChange = toNumber(cashChange);
+
     const updateData = {};
-    if (typeof rtgsChange === 'number') updateData.rtgsChange = rtgsChange;
-    if (typeof cashChange === 'number') updateData.cashChange = cashChange;
+    if (parsedRtgsChange !== undefined) updateData.rtgsChange = parsedRtgsChange;
+    if (parsedCashChange !== undefined) updateData.cashChange = parsedCashChange;
     updateData.updatedBy = userId;
 
-    const supreme = await SupremeChange.findOneAndUpdate({}, { $set: updateData }, { new: true, upsert: true });
+    const supreme = await SupremeChange.findOneAndUpdate(
+      {},
+      { $set: updateData },
+      { new: true, upsert: true, sort: { updatedAt: -1, createdAt: -1 } }
+    );
 
     const mcx = await redisService.getMcxCache() || 160000;
     const supremeRtgs = mcx + (supreme.rtgsChange || 0);
