@@ -280,6 +280,7 @@ export async function loginBusiness(email: string, password: string): Promise<{
     const address = readString(unwrapped, ['address']);
     const phone = readString(unwrapped, ['phone']);
     const emailResp = readString(unwrapped, ['email']);
+    const role = readString(unwrapped, ['role']);
 
     if (!accessToken) {
       return { success: false, error: 'Login response missing access token.' };
@@ -295,7 +296,8 @@ export async function loginBusiness(email: string, password: string): Promise<{
         businessType,
         address,
         phone,
-        email: emailResp
+        email: emailResp,
+        role
       } 
     };
   } catch (error) {

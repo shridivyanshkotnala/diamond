@@ -2,7 +2,8 @@ const OpenAI = require('openai');
 const sharp = require('sharp');
 const config = require('../config/env');
 const fs = require('fs');
-const { SYSTEM_PROMPT, getUserPrompt } = require('../prompts/openai.prompt');
+const { getSystemPrompt, getUserPrompt } = require('../prompts/openai.prompt');
+const { getPromptCustomizations } = require('./redis.service');
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -41,8 +42,10 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
     });
   }
 
+  const customizations = await getPromptCustomizations('diamond');
+  const colorstoneCustomizations = await getPromptCustomizations('colorstone');
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt(customizations, colorstoneCustomizations) },
     { role: 'user', content: userContent },
   ];
 

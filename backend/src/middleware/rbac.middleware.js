@@ -1,5 +1,14 @@
 const Employee = require('../models/employee.model');
 
+const normalizeRole = (role) => String(role || '').trim().toUpperCase();
+const OWNER_EQUIVALENT_ROLES = new Set([
+  'OWNER',
+  'SUPER',
+  'SUPER_ADMIN',
+  'SUPERADMIN',
+  'SUPER ADMIN'
+]);
+
 /**
  * Middleware to enforce Role-Based Access Control
  * @param {String} requiredPermission - The key of the permission required (e.g. 'inventoryManager')
@@ -13,13 +22,15 @@ const requirePermission = (requiredPermission) => {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
       }
 
-      // If user is OWNER, they have access to everything
-      if (user.role === 'OWNER') {
+      const userRole = normalizeRole(user.role);
+
+      // Owner-equivalent users have access to everything
+      if (OWNER_EQUIVALENT_ROLES.has(userRole)) {
         return next();
       }
 
       // If user is EMP, check their permissions in the database
-      if (user.role === 'EMP') {
+      if (userRole === 'EMP') {
         // Fetch employee to get latest permissions
         const employee = await Employee.findById(user.userId);
         

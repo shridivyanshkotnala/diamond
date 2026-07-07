@@ -17,9 +17,24 @@ export const STONE_CLARITY_OPTIONS = ['SI', 'VS', 'VS1', 'VVS', 'VVS1'] as const
 
 export const COLORSTONE_COLOR_OPTIONS = ['Red', 'Blue', 'Green', 'Pink'] as const;
 
+export const DIAMOND_SHAPE_OPTIONS = [
+  { value: 'Rd', label: 'Round (Rd)' },
+  { value: 'Mq', label: 'Marquise (Mq)' },
+  { value: 'Pr', label: 'Pear (Pr)' },
+  { value: 'Em', label: 'Emerald (Em)' },
+  { value: 'Bg', label: 'Baguette (Bg)' },
+  { value: 'Pc', label: 'Princess (Pc)' },
+] as const;
+
 export type DiamondColorOption = (typeof DIAMOND_COLOR_OPTIONS)[number];
 export type StoneClarityOption = (typeof STONE_CLARITY_OPTIONS)[number];
 export type ColorstoneColorOption = (typeof COLORSTONE_COLOR_OPTIONS)[number];
+export type DiamondShapeOption = (typeof DIAMOND_SHAPE_OPTIONS)[number]['value'];
+
+export type StoneSelectOption = {
+  value: string;
+  label?: string;
+};
 
 export type StoneRateKind = 'diamond' | 'colorstone';
 

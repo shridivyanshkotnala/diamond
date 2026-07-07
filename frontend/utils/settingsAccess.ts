@@ -32,8 +32,13 @@ export function canAccessSettingsItem(
   itemId: string,
   userRole: UserRole,
   permissions?: EmployeePermissions | null,
+  isSuper: boolean = false,
 ): boolean {
   if (userRole !== 'employee') {
+    // Non-employee: allowed by default, except for some SUPREME-only items
+    if (itemId === 'rate-control') {
+      return isSuper === true;
+    }
     return true;
   }
 
@@ -66,6 +71,7 @@ export function canAccessSettingsItem(
 export function getVisibleSettingsMenuItems(
   userRole: UserRole,
   permissions?: EmployeePermissions | null,
+  isSuper: boolean = false,
 ) {
-  return SETTINGS_MENU_ITEMS.filter((item) => canAccessSettingsItem(item.id, userRole, permissions));
+  return SETTINGS_MENU_ITEMS.filter((item) => canAccessSettingsItem(item.id, userRole, permissions, isSuper));
 }

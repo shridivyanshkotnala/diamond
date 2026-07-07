@@ -37,6 +37,7 @@ export default function BusinessLoginScreen() {
     setRefreshToken,
     setSavedCredentials,
     setUserRole,
+    setIsSuper,
     setLoggedInEmployee,
   } = useAuthStore();
 
@@ -64,7 +65,15 @@ export default function BusinessLoginScreen() {
         if (result.data.refreshToken) {
           setRefreshToken(result.data.refreshToken);
         }
-        setUserRole('business');
+        // Map backend roles to frontend role and isSuper flag
+        const backendRole = (result.data as any).role;
+        if (backendRole === 'EMP') {
+          setUserRole('employee');
+          setIsSuper(false);
+        } else {
+          setUserRole('business');
+          setIsSuper(backendRole === 'SUPER');
+        }
         setLoggedInEmployee(null);
         setAuthenticated(true);
         

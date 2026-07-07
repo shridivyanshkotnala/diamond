@@ -1,6 +1,6 @@
 import type { GoldIncreaseByType, GoldRate } from '@/types/rates';
 
-export type ScannerCalculationUse = 'rtgs' | 'cash' | 'mcx';
+export type ScannerCalculationUse = 'rtgs' | 'cash';
 
 export function formatKaratLabel(carat: string): string {
   return carat.replace(/Kt/gi, ' KT').replace(/\s+/g, ' ').trim().toUpperCase();
@@ -80,9 +80,9 @@ export function deriveActiveBaseRate(
       return rtgsFinalRate;
     case 'cash':
       return cashFinalRate;
-    case 'mcx':
     default:
-      return mcxLiveRate;
+      // Fallback to RTGS final rate for safety
+      return rtgsFinalRate;
   }
 }
 

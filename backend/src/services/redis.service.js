@@ -145,6 +145,55 @@ function mcxKey() {
   return `mcx_gold_live_rate`;
 }
 
+// === PROMPT CUSTOMIZATIONS (DIAMOND) ===
+function promptCustomKey(category = 'diamond') {
+  return `prompt_custom:${category}`;
+}
+
+const DEFAULT_PROMPT_CUSTOMS = { colors: [], clarities: [], shapes: [] };
+
+const getPromptCustomizations = async (category = 'diamond') => {
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      const data = memoryStore.get(promptCustomKey(category));
+      return data ? JSON.parse(data) : { ...DEFAULT_PROMPT_CUSTOMS };
+    }
+    const data = await redis.get(promptCustomKey(category));
+    return data ? JSON.parse(data) : { ...DEFAULT_PROMPT_CUSTOMS };
+  });
+};
+
+const setPromptCustomizations = async (category, customs) => {
+  return runStoreOp(async (backend) => {
+    const payload = JSON.stringify(customs ?? DEFAULT_PROMPT_CUSTOMS);
+    if (backend === 'memory') {
+      memoryStore.set(promptCustomKey(category), payload);
+      return;
+    }
+    await redis.set(promptCustomKey(category), payload, 'EX', TTL);
+  });
+};
+
+const addPromptCustomization = async (category, type, value) => {
+  if (!value) {
+    return { customizations: await getPromptCustomizations(category), added: false };
+  }
+  const normalized = String(value).trim().toUpperCase();
+  if (!normalized) {
+    return { customizations: await getPromptCustomizations(category), added: false };
+  }
+
+  const current = await getPromptCustomizations(category);
+  const key = type === 'color' ? 'colors' : type === 'clarity' ? 'clarities' : 'shapes';
+  const existing = new Set((current[key] ?? []).map((item) => String(item).toUpperCase()));
+  if (!existing.has(normalized)) {
+    current[key] = [...(current[key] ?? []), normalized];
+    await setPromptCustomizations(category, current);
+    return { customizations: current, added: true };
+  }
+  return { customizations: current, added: false };
+};
+
 const setMcxCache = async (data) => {
   return runStoreOp(async (backend) => {
     if (backend === 'memory') {
@@ -167,6 +216,33 @@ const getMcxCache = async () => {
   });
 };
 
+// === SUPREME RATES CACHING (GLOBAL) ===
+function supremeKey() {
+  return `supreme_rates`;
+}
+
+const setSupremeCache = async (data) => {
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      memoryStore.set(supremeKey(), JSON.stringify(data));
+      setTimeout(() => memoryStore.delete(supremeKey()), MCX_TTL * 1000);
+      return;
+    }
+    await redis.set(supremeKey(), JSON.stringify(data), "EX", MCX_TTL);
+  });
+};
+
+const getSupremeCache = async () => {
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      const data = memoryStore.get(supremeKey());
+      return data ? JSON.parse(data) : null;
+    }
+    const data = await redis.get(supremeKey());
+    return data ? JSON.parse(data) : null;
+  });
+};
+
 module.exports = {
   setScan,
   getScan,
@@ -177,4 +253,7 @@ module.exports = {
   invalidateAllGoldRatesCache,
   setMcxCache,
   getMcxCache
+  ,setSupremeCache, getSupremeCache,
+  getPromptCustomizations,
+  addPromptCustomization
 };

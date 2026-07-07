@@ -26,7 +26,7 @@ const businessUserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['OWNER', 'EMP'],
+    enum: ['OWNER', 'EMP', 'SUPER'],
     default: 'OWNER',
     required: true
   },

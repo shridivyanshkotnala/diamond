@@ -12,9 +12,8 @@ import { X } from 'lucide-react-native';
 
 import { StoneOptionSelect } from '@/components/dashboard/market-rates/StoneOptionSelect';
 import {
-  getColorOptionsForStoneType,
-  STONE_CLARITY_OPTIONS,
   type StoneRateKind,
+  type StoneSelectOption,
 } from '@/constants/stoneRateOptions';
 import { Colors, Radius } from '@/constants/theme';
 
@@ -24,14 +23,23 @@ interface StoneRateFormModalProps {
   isNew: boolean;
   color: string;
   clarity: string;
+  shape?: string;
   rateValue: string;
-  errors: { color?: string; clarity?: string; rate?: string };
+  errors: { color?: string; clarity?: string; shape?: string; rate?: string };
   saving?: boolean;
+  colorOptions: readonly StoneSelectOption[];
+  clarityOptions: readonly StoneSelectOption[];
+  shapeOptions?: readonly StoneSelectOption[];
   onColorChange: (value: string) => void;
   onClarityChange: (value: string) => void;
+  onShapeChange?: (value: string) => void;
   onRateChange: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
+  onAddCustomColor?: (value: string) => void;
+  onAddCustomClarity?: (value: string) => void;
+  onAddCustomShape?: (value: string) => void;
+  validateCustomValue?: (value: string, type: 'color' | 'clarity' | 'shape') => string | null;
 }
 
 export function StoneRateFormModal({
@@ -40,17 +48,26 @@ export function StoneRateFormModal({
   isNew,
   color,
   clarity,
+  shape,
   rateValue,
   errors,
   saving = false,
+  colorOptions,
+  clarityOptions,
+  shapeOptions,
   onColorChange,
   onClarityChange,
+  onShapeChange,
   onRateChange,
   onClose,
   onSave,
+  onAddCustomColor,
+  onAddCustomClarity,
+  onAddCustomShape,
+  validateCustomValue,
 }: StoneRateFormModalProps) {
   const title = mode === 'diamond' ? 'Diamond' : 'Colorstone';
-  const colorOptions = getColorOptionsForStoneType(mode);
+  const allowCustom = true;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -73,15 +90,49 @@ export function StoneRateFormModal({
             onChange={onColorChange}
             placeholder={`Select ${title.toLowerCase()} color`}
             error={errors.color}
+            allowCustom={allowCustom}
+            customLabel="Add Custom Color"
+            customInputLabel="Add Custom Color"
+            customPlaceholder="e.g. AB"
+            onAddCustom={onAddCustomColor}
+            normalizeCustomValue={(input) =>
+              mode === 'diamond' ? input.trim().toUpperCase() : input.trim()
+            }
+            validateCustomValue={(value) => validateCustomValue?.(value, 'color') ?? null}
           />
           <StoneOptionSelect
             label="Clarity"
             value={clarity}
-            options={STONE_CLARITY_OPTIONS}
+            options={clarityOptions}
             onChange={onClarityChange}
             placeholder="Select clarity"
             error={errors.clarity}
+            allowCustom={allowCustom}
+            customLabel="Add Custom Clarity"
+            customInputLabel="Add Custom Clarity"
+            customPlaceholder="e.g. IF"
+            onAddCustom={onAddCustomClarity}
+            normalizeCustomValue={(input) => input.trim().toUpperCase()}
+            validateCustomValue={(value) => validateCustomValue?.(value, 'clarity') ?? null}
           />
+          {mode === 'diamond' && shapeOptions && onShapeChange ? (
+            <StoneOptionSelect
+              label="Shape"
+              value={shape ?? ''}
+              options={shapeOptions}
+              onChange={onShapeChange}
+              placeholder="Select shape"
+              error={errors.shape}
+              allowClear
+              allowCustom={allowCustom}
+              customLabel="Add Custom Shape"
+              customInputLabel="Add Custom Shape"
+              customPlaceholder="e.g. HS"
+              onAddCustom={onAddCustomShape}
+              normalizeCustomValue={(input) => input.trim().toUpperCase()}
+              validateCustomValue={(value) => validateCustomValue?.(value, 'shape') ?? null}
+            />
+          ) : null}
 
           <Text style={styles.fieldLabel}>Rate / ct (₹)</Text>
           <TextInput

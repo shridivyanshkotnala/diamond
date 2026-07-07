@@ -9,13 +9,13 @@ const colorstoneRateSchema = new mongoose.Schema({
   },
   color: {
     type: String,
-    required: true,
-    trim: true // No default values, no enum
+    trim: true,
+    default: ''
   },
   clarity: {
     type: String,
-    required: true,
-    trim: true // No default values, no enum
+    trim: true,
+    default: ''
   },
   rate: {
     type: Number,

@@ -2,6 +2,7 @@ const mcxService = require('./mcx.service');
 const GoldTaxSetting = require('../models/goldTaxSetting.model');
 const GoldRate = require('../models/goldRate.model');
 const redisService = require('./redis.service');
+const SupremeChange = require('../models/supremeChange.model');
 
 const getLiveGoldRates = async (businessId) => {
   if (!businessId) throw new Error('Business ID is required');
@@ -25,9 +26,30 @@ const getLiveGoldRates = async (businessId) => {
     };
   }
 
-  // 4. Compute Live Final Tax Rates
-  const rtgsFinalRate = mcxLiveRate + taxSettings.rtgsChangeBy;
-  const cashFinalRate = mcxLiveRate + taxSettings.cashChangeBy;
+  // 4. Fetch Supreme changes (global) and compute Live Final Tax Rates
+  let supremeCache = await redisService.getSupremeCache();
+  let supremeChanges = null;
+  if (supremeCache) {
+    supremeChanges = {
+      rtgsChange: supremeCache.rtgsChange || 0,
+      cashChange: supremeCache.cashChange || 0
+    };
+  } else {
+    const supreme = await SupremeChange.findOne();
+    supremeChanges = {
+      rtgsChange: supreme && typeof supreme.rtgsChange === 'number' ? supreme.rtgsChange : 0,
+      cashChange: supreme && typeof supreme.cashChange === 'number' ? supreme.cashChange : 0
+    };
+  }
+
+  // Compose final rates: MCX + SupremeChange + Business (taxSettings)
+  const supremeRtgsChange = supremeChanges.rtgsChange || 0;
+  const supremeCashChange = supremeChanges.cashChange || 0;
+  const businessRtgsChange = taxSettings.rtgsChangeBy || 0;
+  const businessCashChange = taxSettings.cashChangeBy || 0;
+
+  const rtgsFinalRate = mcxLiveRate + supremeRtgsChange + businessRtgsChange;
+  const cashFinalRate = mcxLiveRate + supremeCashChange + businessCashChange;
 
   // 5. Determine Base Rate for Karat Calculations
   const baseRate = taxSettings.scannerCalculationUse === 'cash' ? cashFinalRate : rtgsFinalRate;
@@ -54,7 +76,8 @@ const getLiveGoldRates = async (businessId) => {
         carat: rc.carat,
         purity: rc.purity,
         increaseByAmount: 0,
-        increaseByType: 'FLAT'
+        increaseByType: 'FLAT',
+        isHidden: false
       });
       await newRate.save();
       karatRows.push(newRate);
@@ -85,6 +108,7 @@ const getLiveGoldRates = async (businessId) => {
       purity: row.purity,
       increaseByAmount: row.increaseByAmount,
       increaseByType: row.increaseByType,
+      isHidden: !!row.isHidden,
       finalRate: Math.round(finalRate * 100) / 100, // Legacy fallback
       mcxRate,
       cashRate,
@@ -99,9 +123,15 @@ const getLiveGoldRates = async (businessId) => {
   // 8. Compile the Final Rich Response
   const responseData = {
     mcxLiveRate,
+    supremeChanges: {
+      rtgsChange: supremeRtgsChange,
+      cashChange: supremeCashChange,
+      supremeRtgs: mcxLiveRate + supremeRtgsChange,
+      supremeCash: mcxLiveRate + supremeCashChange
+    },
     taxSettings: {
-      rtgsChangeBy: taxSettings.rtgsChangeBy,
-      cashChangeBy: taxSettings.cashChangeBy,
+      rtgsChangeBy: businessRtgsChange,
+      cashChangeBy: businessCashChange,
       scannerCalculationUse: taxSettings.scannerCalculationUse,
       rtgsFinalRate,
       cashFinalRate

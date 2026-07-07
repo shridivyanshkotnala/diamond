@@ -7,6 +7,7 @@ import { useEmployeeStore } from '@/store/employeeStore';
 
 export function useSettingsAccess() {
   const userRole = useAuthStore((state) => state.userRole);
+  const isSuper = useAuthStore((state) => state.isSuper);
   const loggedInEmployeeId = useAuthStore((state) => state.loggedInEmployeeId);
   const savedPhone = useAuthStore((state) => state.savedPhone);
   const employees = useEmployeeStore((state) => state.employees);
@@ -17,7 +18,7 @@ export function useSettingsAccess() {
   );
 
   const visibleMenuItems = useMemo(
-    () => getVisibleSettingsMenuItems(userRole, employee?.permissions),
+    () => getVisibleSettingsMenuItems(userRole, employee?.permissions, isSuper),
     [userRole, employee?.permissions],
   );
 

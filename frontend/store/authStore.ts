@@ -8,6 +8,7 @@ export type UserRole = 'business' | 'employee' | null;
 
 interface AuthState {
   isAuthenticated: boolean;
+  isSuper: boolean;
   authToken: string | null;
   refreshToken: string | null;
   userRole: UserRole;
@@ -21,6 +22,7 @@ interface AuthState {
   _hasHydrated: boolean;
   setAuthenticated: (value: boolean) => void;
   setAuthToken: (token: string | null) => void;
+  setIsSuper: (value: boolean) => void;
   setRefreshToken: (token: string | null) => void;
   setUserRole: (role: UserRole) => void;
   setLoggedInEmployee: (id: string | null) => void;
@@ -38,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       isAuthenticated: false,
+      isSuper: false,
       authToken: null,
       refreshToken: null,
       userRole: null,
@@ -51,6 +54,7 @@ export const useAuthStore = create<AuthState>()(
       _hasHydrated: false,
       setAuthenticated: (value) => set({ isAuthenticated: value }),
       setAuthToken: (token) => set({ authToken: token }),
+      setIsSuper: (value) => set({ isSuper: value }),
       setRefreshToken: (token) => set({ refreshToken: token }),
       setUserRole: (role) => set({ userRole: role }),
       setLoggedInEmployee: (id) => set({ loggedInEmployeeId: id }),
@@ -80,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
         authToken: state.authToken,
         refreshToken: state.refreshToken,
         userRole: state.userRole,
+        isSuper: state.isSuper,
         loggedInEmployeeId: state.loggedInEmployeeId,
         rememberMe: state.rememberMe,
         savedEmail: state.savedEmail,

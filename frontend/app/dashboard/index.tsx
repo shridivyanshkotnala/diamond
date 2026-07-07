@@ -117,7 +117,7 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <>
-              {mcxLiveRate != null && matrixValues['24k_mcx'] ? (
+              {mcxLiveRate != null ? (
                 <View style={styles.mcxTopCard}>
                   <Text style={styles.mcxTopLabel}>MCX Gold Rate (24 Kt)</Text>
                   <Text style={styles.mcxTopValue}>₹ {mcxLiveRate.toLocaleString('en-IN')}</Text>
@@ -127,39 +127,46 @@ export default function DashboardScreen() {
               {sortedGoldRates.length > 0 ? (
                 sortedGoldRates.map((rate) => {
                   const karatPrefix = rate.carat.replace('Kt', 'k').toLowerCase();
-                  const showMcx = matrixValues[`${karatPrefix}_mcx` as MatrixKey];
                   const showCash = matrixValues[`${karatPrefix}_cash` as MatrixKey];
                   const showRtgs = matrixValues[`${karatPrefix}_rtgs` as MatrixKey];
+                  const showSingleRate = (showCash && !showRtgs) || (!showCash && showRtgs);
                   
-                  if (!showMcx && !showCash && !showRtgs) return null;
+                  if (!showCash && !showRtgs) return null;
+
+                  const purityLabel = formatPurityLabel(rate.purity);
+                  const singleRateLabel = showCash ? 'Cash Rate' : 'RTGS Rate';
+                  const singleRateValue = showCash ? rate.cashRate : rate.rtgsRate;
 
                   return (
                     <View key={rate.carat} style={styles.rateCard}>
                       <View style={styles.rateCardHeader}>
                         <Text style={styles.cardKaratLabel}>
-                          Gold ({formatKaratLabel(rate.carat)}){showMcx ? ' MCX' : ''}
+                          Gold ({formatKaratLabel(rate.carat)}) {purityLabel}
                         </Text>
-                        {showMcx && (
-                          <Text style={styles.cardMcxValue}>₹ {rate.mcxRate?.toLocaleString('en-IN') || 0}</Text>
-                        )}
+                        {showSingleRate ? (
+                          <View style={styles.rateBadge}>
+                            <Text style={styles.rateBadgeValue}>
+                              ₹ {singleRateValue?.toLocaleString('en-IN') || 0}
+                            </Text>
+                            <Text style={styles.rateBadgeLabel}>({singleRateLabel})</Text>
+                          </View>
+                        ) : null}
                       </View>
 
-                      {(showCash || showRtgs) && (
+                      {!showSingleRate && (showCash || showRtgs) && (
                         <View style={styles.rateCardBody}>
                           {showCash && (
-                            <View style={!showRtgs ? styles.rateBoxRight : styles.rateBoxLeft}>
-                              <Text style={!showRtgs ? styles.rtgsRateValue : styles.cashRateValue}>
+                            <View style={styles.rateBadge}>
+                              <Text style={styles.rateBadgeValue}>
                                 ₹ {rate.cashRate?.toLocaleString('en-IN') || 0}
                               </Text>
-                              <Text style={!showRtgs ? styles.rtgsRateSubtitle : styles.rateSubtitle}>
-                                (Cash Rate)
-                              </Text>
+                              <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
                             </View>
                           )}
                           {showRtgs && (
-                            <View style={styles.rateBoxRight}>
-                              <Text style={styles.rtgsRateValue}>₹ {rate.rtgsRate?.toLocaleString('en-IN') || 0}</Text>
-                              <Text style={styles.rtgsRateSubtitle}>(RTGS Rate)</Text>
+                            <View style={styles.rateBadge}>
+                              <Text style={styles.rateBadgeValue}>₹ {rate.rtgsRate?.toLocaleString('en-IN') || 0}</Text>
+                              <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
                             </View>
                           )}
                         </View>
@@ -180,6 +187,11 @@ export default function DashboardScreen() {
       <BottomNav activeRoute="home" />
     </SafeAreaView>
   );
+}
+
+function formatPurityLabel(purity: number): string {
+  if (!Number.isFinite(purity)) return '';
+  return `${purity.toFixed(1)}%`;
 }
 
 const styles = StyleSheet.create({
@@ -290,13 +302,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
     paddingBottom: Spacing.md,
     marginBottom: Spacing.md,
+    alignItems: 'center',
   },
   cardKaratLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  cardMcxValue: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
@@ -306,10 +314,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  rateBoxLeft: {
-    flex: 1,
-  },
-  rateBoxRight: {
+  rateBadge: {
     backgroundColor: '#1B3022',
     borderRadius: 8,
     paddingVertical: Spacing.sm,
@@ -318,23 +323,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 120,
   },
-  cashRateValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  rtgsRateValue: {
+  rateBadgeValue: {
     fontSize: 16,
     fontWeight: '700',
     color: Colors.white,
     marginBottom: 2,
   },
-  rateSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  rtgsRateSubtitle: {
+  rateBadgeLabel: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.85)',
   },

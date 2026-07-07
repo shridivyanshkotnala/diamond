@@ -1,5 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { TrendingUp } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Eye, EyeOff, Pencil, TrendingUp } from 'lucide-react-native';
 
 import type { GoldRate } from '@/types/rates';
 import { formatInr } from '@/utils/rateMappers';
@@ -10,52 +10,114 @@ interface GoldRatesTableProps {
   rates: GoldRate[];
   onEdit: (rate: GoldRate) => void;
   onIncreaseBy: (rate: GoldRate) => void;
+  onToggleVisibility?: (rate: GoldRate) => void;
+  visibilityAction?: 'hide' | 'restore';
+  showHeader?: boolean;
+  showEditAction?: boolean;
 }
 
 function TableHeader() {
   return (
     <View style={styles.headerRow}>
-      <Text style={[styles.headerCell, styles.karatCol]}>Karat</Text>
-      <Text style={[styles.headerCell, styles.purityCol]}>Purity (%)</Text>
-      <Text style={[styles.headerCell, styles.rateCol]}>Final Rate</Text>
-      <Text style={[styles.headerCell, styles.actionsCol]}>Actions</Text>
+      <Text numberOfLines={1} style={[styles.headerCell, styles.karatCol]}>
+        Karat
+      </Text>
+      <Text numberOfLines={1} style={[styles.headerCell, styles.purityCol]}>
+        Purity %
+      </Text>
+      <Text numberOfLines={1} style={[styles.headerCell, styles.rateCol]}>
+        Final Rate
+      </Text>
+      <Text numberOfLines={1} style={[styles.headerCell, styles.actionsCol, styles.actionsHeader]}>
+        Actions
+      </Text>
     </View>
   );
 }
 
-export function GoldRatesTable({ rates, onEdit, onIncreaseBy }: GoldRatesTableProps) {
+export function GoldRatesTable({
+  rates,
+  onEdit,
+  onIncreaseBy: _onIncreaseBy,
+  onToggleVisibility,
+  visibilityAction = 'hide',
+  showHeader = true,
+  showEditAction = true,
+}: GoldRatesTableProps) {
   if (rates.length === 0) {
     return null;
   }
 
+  const VisibilityIcon = visibilityAction === 'hide' ? Eye : EyeOff;
+
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View style={styles.table}>
-        <TableHeader />
-        {rates.map((rate, index) => (
-          <View
-            key={rate.id ?? rate.carat}
-            style={[styles.dataRow, index < rates.length - 1 && styles.rowBorder]}
-          >
-            <Text style={[styles.cell, styles.karatCol, styles.karatText]}>
-              {formatKaratLabel(rate.carat)}
+    <View style={styles.table}>
+      {showHeader ? <TableHeader /> : null}
+      {rates.map((rate, index) => (
+        <View
+          key={rate.id ?? rate.carat}
+          style={[styles.dataRow, index < rates.length - 1 && styles.rowBorder]}
+        >
+          <Text numberOfLines={1} style={[styles.cell, styles.karatCol, styles.karatText]}>
+            {formatKaratLabel(rate.carat)}
+          </Text>
+          <View style={[styles.purityCol, styles.purityWrap]}>
+            <Text numberOfLines={1} style={[styles.cell, styles.purityText]}>
+              {rate.purity.toFixed(1)}
             </Text>
-            <Text style={[styles.cell, styles.purityCol]}>{rate.purity.toFixed(1)}</Text>
-            <Text style={[styles.cell, styles.rateCol, styles.rateText]}>
-              {formatInr(rate.finalRate)}
-            </Text>
-            <View style={[styles.actionsCol, styles.actionsWrap]}>
-              <Pressable onPress={() => onEdit(rate)} style={styles.actionBtn}>
-                <Text style={styles.actionText}>Edit</Text>
+            {showEditAction ? (
+              <Pressable
+                onPress={() => onEdit(rate)}
+                style={({ pressed }) => [
+                  styles.inlineEditBtn,
+                  pressed && styles.inlineEditBtnPressed,
+                ]}
+                accessibilityLabel="Edit gold karat"
+                accessibilityHint="Opens edit form for this karat"
+                hitSlop={6}
+              >
+                <Pencil size={14} color="#1B3022" />
               </Pressable>
-              {/* <Pressable onPress={() => onIncreaseBy(rate)} style={styles.actionBtnOutline}>
-                <Text style={styles.actionTextOutline}>Increase By</Text>
-              </Pressable> */}
-            </View>
+            ) : null}
           </View>
-        ))}
-      </View>
-    </ScrollView>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+            style={[styles.cell, styles.rateCol, styles.rateText]}
+          >
+            {formatInr(rate.finalRate)}
+          </Text>
+          <View style={[styles.actionsCol, styles.actionsWrap]}>
+            {onToggleVisibility ? (
+              <Pressable
+                onPress={() => onToggleVisibility(rate)}
+                style={({ pressed }) => [
+                  styles.actionIconBtn,
+                  styles.actionIconBtnGhost,
+                  pressed && styles.actionIconBtnGhostPressed,
+                ]}
+                accessibilityLabel={
+                  visibilityAction === 'hide' ? 'Hide gold karat' : 'Restore gold karat'
+                }
+                accessibilityHint={
+                  visibilityAction === 'hide'
+                    ? 'Moves this karat to hidden rates'
+                    : 'Moves this karat back to visible rates'
+                }
+                android_ripple={{ color: 'rgba(27,48,34,0.12)', borderless: false }}
+                hitSlop={8}
+              >
+                <VisibilityIcon size={15} color="#1B3022" />
+              </Pressable>
+            ) : null}
+            {/* <Pressable onPress={() => onIncreaseBy(rate)} style={styles.actionBtnOutline}>
+              <Text style={styles.actionTextOutline}>Increase By</Text>
+            </Pressable> */}
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -189,7 +251,7 @@ export function GoldIncreaseModalFields({
 
 const styles = StyleSheet.create({
   table: {
-    minWidth: 520,
+    width: '100%',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
@@ -199,8 +261,8 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     backgroundColor: '#F0F0F0',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
   },
   headerCell: {
     fontSize: 12,
@@ -211,23 +273,54 @@ const styles = StyleSheet.create({
   dataRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
   },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  cell: { fontSize: 13, color: Colors.textPrimary },
-  karatCol: { width: 72 },
-  purityCol: { width: 88 },
-  rateCol: { width: 110 },
-  actionsCol: { flex: 1, minWidth: 160 },
+  cell: { fontSize: 14, color: Colors.textPrimary, flexShrink: 1 },
+  karatCol: { flex: 0.82 },
+  purityCol: { flex: 0.78 },
+  rateCol: { flex: 1, textAlign: 'right', paddingRight: 2 },
+  actionsCol: { flex: 0.6, alignItems: 'flex-end' },
+  actionsHeader: { textAlign: 'right' },
   karatText: { fontWeight: '700' },
-  rateText: { fontWeight: '600' },
-  actionsWrap: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  actionBtn: {
+  purityWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  purityText: { fontWeight: '600' },
+  rateText: { fontWeight: '600', textAlign: 'right', fontSize: 13.5 },
+  actionsWrap: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
+  inlineEditBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7F7F7',
+  },
+  inlineEditBtnPressed: {
+    backgroundColor: '#EFEFEF',
+  },
+  actionIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionIconBtnPrimary: {
     backgroundColor: '#1B3022',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  },
+  actionIconBtnPrimaryPressed: {
+    opacity: 0.85,
+  },
+  actionIconBtnGhost: {
+    backgroundColor: '#F4F4F4',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  actionIconBtnGhostPressed: {
+    backgroundColor: '#EDEDED',
   },
   actionBtnOutline: {
     borderWidth: 1,
@@ -236,7 +329,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-  actionText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   actionTextOutline: { color: '#1B3022', fontSize: 11, fontWeight: '600' },
   mcxBanner: {
     flexDirection: 'row',

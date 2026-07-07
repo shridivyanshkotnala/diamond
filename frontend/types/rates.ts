@@ -7,6 +7,7 @@ export interface GoldRate {
   carat: GoldCarat | string;
   purity: number;
   finalRate: number;
+  isHidden?: boolean;
   increaseByAmount?: number;
   increaseByType?: GoldIncreaseByType;
   baseRate?: number;
@@ -18,13 +19,21 @@ export interface GoldRate {
 export interface TaxSettings {
   rtgsChangeBy: number;
   cashChangeBy: number;
-  scannerCalculationUse: 'rtgs' | 'cash' | 'mcx';
+  scannerCalculationUse: 'rtgs' | 'cash';
+}
+
+export interface SupremeChanges {
+  rtgsChange: number;
+  cashChange: number;
+  supremeRtgs?: number;
+  supremeCash?: number;
 }
 
 export interface GoldRatesResponse {
   mcxLiveRate: number;
   rates: GoldRate[];
   taxSettings?: TaxSettings;
+  supremeChanges?: SupremeChanges;
 }
 
 export interface UpdateGoldRatePayload {
@@ -34,16 +43,23 @@ export interface UpdateGoldRatePayload {
   increaseByType: GoldIncreaseByType;
 }
 
+export interface UpdateGoldRateVisibilityPayload {
+  carat?: string;
+  id?: string;
+  hidden: boolean;
+}
+
 export interface UpdateGoldTaxSettingsPayload {
   rtgsChangeBy?: number;
   cashChangeBy?: number;
-  scannerCalculationUse?: 'rtgs' | 'cash' | 'mcx';
+  scannerCalculationUse?: 'rtgs' | 'cash';
 }
 
 export interface StoneRate {
   id: string;
   color: string;
   clarity: string;
+  shape?: string;
   rate: number;
   updatedAt?: string;
 }
@@ -51,6 +67,7 @@ export interface StoneRate {
 export interface UpsertStoneRatePayload {
   color: string;
   clarity: string;
+  shape?: string;
   rate: number;
 }
 
@@ -60,6 +77,7 @@ export interface StoneRateLookupPayload {
   type: StoneLookupType;
   color: string;
   clarity: string;
+  shape?: string;
 }
 
 export interface StoneRateLookupResponse {

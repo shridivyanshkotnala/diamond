@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Pencil, Trash2 } from 'lucide-react-native';
 
@@ -13,12 +13,17 @@ import {
   upsertColorstoneRate,
   upsertDiamondRate,
 } from '@/utils/ratesApi';
-import type { StoneRateKind } from '@/constants/stoneRateOptions';
+import {
+  DIAMOND_SHAPE_OPTIONS,
+  STONE_CLARITY_OPTIONS,
+  getColorOptionsForStoneType,
+  type StoneRateKind,
+  type StoneSelectOption,
+} from '@/constants/stoneRateOptions';
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import type { StoneRate } from '@/types/rates';
 import {
-  createLocalStoneRateId,
   displayStoneField,
   findDuplicateStoneRate,
   formatStoneRatePerCt,
@@ -32,12 +37,13 @@ const BUTTON_GREEN = '#1B3022';
 interface StoneRatesTableProps {
   title: string;
   rates: StoneRate[];
+  showShape: boolean;
   onEdit: (rate: StoneRate) => void;
   onDelete: (rate: StoneRate) => void;
   onAdd: () => void;
 }
 
-function StoneRatesTable({ title, rates, onEdit, onDelete, onAdd }: StoneRatesTableProps) {
+function StoneRatesTable({ title, rates, showShape, onEdit, onDelete, onAdd }: StoneRatesTableProps) {
   const { width } = useWindowDimensions();
   const isCompact = width < 480;
 
@@ -56,10 +62,16 @@ function StoneRatesTable({ title, rates, onEdit, onDelete, onAdd }: StoneRatesTa
         </View>
       ) : (
         <ScrollView horizontal={isCompact} showsHorizontalScrollIndicator={false}>
-          <View style={[styles.table, isCompact && styles.tableCompact]}>
+          <View
+            style={[
+              styles.table,
+              isCompact && (showShape ? styles.tableCompactWide : styles.tableCompact),
+            ]}
+          >
             <View style={styles.headerRow}>
               <Text style={[styles.headerCell, styles.colorCol]}>Color</Text>
               <Text style={[styles.headerCell, styles.clarityCol]}>Clarity</Text>
+              {showShape ? <Text style={[styles.headerCell, styles.shapeCol]}>Shape</Text> : null}
               <Text style={[styles.headerCell, styles.rateCol]}>Rate/ct</Text>
               <Text style={[styles.headerCell, styles.actionsCol]}>Actions</Text>
             </View>
@@ -72,6 +84,11 @@ function StoneRatesTable({ title, rates, onEdit, onDelete, onAdd }: StoneRatesTa
                 <Text style={[styles.cell, styles.clarityCol]}>
                   {displayStoneField(rate.clarity)}
                 </Text>
+                {showShape ? (
+                  <Text style={[styles.cell, styles.shapeCol]}>
+                    {displayStoneField(rate.shape ?? '')}
+                  </Text>
+                ) : null}
                 <Text style={[styles.cell, styles.rateCol, styles.rateText]}>
                   {formatStoneRatePerCt(rate.rate)}
                 </Text>
@@ -106,14 +123,71 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
   const [isNew, setIsNew] = useState(false);
   const [color, setColor] = useState('');
   const [clarity, setClarity] = useState('');
+  const [shape, setShape] = useState('');
   const [rateValue, setRateValue] = useState('');
   const [formErrors, setFormErrors] = useState<{
     color?: string;
     clarity?: string;
+    shape?: string;
     rate?: string;
   }>({});
   const [deletingRate, setDeletingRate] = useState<StoneRate | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [customColors, setCustomColors] = useState<string[]>([]);
+  const [customClarities, setCustomClarities] = useState<string[]>([]);
+  const [customShapes, setCustomShapes] = useState<string[]>([]);
+
+  const showShape = stoneType === 'diamond';
+
+  const normalizeDiamondOption = (value: string) => value.trim().toUpperCase();
+  const normalizeColorOption = (value: string) =>
+    stoneType === 'diamond' ? normalizeDiamondOption(value) : value.trim();
+
+  const colorOptions = useMemo<StoneSelectOption[]>(() => {
+    const defaults = getColorOptionsForStoneType(stoneType);
+    const fromRates = rates.map((rate) => rate.color).filter(Boolean);
+    const merged = [...defaults, ...fromRates, ...customColors]
+      .map(normalizeColorOption)
+      .filter(Boolean);
+    const unique = Array.from(new Set(merged));
+    return unique.map((option) => ({ value: option, label: option }));
+  }, [stoneType, rates, customColors]);
+
+  const clarityOptions = useMemo<StoneSelectOption[]>(() => {
+    const fromRates = rates.map((rate) => rate.clarity).filter(Boolean);
+    const merged = [...STONE_CLARITY_OPTIONS, ...fromRates, ...customClarities]
+      .map(normalizeDiamondOption)
+      .filter(Boolean);
+    const unique = Array.from(new Set(merged));
+    return unique.map((option) => ({ value: option, label: option }));
+  }, [rates, customClarities]);
+
+  const shapeOptions = useMemo<StoneSelectOption[]>(() => {
+    if (!showShape) return [];
+    const defaultShapes = DIAMOND_SHAPE_OPTIONS.map((option) => option.value);
+    const fromRates = rates.map((rate) => rate.shape ?? '').filter(Boolean);
+    const shapeMap = new Map(
+      DIAMOND_SHAPE_OPTIONS.map((option) => [option.value.toUpperCase(), option.value]),
+    );
+    const normalizeShape = (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      const upper = trimmed.toUpperCase();
+      return shapeMap.get(upper) ?? upper;
+    };
+    const merged = [...defaultShapes, ...fromRates, ...customShapes]
+      .map(normalizeShape)
+      .filter(Boolean);
+    const unique = Array.from(new Set(merged));
+    const labelMap = new Map(
+      DIAMOND_SHAPE_OPTIONS.map((option) => [option.value, option.label]),
+    );
+    return unique.map((option) => ({
+      value: option,
+      label: labelMap.get(option) ?? option,
+    }));
+  }, [rates, customShapes, showShape]);
 
   const notify = (message: string, type: ToastType = 'info') => {
     onToast?.(message, type);
@@ -141,6 +215,7 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
     setEditingRate(null);
     setColor('');
     setClarity('');
+    setShape('');
     setRateValue('');
     setFormErrors({});
   };
@@ -150,6 +225,7 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
     setEditingRate(rate);
     setColor(rate.color);
     setClarity(rate.clarity);
+    setShape(rate.shape ?? '');
     setRateValue(String(rate.rate));
     setFormErrors({});
   };
@@ -161,24 +237,44 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
   };
 
   const handleSave = async () => {
-    const errors = validateStoneRateForm(color, clarity, rateValue);
+    const errors = validateStoneRateForm(color, clarity, rateValue, shape, false);
     if (errors) {
       setFormErrors(errors);
       return;
     }
 
-    const trimmedColor = color.trim();
-    const trimmedClarity = clarity.trim();
+    const trimmedColor =
+      stoneType === 'diamond' ? color.trim().toUpperCase() : color.trim();
+    const trimmedClarity = clarity.trim().toUpperCase();
+    const trimmedShape = showShape ? shape.trim().toUpperCase() : '';
     const rate = Number(rateValue);
 
-    if (findDuplicateStoneRate(rates, trimmedColor, trimmedClarity, editingRate?.id)) {
-      notify('A rate with the same color and clarity already exists.', 'error');
+    if (
+      findDuplicateStoneRate(
+        rates,
+        trimmedColor,
+        trimmedClarity,
+        trimmedShape,
+        editingRate?.id,
+      )
+    ) {
+      notify(
+        showShape
+          ? 'A rate with the same color, clarity, and shape already exists.'
+          : 'A rate with the same color and clarity already exists.',
+        'error',
+      );
       return;
     }
 
     setSaving(true);
     try {
-      const payload = { color: trimmedColor, clarity: trimmedClarity, rate };
+      const payload = {
+        color: trimmedColor,
+        clarity: trimmedClarity,
+        shape: showShape ? trimmedShape : undefined,
+        rate,
+      };
       const savedRate =
         stoneType === 'diamond'
           ? await upsertDiamondRate(payload)
@@ -224,6 +320,7 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
       <StoneRatesTable
         title={title}
         rates={rates}
+        showShape={showShape}
         onEdit={openEdit}
         onDelete={setDeletingRate}
         onAdd={openAdd}
@@ -235,9 +332,13 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
         isNew={isNew}
         color={color}
         clarity={clarity}
+        shape={shape}
         rateValue={rateValue}
         errors={formErrors}
         saving={saving}
+        colorOptions={colorOptions}
+        clarityOptions={clarityOptions}
+        shapeOptions={showShape ? shapeOptions : undefined}
         onColorChange={(value) => {
           setColor(value);
           if (formErrors.color || formErrors.clarity) {
@@ -250,11 +351,39 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
             setFormErrors((prev) => ({ ...prev, color: undefined, clarity: undefined }));
           }
         }}
+        onShapeChange={(value) => {
+          setShape(value);
+          if (formErrors.shape) {
+            setFormErrors((prev) => ({ ...prev, shape: undefined }));
+          }
+        }}
         onRateChange={(value) => {
           setRateValue(value.replace(/[^\d.]/g, ''));
           if (formErrors.rate) {
             setFormErrors((prev) => ({ ...prev, rate: undefined }));
           }
+        }}
+        onAddCustomColor={(value) => {
+          if (!customColors.includes(value)) setCustomColors((prev) => [...prev, value]);
+        }}
+        onAddCustomClarity={(value) => {
+          if (!customClarities.includes(value)) setCustomClarities((prev) => [...prev, value]);
+        }}
+        onAddCustomShape={(value) => {
+          if (!customShapes.includes(value)) setCustomShapes((prev) => [...prev, value]);
+        }}
+        validateCustomValue={(value, type) => {
+          const normalized = value.trim().toUpperCase();
+          const existing =
+            type === 'color'
+              ? colorOptions
+              : type === 'clarity'
+                ? clarityOptions
+                : shapeOptions;
+          if (existing?.some((option) => option.value.toUpperCase() === normalized)) {
+            return 'Value already exists.';
+          }
+          return null;
         }}
         onClose={closeForm}
         onSave={handleSave}
@@ -297,6 +426,7 @@ const styles = StyleSheet.create({
     ...screenStyles.table,
   },
   tableCompact: { minWidth: 520 },
+  tableCompactWide: { minWidth: 580 },
   headerRow: screenStyles.tableHeaderRow,
   headerCell: screenStyles.tableHeaderCell,
   dataRow: screenStyles.tableDataRow,
@@ -304,6 +434,7 @@ const styles = StyleSheet.create({
   cell: screenStyles.tableCell,
   colorCol: { width: 72, flexShrink: 0 },
   clarityCol: { width: 72, flexShrink: 0 },
+  shapeCol: { width: 72, flexShrink: 0 },
   rateCol: { width: 120, flexShrink: 0 },
   actionsCol: { flex: 1, minWidth: 150 },
   rateText: { fontWeight: '600' },

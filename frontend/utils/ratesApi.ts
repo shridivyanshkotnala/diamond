@@ -6,8 +6,10 @@ import type {
   StoneRateLookupPayload,
   StoneRateLookupResponse,
   UpdateGoldRatePayload,
+  UpdateGoldRateVisibilityPayload,
   UpdateGoldTaxSettingsPayload,
   TaxSettings,
+  SupremeChanges,
   UpsertLabourRatePayload,
   UpsertStoneRatePayload,
 } from '@/types/rates';
@@ -64,6 +66,14 @@ function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
     baseRate: readNumber(raw.baseRate ?? raw.base_rate),
     increaseByAmount: readNumber(raw.increaseByAmount ?? raw.increase_by_amount),
     increaseByType: normalizedIncreaseByType,
+    isHidden:
+      typeof raw.isHidden === 'boolean'
+        ? raw.isHidden
+        : typeof raw.is_hidden === 'boolean'
+          ? raw.is_hidden
+          : typeof raw.hidden === 'boolean'
+            ? raw.hidden
+            : undefined,
     mcxRate: readNumber(raw.mcxRate),
     cashRate: readNumber(raw.cashRate),
     rtgsRate: readNumber(raw.rtgsRate),
@@ -73,6 +83,7 @@ function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
 function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
   const color = readString(raw.color) ?? '';
   const clarity = readString(raw.clarity) ?? '';
+  const shape = readString(raw.shape) ?? '';
   const rate = readNumber(raw.rate);
 
   if (rate == null || (!color && !clarity)) {
@@ -81,12 +92,15 @@ function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
 
   const id =
     readString(raw.id ?? raw._id) ??
-    `${color.trim().toLowerCase()}|${clarity.trim().toLowerCase()}|${rate}`;
+    `${color.trim().toLowerCase()}|${clarity.trim().toLowerCase()}|${shape
+      .trim()
+      .toLowerCase()}|${rate}`;
 
   return {
     id,
     color,
     clarity,
+    shape,
     rate,
     updatedAt: readString(raw.updatedAt ?? raw.updated_at),
   };
@@ -124,11 +138,22 @@ export function normalizeGoldRatesResponse(response: unknown): GoldRatesResponse
     taxSettings = {
       rtgsChangeBy: readNumber(rawTax.rtgsChangeBy ?? rawTax.rtgs_change_by) ?? 0,
       cashChangeBy: readNumber(rawTax.cashChangeBy ?? rawTax.cash_change_by) ?? 0,
-      scannerCalculationUse: (readString(rawTax.scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash' | 'mcx',
+      scannerCalculationUse: (readString(rawTax.scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash',
     };
   }
 
-  return { mcxLiveRate, rates, taxSettings };
+  const rawSupreme = unwrapped.supremeChanges as Record<string, unknown> | undefined;
+  let supremeChanges: SupremeChanges | undefined;
+  if (rawSupreme) {
+    supremeChanges = {
+      rtgsChange: readNumber(rawSupreme.rtgsChange ?? rawSupreme.rtgs_change) ?? 0,
+      cashChange: readNumber(rawSupreme.cashChange ?? rawSupreme.cash_change) ?? 0,
+      supremeRtgs: readNumber(rawSupreme.supremeRtgs ?? rawSupreme.supreme_rtgs),
+      supremeCash: readNumber(rawSupreme.supremeCash ?? rawSupreme.supreme_cash),
+    };
+  }
+
+  return { mcxLiveRate, rates, taxSettings, supremeChanges };
 }
 
 export function normalizeStoneRatesResponse(response: unknown): StoneRate[] {
@@ -166,6 +191,27 @@ export async function updateGoldRate(payload: UpdateGoldRatePayload): Promise<Go
   throw new Error('Invalid gold rate update response from server');
 }
 
+export async function updateGoldRateVisibility(
+  payload: UpdateGoldRateVisibilityPayload,
+): Promise<GoldRate> {
+  const response = await apiRequest<ApiEnvelope>('/rates/gold/visibility', {
+    method: 'PATCH',
+    body: payload as unknown as Record<string, unknown>,
+  });
+  const unwrapped = unwrapApiData(response);
+  const normalized = normalizeGoldRate(unwrapped);
+  if (normalized) return normalized;
+
+  const nested = (unwrapped as Record<string, unknown>).rate ??
+    (unwrapped as Record<string, unknown>).data;
+  if (nested && typeof nested === 'object') {
+    const fromNested = normalizeGoldRate(nested as Record<string, unknown>);
+    if (fromNested) return fromNested;
+  }
+
+  throw new Error('Invalid gold rate visibility response from server');
+}
+
 export async function updateGoldTaxSettings(payload: UpdateGoldTaxSettingsPayload): Promise<TaxSettings> {
   const response = await apiRequest<ApiEnvelope>('/rates/gold/tax-settings', {
     method: 'POST',
@@ -179,7 +225,7 @@ export async function updateGoldTaxSettings(payload: UpdateGoldTaxSettingsPayloa
     return {
       rtgsChangeBy: readNumber((rawTax as Record<string, unknown>).rtgsChangeBy) ?? 0,
       cashChangeBy: readNumber((rawTax as Record<string, unknown>).cashChangeBy) ?? 0,
-      scannerCalculationUse: (readString((rawTax as Record<string, unknown>).scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash' | 'mcx',
+      scannerCalculationUse: (readString((rawTax as Record<string, unknown>).scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash',
     };
   }
   throw new Error('Invalid tax settings response from server');
@@ -254,6 +300,7 @@ export async function lookupStoneRate(
 ): Promise<StoneRateLookupResponse> {
   const trimmedColor = payload.color.trim();
   const trimmedClarity = payload.clarity.trim();
+  const trimmedShape = payload.shape?.trim();
   const quality = `${trimmedColor} ${trimmedClarity}`.trim();
 
   let rates: StoneRate[] = [];
@@ -266,9 +313,16 @@ export async function lookupStoneRate(
   }
 
   const match = rates.find(
-    (item) =>
-      item.color.trim().toLowerCase() === trimmedColor.toLowerCase() &&
-      item.clarity.trim().toLowerCase() === trimmedClarity.toLowerCase(),
+    (item) => {
+      const colorMatch =
+        item.color.trim().toLowerCase() === trimmedColor.toLowerCase();
+      const clarityMatch =
+        item.clarity.trim().toLowerCase() === trimmedClarity.toLowerCase();
+      const shapeMatch = trimmedShape
+        ? item.shape?.trim().toLowerCase() === trimmedShape.toLowerCase()
+        : true;
+      return colorMatch && clarityMatch && shapeMatch;
+    },
   );
 
   if (match) {

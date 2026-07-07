@@ -1,5 +1,8 @@
 const authService = require('../services/auth.service');
 
+const normalizeRole = (role) => String(role || '').trim().toUpperCase();
+const SUPER_ROLES = new Set(['SUPER', 'SUPER_ADMIN', 'SUPERADMIN', 'SUPER ADMIN']);
+
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,7 +21,18 @@ const authenticateJWT = (req, res, next) => {
 
 const requireRole = (...roles) => {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
+      return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'You do not have permission to perform this action' });
+    }
+
+    const userRole = normalizeRole(req.user.role);
+    const allowedRoles = roles.map(normalizeRole);
+
+    if (SUPER_ROLES.has(userRole)) {
+      return next();
+    }
+
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'You do not have permission to perform this action' });
     }
     next();

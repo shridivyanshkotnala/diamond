@@ -17,14 +17,13 @@ import { formatInr } from '@/utils/rateMappers';
 
 const BUTTON_GREEN = '#1B3022';
 
-export type ScannerCalculationUse = 'rtgs' | 'cash' | 'mcx';
+export type ScannerCalculationUse = 'rtgs' | 'cash';
 export type TaxChangeTarget = 'rtgs' | 'cash';
 type TaxChangeDirection = 'increase' | 'decrease';
 
 const SCANNER_OPTIONS: { value: ScannerCalculationUse; label: string }[] = [
   { value: 'rtgs', label: 'RTGS Rate' },
   { value: 'cash', label: 'Cash Rate' },
-  { value: 'mcx', label: 'Live MCX Rate' },
 ];
 
 interface GoldTaxSettingsRowProps {
@@ -36,7 +35,7 @@ export function GoldTaxSettingsRow({ onPress }: GoldTaxSettingsRowProps) {
     <Pressable onPress={onPress} style={styles.settingsRow}>
       <View style={styles.settingsRowLeft}>
         <Settings2 size={18} color={BUTTON_GREEN} />
-        <Text style={styles.settingsRowText}>Gold Tax Settings</Text>
+        <Text style={styles.settingsRowText}>Gold Rate Settings</Text>
       </View>
       <ChevronRight size={18} color={Colors.textMuted} />
     </Pressable>
@@ -163,7 +162,7 @@ export function GoldTaxSettingsModal({
           <Pressable onPress={onClose} hitSlop={8} style={styles.modalClose}>
             <X size={20} color={Colors.textSecondary} />
           </Pressable>
-          <Text style={styles.modalTitle}>Gold Tax Settings</Text>
+          <Text style={styles.modalTitle}>Gold Rate Settings</Text>
           <RateSettingsCard
             title="RTGS With Tax Rate"
             showMcxLive

@@ -40,12 +40,15 @@ export default function SettingsScreen() {
           <Text style={screenStyles.pageTitle}>Settings</Text>
         </View>
 
-        <View style={styles.profileCard}>
+        <Pressable
+          onPress={() => router.push('/dashboard/business-profile' as Href)}
+          style={styles.profileCard}
+        >
           <View style={styles.avatar} />
           <Text style={styles.profileName}>
             Pratham{'\n'}International
           </Text>
-        </View>
+        </Pressable>
 
         <View style={styles.menuList}>
           {visibleMenuItems.map((item) => {
@@ -73,9 +76,6 @@ export default function SettingsScreen() {
                 </View>
                 <View style={styles.menuTextWrap}>
                   <Text style={styles.menuTitle}>{item.title}</Text>
-                  {item.subtitle ? (
-                    <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-                  ) : null}
                 </View>
               </>
             );
@@ -136,8 +136,9 @@ const styles = StyleSheet.create({
   },
   menuList: {
     paddingHorizontal: Spacing.screenHorizontal,
-    marginTop: Spacing.xl,
+    marginTop: Spacing.lg,
     gap: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
   menuCard: {
     flexDirection: 'row',
@@ -181,12 +182,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     lineHeight: 20,
   },
-  menuSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-    lineHeight: 16,
-  },
+
   logoutTitle: {
     fontSize: 15,
     fontWeight: '700',

@@ -1,7 +1,7 @@
 import type { SettingsPermissionKey } from '@/types/employee';
 
 /** Never visible to employees, regardless of owner permissions. */
-export const OWNER_ONLY_SETTINGS_IDS = new Set(['business', 'employee', 'matrices', 'subscription']);
+export const OWNER_ONLY_SETTINGS_IDS = new Set(['employee', 'matrices', 'subscription']);
 
 /** Always visible to employees in settings. */
 export const EMPLOYEE_ALWAYS_SETTINGS_IDS = new Set(['password', 'logout']);

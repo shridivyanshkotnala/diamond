@@ -1,35 +1,35 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  LayoutAnimation,
   Modal,
+  Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { ChevronDown, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  GoldTaxChangeEditModal,
-  GoldTaxSettingsModal,
-  GoldTaxSettingsRow,
+  GoldRateSettingsModal,
+  GoldRateSettingsRow,
   ScannerCalculationPicker,
   type ScannerCalculationUse,
-  type TaxChangeTarget,
-} from '@/components/dashboard/market-rates/GoldTaxSettings';
+} from '@/components/dashboard/market-rates/GoldRateSettings';
 import {
   GoldEditModalFields,
   GoldIncreaseModalFields,
   GoldRatesTable,
   McxLiveBanner,
 } from '@/components/dashboard/market-rates/GoldRatesTable';
-import { StoneRatesPanel } from '@/components/dashboard/market-rates/StoneRatesPanel';
 import { LabourRatesPanel } from '@/components/dashboard/market-rates/LabourRatesPanel';
+import { StoneRatesPanel } from '@/components/dashboard/market-rates/StoneRatesPanel';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { ToastNotification, type ToastType } from '@/components/scanner/ToastNotification';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
@@ -37,8 +37,13 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useRequireMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
+import {
+  useGetGoldRatesQuery,
+  useUpdateGoldRateMutation,
+  useUpdateGoldRateVisibilityMutation,
+  useUpdateGoldTaxSettingsMutation,
+} from '@/store/goldRatesApi';
 import type { GoldIncreaseByType, GoldRate } from '@/types/rates';
-import { ApiError } from '@/utils/apiClient';
 import {
   applyGoldIncrease,
   calculateBaseGoldRate,
@@ -50,24 +55,31 @@ import {
   validateIncreaseAmount,
   validatePurityValue,
 } from '@/utils/goldRateUtils';
-import {
-  fetchGoldRates,
-  updateGoldRate,
-  updateGoldTaxSettings,
-} from '@/utils/ratesApi';
 
 const BUTTON_GREEN = '#1B3022';
 const CARAT_ORDER = ['22Kt', '20Kt', '18Kt', '14Kt', '9Kt'];
 
 type RatesTab = 'gold' | 'diamond' | 'colorstone' | 'labour';
 
-
-
 const TAB_SCREEN_TITLE: Record<RatesTab, string> = {
   gold: 'Gold Rates',
   diamond: 'Diamond Rates',
   colorstone: 'Colorstone Rates',
   labour: 'Labour Charge Rates',
+};
+
+const TABLE_ROW_ANIMATION = {
+  duration: 220,
+  create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+  update: { type: LayoutAnimation.Types.easeInEaseOut },
+  delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+};
+
+const SECTION_ANIMATION = {
+  duration: 220,
+  create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+  update: { type: LayoutAnimation.Types.easeInEaseOut },
+  delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
 };
 
 function sortGoldRates(rates: GoldRate[]): GoldRate[] {
@@ -90,13 +102,25 @@ function parseTabParam(tab?: string): RatesTab {
 
 export default function MarketRatesScreen() {
   const access = useRequireMarketRatesAccess();
-  const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const activeTab = useMemo(() => parseTabParam(tab), [tab]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [mcxLiveRate, setMcxLiveRate] = useState(0);
-  const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
+
+  const {
+    data: goldData,
+    isLoading: isGoldLoading,
+    error: goldError,
+  } = useGetGoldRatesQuery(undefined, {
+    skip: !access.hasAnyAccess || activeTab !== 'gold',
+    pollingInterval: 30000,
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+    refetchOnFocus: true,
+  });
+
+  const [updateGoldRateMutation, { isLoading: isUpdatingGoldRate }] = useUpdateGoldRateMutation();
+  const [updateGoldRateVisibilityMutation] = useUpdateGoldRateVisibilityMutation();
+  const [updateGoldTaxSettingsMutation, { isLoading: isUpdatingTaxSettings }] =
+    useUpdateGoldTaxSettingsMutation();
 
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
     visible: false,
@@ -115,16 +139,24 @@ export default function MarketRatesScreen() {
   const [increaseType, setIncreaseType] = useState<GoldIncreaseByType>('PERCENTAGE');
   const [increaseError, setIncreaseError] = useState<string | null>(null);
 
-  const [rtgsChange, setRtgsChange] = useState(0);
-  const [cashChange, setCashChange] = useState(0);
-  const [scannerCalculationUse, setScannerCalculationUse] = useState<ScannerCalculationUse>('rtgs');
   const [taxSettingsVisible, setTaxSettingsVisible] = useState(false);
-  const [editingTaxTarget, setEditingTaxTarget] = useState<TaxChangeTarget | null>(null);
+  const [hiddenGoldRateIds, setHiddenGoldRateIds] = useState<string[]>([]);
+  const [hiddenOverrides, setHiddenOverrides] = useState<Record<string, boolean | undefined>>({});
+  const [hiddenSectionOpen, setHiddenSectionOpen] = useState(false);
+
+  const mcxLiveRate = goldData?.mcxLiveRate ?? 0;
+  const goldRates = goldData?.rates ?? [];
+  const supremeRtgsChange = goldData?.supremeChanges?.rtgsChange ?? 0;
+  const supremeCashChange = goldData?.supremeChanges?.cashChange ?? 0;
+  const rtgsChange = goldData?.taxSettings?.rtgsChangeBy ?? 0;
+  const cashChange = goldData?.taxSettings?.cashChangeBy ?? 0;
+  const scannerCalculationUse: ScannerCalculationUse =
+    goldData?.taxSettings?.scannerCalculationUse === 'cash' ? 'cash' : 'rtgs';
 
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
 
-  const rtgsFinalRate = mcxLiveRate + rtgsChange;
-  const cashFinalRate = mcxLiveRate + cashChange;
+  const rtgsFinalRate = mcxLiveRate + supremeRtgsChange + rtgsChange;
+  const cashFinalRate = mcxLiveRate + supremeCashChange + cashChange;
 
   const activeBaseRate = useMemo(
     () => deriveActiveBaseRate(scannerCalculationUse, mcxLiveRate, rtgsFinalRate, cashFinalRate),
@@ -136,49 +168,62 @@ export default function MarketRatesScreen() {
     [sortedGoldRates, activeBaseRate],
   );
 
+  const goldRateKey = (rate: GoldRate) => rate.id ?? rate.carat;
+
+  const visibleGoldRates = useMemo(
+    () =>
+      displayGoldRates.filter((rate) => {
+        const key = goldRateKey(rate);
+        const override = hiddenOverrides[key];
+        const isHidden = override ?? rate.isHidden ?? false;
+        return !isHidden && !hiddenGoldRateIds.includes(key);
+      }),
+    [displayGoldRates, hiddenGoldRateIds, hiddenOverrides],
+  );
+
+  const hiddenGoldRates = useMemo(
+    () =>
+      displayGoldRates.filter((rate) => {
+        const key = goldRateKey(rate);
+        const override = hiddenOverrides[key];
+        const isHidden = override ?? rate.isHidden ?? false;
+        return isHidden || hiddenGoldRateIds.includes(key);
+      }),
+    [displayGoldRates, hiddenGoldRateIds, hiddenOverrides],
+  );
+
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ visible: true, message, type });
   };
 
-  const loadRates = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const gold = await fetchGoldRates();
-      setMcxLiveRate(gold.mcxLiveRate);
-      setGoldRates(gold.rates);
-      if (gold.taxSettings) {
-        setRtgsChange(gold.taxSettings.rtgsChangeBy);
-        setCashChange(gold.taxSettings.cashChangeBy);
-        setScannerCalculationUse(gold.taxSettings.scannerCalculationUse);
-      }
-    } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to load market rates. Please try again.';
-      showToast(message, 'error');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (access.hasAnyAccess && activeTab === 'gold') void loadRates();
-    }, [access.hasAnyAccess, activeTab, loadRates]),
-  );
+  useEffect(() => {
+    const knownKeys = new Set(displayGoldRates.map((rate) => goldRateKey(rate)));
+    const serverHidden = new Set(
+      displayGoldRates.filter((rate) => rate.isHidden).map((rate) => goldRateKey(rate)),
+    );
+    const next = Array.from(serverHidden).filter((key) => knownKeys.has(key));
+    setHiddenGoldRateIds((prev) =>
+      next.length === prev.length && next.every((key, idx) => key === prev[idx]) ? prev : next,
+    );
+  }, [displayGoldRates]);
 
   useEffect(() => {
-    if (!access.hasAnyAccess || activeTab !== 'gold') return;
-    
-    // Auto-refresh the dashboard every 60 seconds to pull the latest MCX rates
-    const intervalId = setInterval(() => {
-      void loadRates();
-    }, 60000);
-    
-    return () => clearInterval(intervalId);
-  }, [access.hasAnyAccess, activeTab, loadRates]);
+    if (hiddenGoldRates.length === 0 && hiddenSectionOpen) {
+      setHiddenSectionOpen(false);
+    }
+  }, [hiddenGoldRates.length, hiddenSectionOpen]);
 
   if (!access.hasAnyAccess) return null;
+
+  const isSaving = isUpdatingGoldRate || isUpdatingTaxSettings;
+  const showGoldLoading = activeTab === 'gold' && access.canEditGold && isGoldLoading && !goldData;
+  const hasGoldError = activeTab === 'gold' && !!goldError && !goldData;
 
   const openGoldEdit = (rate: GoldRate) => {
     setEditingGold(rate);
@@ -193,6 +238,57 @@ export default function MarketRatesScreen() {
     setIncreaseAmount('');
     setIncreaseType('PERCENTAGE');
     setIncreaseError(null);
+  };
+
+  const handleHideGoldRate = async (rate: GoldRate) => {
+    LayoutAnimation.configureNext(TABLE_ROW_ANIMATION);
+    const key = goldRateKey(rate);
+    setHiddenOverrides((prev) => ({ ...prev, [key]: true }));
+    setHiddenGoldRateIds((prev) => (prev.includes(key) ? prev : [...prev, key]));
+
+    try {
+      await updateGoldRateVisibilityMutation({
+        id: rate.id,
+        carat: rate.carat,
+        hidden: true,
+      }).unwrap();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to hide gold rate';
+      showToast(message, 'error');
+      setHiddenOverrides((prev) => ({ ...prev, [key]: undefined }));
+      setHiddenGoldRateIds((prev) => prev.filter((id) => id !== key));
+      return;
+    }
+
+    setHiddenOverrides((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const handleRestoreGoldRate = async (rate: GoldRate) => {
+    LayoutAnimation.configureNext(TABLE_ROW_ANIMATION);
+    const key = goldRateKey(rate);
+    setHiddenOverrides((prev) => ({ ...prev, [key]: false }));
+    setHiddenGoldRateIds((prev) => prev.filter((id) => id !== key));
+
+    try {
+      await updateGoldRateVisibilityMutation({
+        id: rate.id,
+        carat: rate.carat,
+        hidden: false,
+      }).unwrap();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to restore gold rate';
+      showToast(message, 'error');
+      setHiddenOverrides((prev) => ({ ...prev, [key]: undefined }));
+      setHiddenGoldRateIds((prev) => (prev.includes(key) ? prev : [...prev, key]));
+      return;
+    }
+
+    setHiddenOverrides((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const toggleHiddenSection = () => {
+    LayoutAnimation.configureNext(SECTION_ANIMATION);
+    setHiddenSectionOpen((prev) => !prev);
   };
 
   const handleEditPurityChange = (value: string) => {
@@ -227,25 +323,18 @@ export default function MarketRatesScreen() {
     const increaseByAmount = flatIncreaseForFinalRate(baseRate, finalRate);
     const increaseByType: GoldIncreaseByType = 'FLAT';
 
-    setSaving(true);
     try {
-      const updated = await updateGoldRate({
+      const updated = await updateGoldRateMutation({
         carat: editingGold.carat,
         purity,
         increaseByAmount,
         increaseByType,
-      });
-      setGoldRates((prev) =>
-        prev.map((row) => (row.carat === updated.carat ? updated : row)),
-      );
+      }).unwrap();
       setEditingGold(null);
       showToast(`${formatKaratLabel(updated.carat)} rate updated`, 'success');
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to update gold rate. Please try again.';
+      const message = error instanceof Error ? error.message : 'Failed to update gold rate. Please try again.';
       showToast(message, 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -256,25 +345,18 @@ export default function MarketRatesScreen() {
     setIncreaseError(amountErr);
     if (amountErr) return;
 
-    setSaving(true);
     try {
-      const updated = await updateGoldRate({
+      const updated = await updateGoldRateMutation({
         carat: increasingGold.carat,
         purity: increasingGold.purity,
         increaseByAmount: amount,
         increaseByType: increaseType,
-      });
-      setGoldRates((prev) =>
-        prev.map((row) => (row.carat === updated.carat ? updated : row)),
-      );
+      }).unwrap();
       setIncreasingGold(null);
       showToast(`${formatKaratLabel(updated.carat)} rate increased`, 'success');
     } catch (error) {
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to apply increase. Please try again.';
+      const message = error instanceof Error ? error.message : 'Failed to apply increase. Please try again.';
       showToast(message, 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -287,44 +369,26 @@ export default function MarketRatesScreen() {
         )
       : null;
 
-  const openTaxChangeEdit = (target: TaxChangeTarget) => {
-    setEditingTaxTarget(target);
-  };
-
-  const handleApplyTaxChange = async (change: number) => {
-    const isRtgs = editingTaxTarget === 'rtgs';
-    const payload = isRtgs ? { rtgsChangeBy: change } : { cashChangeBy: change };
-    
-    setSaving(true);
+  const handleApplyTaxSettings = async (nextRtgsChange: number, nextCashChange: number) => {
     try {
-      const updated = await updateGoldTaxSettings(payload);
-      setRtgsChange(updated.rtgsChangeBy);
-      setCashChange(updated.cashChangeBy);
-      setScannerCalculationUse(updated.scannerCalculationUse);
-      setEditingTaxTarget(null);
-      showToast(`${isRtgs ? 'RTGS' : 'Cash'} setting updated`, 'success');
-      // Reload rates to reflect new calculation across all karats globally
-      await loadRates();
+      await updateGoldTaxSettingsMutation({
+        rtgsChangeBy: nextRtgsChange,
+        cashChangeBy: nextCashChange,
+      }).unwrap();
+      showToast('Gold rate settings updated', 'success');
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Failed to save tax setting';
+      const message = error instanceof Error ? error.message : 'Failed to save gold rate settings';
       showToast(message, 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleScannerCalculationChange = async (value: ScannerCalculationUse) => {
-    setSaving(true);
     try {
-      const updated = await updateGoldTaxSettings({ scannerCalculationUse: value });
-      setScannerCalculationUse(updated.scannerCalculationUse);
+      await updateGoldTaxSettingsMutation({ scannerCalculationUse: value }).unwrap();
       showToast('Scanner base updated', 'success');
-      await loadRates();
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Failed to update scanner base';
+      const message = error instanceof Error ? error.message : 'Failed to update scanner base';
       showToast(message, 'error');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -332,46 +396,72 @@ export default function MarketRatesScreen() {
     <SafeAreaView style={screenStyles.safeArea} edges={['top']}>
       <BackgroundPattern />
 
-      <ScrollView
-        contentContainerStyle={screenStyles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={screenStyles.scrollContent} showsVerticalScrollIndicator={false}>
         <PageHeader title={TAB_SCREEN_TITLE[activeTab]} />
 
-        {loading && activeTab === 'gold' && access.canEditGold ? (
+        {showGoldLoading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={BUTTON_GREEN} />
-            <Text style={styles.loadingText}>Loading ratesΓÇª</Text>
+            <Text style={styles.loadingText}>Loading rates…</Text>
           </View>
         ) : activeTab === 'gold' ? (
           access.canEditGold ? (
             <View style={screenStyles.screenSection}>
               <McxLiveBanner mcxLiveRate={mcxLiveRate} />
-              <GoldTaxSettingsRow onPress={() => setTaxSettingsVisible(true)} />
-              <ScannerCalculationPicker
-                value={scannerCalculationUse}
-                onChange={handleScannerCalculationChange}
-              />
+              <GoldRateSettingsRow onPress={() => setTaxSettingsVisible(true)} />
+              <ScannerCalculationPicker value={scannerCalculationUse} onChange={handleScannerCalculationChange} />
               <Text style={styles.sectionTitle}>Gold Karat Rates</Text>
-              {displayGoldRates.length > 0 ? (
+
+              {visibleGoldRates.length > 0 ? (
                 <GoldRatesTable
-                  rates={displayGoldRates}
+                  rates={visibleGoldRates}
                   onEdit={openGoldEdit}
                   onIncreaseBy={openGoldIncrease}
+                  onToggleVisibility={handleHideGoldRate}
+                  visibilityAction="hide"
                 />
+              ) : hiddenGoldRates.length > 0 ? (
+                <View style={screenStyles.emptyCard}>
+                  <Text style={screenStyles.emptyText}>All gold rates are hidden.</Text>
+                </View>
+              ) : hasGoldError ? (
+                <View style={screenStyles.emptyCard}>
+                  <Text style={screenStyles.emptyText}>Unable to load gold rates. Pull down to refresh.</Text>
+                </View>
               ) : (
                 <View style={screenStyles.emptyCard}>
-                  <Text style={screenStyles.emptyText}>
-                    Unable to load gold rates. Pull down to refresh.
-                  </Text>
+                  <Text style={screenStyles.emptyText}>No gold rates available.</Text>
                 </View>
               )}
+
+              {hiddenGoldRates.length > 0 ? (
+                <View style={styles.hiddenSection}>
+                  <Pressable onPress={toggleHiddenSection} style={styles.hiddenHeader}>
+                    <Text style={styles.hiddenTitle}>Hidden Gold Karat Rates ({hiddenGoldRates.length})</Text>
+                    <ChevronDown
+                      size={18}
+                      color={Colors.textMuted}
+                      style={hiddenSectionOpen ? styles.hiddenChevronOpen : undefined}
+                    />
+                  </Pressable>
+                  {hiddenSectionOpen ? (
+                    <View style={styles.hiddenTableWrap}>
+                      <GoldRatesTable
+                        rates={hiddenGoldRates}
+                        onEdit={openGoldEdit}
+                        onIncreaseBy={openGoldIncrease}
+                        onToggleVisibility={handleRestoreGoldRate}
+                        visibilityAction="restore"
+                        showEditAction={false}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           ) : (
             <View style={screenStyles.emptyCard}>
-              <Text style={screenStyles.emptyText}>
-                You do not have permission to view or edit Gold Rates.
-              </Text>
+              <Text style={screenStyles.emptyText}>You do not have permission to view or edit Gold Rates.</Text>
             </View>
           )
         ) : activeTab === 'labour' ? (
@@ -381,9 +471,7 @@ export default function MarketRatesScreen() {
             </View>
           ) : (
             <View style={screenStyles.emptyCard}>
-              <Text style={screenStyles.emptyText}>
-                You do not have permission to view or edit Labour Charges.
-              </Text>
+              <Text style={screenStyles.emptyText}>You do not have permission to view or edit Labour Charges.</Text>
             </View>
           )
         ) : activeTab === 'diamond' || activeTab === 'colorstone' ? (
@@ -411,20 +499,13 @@ export default function MarketRatesScreen() {
 
       <BottomNav activeRoute="home" />
 
-      <Modal
-        visible={editingGold !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditingGold(null)}
-      >
+      <Modal visible={editingGold !== null} transparent animationType="fade" onRequestClose={() => setEditingGold(null)}>
         <View style={screenStyles.modalOverlay}>
           <View style={screenStyles.modalCard}>
             <Pressable onPress={() => setEditingGold(null)} hitSlop={8} style={styles.modalClose}>
               <X size={20} color={Colors.textSecondary} />
             </Pressable>
-            <Text style={styles.modalTitle}>
-              Edit {editingGold ? formatKaratLabel(editingGold.carat) : ''} Rate
-            </Text>
+            <Text style={styles.modalTitle}>Edit {editingGold ? formatKaratLabel(editingGold.carat) : ''} Rate</Text>
             <GoldEditModalFields
               karatLabel={editingGold ? formatKaratLabel(editingGold.carat) : ''}
               purity={editPurity}
@@ -441,14 +522,10 @@ export default function MarketRatesScreen() {
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={handleSaveGoldEdit}
-                disabled={saving}
-                style={[styles.applyBtn, saving && styles.applyBtnDisabled]}
+                disabled={isSaving}
+                style={[styles.applyBtn, isSaving && styles.applyBtnDisabled]}
               >
-                {saving ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.applyBtnText}>Apply</Text>
-                )}
+                {isSaving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.applyBtnText}>Apply</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -471,9 +548,7 @@ export default function MarketRatesScreen() {
             </Text>
             <GoldIncreaseModalFields
               currentFinalRate={
-                increasingGold
-                  ? computeDisplayGoldRates([increasingGold], activeBaseRate)[0]?.finalRate ?? 0
-                  : 0
+                increasingGold ? computeDisplayGoldRates([increasingGold], activeBaseRate)[0]?.finalRate ?? 0 : 0
               }
               increaseAmount={increaseAmount}
               increaseType={increaseType}
@@ -482,9 +557,7 @@ export default function MarketRatesScreen() {
               onIncreaseTypeChange={setIncreaseType}
             />
             {increasePreview != null ? (
-              <Text style={styles.previewText}>
-                New rate after apply: Γé╣{increasePreview.toLocaleString('en-IN')}
-              </Text>
+              <Text style={styles.previewText}>New rate after apply: ₹{increasePreview.toLocaleString('en-IN')}</Text>
             ) : null}
             <View style={styles.modalActions}>
               <Pressable onPress={() => setIncreasingGold(null)} style={styles.cancelBtn}>
@@ -493,38 +566,27 @@ export default function MarketRatesScreen() {
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={handleApplyIncrease}
-                disabled={saving}
-                style={[styles.applyBtn, saving && styles.applyBtnDisabled]}
+                disabled={isSaving}
+                style={[styles.applyBtn, isSaving && styles.applyBtnDisabled]}
               >
-                {saving ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.applyBtnText}>Apply</Text>
-                )}
+                {isSaving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.applyBtnText}>Apply</Text>}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      <GoldTaxSettingsModal
+      <GoldRateSettingsModal
         visible={taxSettingsVisible}
         mcxLiveRate={mcxLiveRate}
+        supremeRtgsChange={supremeRtgsChange}
+        supremeCashChange={supremeCashChange}
         rtgsChange={rtgsChange}
         cashChange={cashChange}
         rtgsFinalRate={rtgsFinalRate}
         cashFinalRate={cashFinalRate}
         onClose={() => setTaxSettingsVisible(false)}
-        onEditRtgs={() => openTaxChangeEdit('rtgs')}
-        onEditCash={() => openTaxChangeEdit('cash')}
-      />
-
-      <GoldTaxChangeEditModal
-        visible={editingTaxTarget !== null}
-        target={editingTaxTarget}
-        currentChange={editingTaxTarget === 'cash' ? cashChange : rtgsChange}
-        onClose={() => setEditingTaxTarget(null)}
-        onApply={handleApplyTaxChange}
+        onApply={handleApplyTaxSettings}
       />
     </SafeAreaView>
   );
@@ -534,6 +596,25 @@ const styles = StyleSheet.create({
   loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: Spacing.md },
   loadingText: { fontSize: 14, color: Colors.textMuted },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  hiddenSection: {
+    marginTop: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.input,
+    backgroundColor: Colors.white,
+    overflow: 'hidden',
+  },
+  hiddenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    backgroundColor: '#F7F7F7',
+  },
+  hiddenTitle: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  hiddenChevronOpen: { transform: [{ rotate: '180deg' }] },
+  hiddenTableWrap: { padding: Spacing.md },
   modalClose: { alignSelf: 'flex-end' },
   modalTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
   previewText: {

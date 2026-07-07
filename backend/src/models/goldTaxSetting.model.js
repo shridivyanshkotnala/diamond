@@ -17,7 +17,7 @@ const goldTaxSettingSchema = new mongoose.Schema({
   },
   scannerCalculationUse: {
     type: String,
-    enum: ['rtgs', 'cash', 'mcx'],
+    enum: ['rtgs', 'cash'],
     default: 'rtgs'
   }
 }, {

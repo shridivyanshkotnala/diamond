@@ -8,6 +8,7 @@ interface UseStoneRateFetchOptions {
   type: StoneRateType;
   color: string;
   clarity: string;
+  shape?: string;
   enabled?: boolean;
   onRateFetched?: (rate: string) => void;
 }
@@ -28,6 +29,7 @@ export function useStoneRateFetch({
   type,
   color,
   clarity,
+  shape,
   enabled = true,
   onRateFetched,
 }: UseStoneRateFetchOptions): UseStoneRateFetchResult {
@@ -65,6 +67,7 @@ export function useStoneRateFetch({
         type,
         color: trimmedColor,
         clarity: trimmedClarity,
+        shape: shape?.trim(),
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -90,7 +93,7 @@ export function useStoneRateFetch({
         setIsFetching(false);
       }
     }
-  }, [type, color, clarity]);
+  }, [type, color, clarity, shape]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -109,7 +112,7 @@ export function useStoneRateFetch({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [color, clarity, enabled, fetchRate]);
+  }, [color, clarity, shape, enabled, fetchRate]);
 
   const dismissRateNotFoundModal = useCallback(() => {
     setModalDismissed(true);

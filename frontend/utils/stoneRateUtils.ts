@@ -8,8 +8,9 @@ export function displayStoneField(value: string): string {
   return value.trim() ? value.trim() : '—';
 }
 
-export function stoneRateKey(color: string, clarity: string): string {
-  return `${color.trim().toLowerCase()}|${clarity.trim().toLowerCase()}`;
+export function stoneRateKey(color: string, clarity: string, shape?: string): string {
+  const shapeKey = shape?.trim().toLowerCase() ?? '';
+  return `${color.trim().toLowerCase()}|${clarity.trim().toLowerCase()}|${shapeKey}`;
 }
 
 export function createLocalStoneRateId(): string {
@@ -20,14 +21,21 @@ export function validateStoneRateForm(
   color: string,
   clarity: string,
   rateValue: string,
-): { color?: string; clarity?: string; rate?: string } | null {
-  const errors: { color?: string; clarity?: string; rate?: string } = {};
+  shape?: string,
+  requireShape = false,
+): { color?: string; clarity?: string; rate?: string; shape?: string } | null {
+  const errors: { color?: string; clarity?: string; rate?: string; shape?: string } = {};
   const hasColor = Boolean(color.trim());
   const hasClarity = Boolean(clarity.trim());
+  const hasShape = Boolean(shape?.trim());
 
   if (!hasColor && !hasClarity) {
     errors.color = 'Select at least Color or Clarity.';
     errors.clarity = 'Select at least Color or Clarity.';
+  }
+
+  if (requireShape && !hasShape) {
+    errors.shape = 'Select a shape.';
   }
 
   const rate = Number(rateValue);
@@ -42,18 +50,22 @@ export function findDuplicateStoneRate(
   rates: StoneRate[],
   color: string,
   clarity: string,
+  shape?: string,
   excludeId?: string,
 ): boolean {
-  const key = stoneRateKey(color, clarity);
+  const key = stoneRateKey(color, clarity, shape);
   return rates.some(
-    (item) => item.id !== excludeId && stoneRateKey(item.color, item.clarity) === key,
+    (item) =>
+      item.id !== excludeId && stoneRateKey(item.color, item.clarity, item.shape) === key,
   );
 }
 
 export function stoneRateSummary(rate: StoneRate): string {
-  const parts = [displayStoneField(rate.color), displayStoneField(rate.clarity)].filter(
-    (part) => part !== '—',
-  );
+  const parts = [
+    displayStoneField(rate.color),
+    displayStoneField(rate.clarity),
+    displayStoneField(rate.shape ?? ''),
+  ].filter((part) => part !== '—');
   const label = parts.length > 0 ? parts.join(' · ') : 'this rate';
   return `${label} (${formatStoneRatePerCt(rate.rate)})`;
 }

@@ -1,3 +1,5 @@
+const { buildCustomPromptSection } = require('../services/promptCustomization.service');
+
 const SYSTEM_PROMPT = `You are a Jewellery Tag Intelligence Engine trained specifically on Indian jewellery tags.
 
 Your ONLY job is to read visible text from jewellery tag images and map it to structured fields.
@@ -320,5 +322,10 @@ INSTRUCTIONS:
 
 module.exports = {
   SYSTEM_PROMPT,
+  getSystemPrompt: (customizations = null, colorstoneCustomizations = null) =>
+    `${SYSTEM_PROMPT}${buildCustomPromptSection(customizations, 'diamond')}${buildCustomPromptSection(
+      colorstoneCustomizations,
+      'colorstone',
+    )}`,
   getUserPrompt
 };

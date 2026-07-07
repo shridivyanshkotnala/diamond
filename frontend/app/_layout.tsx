@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { ReduxProvider } from '@/components/ReduxProvider';
 import { useAuthStore } from '@/store/authStore';
 
 export { ErrorBoundary } from 'expo-router';
@@ -59,13 +60,15 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthGuard>
-      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="dashboard" />
-      </Stack>
-    </AuthGuard>
+    <ReduxProvider>
+      <AuthGuard>
+        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="dashboard" />
+        </Stack>
+      </AuthGuard>
+    </ReduxProvider>
   );
 }

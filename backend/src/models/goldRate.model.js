@@ -25,6 +25,10 @@ const goldRateSchema = new mongoose.Schema({
     type: String,
     enum: ['FLAT', 'PERCENTAGE'],
     default: 'FLAT'
+  },
+  isHidden: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,

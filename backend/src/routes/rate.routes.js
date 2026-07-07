@@ -10,6 +10,7 @@ router.use(authenticateJWT);
 // Gold
 router.get('/gold', rateController.getGoldRates);
 router.post('/gold', requirePermission('editRateGold'), rateController.updateGoldRate);
+router.patch('/gold/visibility', requirePermission('editRateGold'), rateController.updateGoldRateVisibility);
 
 router.get('/gold/tax-settings', rateController.getGoldTaxSettings);
 router.post('/gold/tax-settings', requirePermission('editRateGold'), rateController.updateGoldTaxSettings);

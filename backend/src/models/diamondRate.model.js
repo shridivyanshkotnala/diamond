@@ -9,13 +9,17 @@ const diamondRateSchema = new mongoose.Schema({
   },
   color: {
     type: String,
-    required: true,
-    trim: true // Any string accepted, no enum
+    trim: true,
+    default: ''
   },
   clarity: {
     type: String,
-    required: true,
-    trim: true // Any string accepted, no enum
+    trim: true,
+    default: ''
+  },
+  shape: {
+    type: mongoose.Schema.Types.Mixed,
+    default: 0
   },
   rate: {
     type: Number,
@@ -26,7 +30,7 @@ const diamondRateSchema = new mongoose.Schema({
   collection: 'diamond_rates'
 });
 
-// Ensure uniqueness for a business based on color and clarity
-diamondRateSchema.index({ businessId: 1, color: 1, clarity: 1 }, { unique: true });
+// Ensure uniqueness for a business based on color, clarity, and shape
+diamondRateSchema.index({ businessId: 1, color: 1, clarity: 1, shape: 1 }, { unique: true });
 
 module.exports = mongoose.model('DiamondRate', diamondRateSchema);

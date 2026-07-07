@@ -1,6 +1,7 @@
 const axios = require('axios');
 const redisService = require('./redis.service');
 const MCXFetch = require('../models/mcxFetch.model');
+const SupremeChange = require('../models/supremeChange.model');
 const config = require('../config/env');
 
 let schedulerInterval = null;
@@ -27,6 +28,29 @@ const fetchAndStoreMcxRate = async () => {
       // Store in Redis (24-hour cache instead of 60s since scheduler manages it)
       await redisService.setMcxCache(liveRate);
       console.log(`[MCX Scheduler] Successfully fetched and cached new rate: ${liveRate}`);
+
+      // Recompute supreme rates from DB and update supreme cache so dependent services pick up new values
+      try {
+        const supreme = await SupremeChange.findOne();
+        const rtgsChange = (supreme && typeof supreme.rtgsChange === 'number') ? supreme.rtgsChange : 0;
+        const cashChange = (supreme && typeof supreme.cashChange === 'number') ? supreme.cashChange : 0;
+
+        const supremeRtgs = liveRate + rtgsChange;
+        const supremeCash = liveRate + cashChange;
+
+        await redisService.setSupremeCache({
+          mcx: liveRate,
+          supremeRtgs,
+          supremeCash,
+          rtgsChange,
+          cashChange,
+          rtgsFinalRate: supremeRtgs,
+          cashFinalRate: supremeCash,
+        });
+        console.log('[MCX Scheduler] Updated supreme cache based on latest MCX rate.');
+      } catch (err) {
+        console.error('[MCX Scheduler] Failed to update supreme cache:', err.message);
+      }
 
       if (oldRate !== liveRate) {
         console.log(`[MCX Scheduler] Rate changed from ${oldRate} to ${liveRate}. Invalidating 24-hour dashboard cache.`);

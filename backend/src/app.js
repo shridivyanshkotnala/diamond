@@ -28,8 +28,6 @@ app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/wishlist', require('./routes/wishlist.routes'));
 app.use('/api/v1/invoices', require('./routes/invoice.routes'));
 
-
-
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });

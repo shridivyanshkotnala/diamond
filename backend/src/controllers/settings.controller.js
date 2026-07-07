@@ -59,22 +59,16 @@ const getDashboardMatrices = async (req, res) => {
     if (!metrics) {
       metrics = {
         metricsData: {
-          '24k_mcx': true,
           '22k_rtgs': true,
-          '22k_cash': false,
-          '22k_mcx': true,
+          '22k_cash': true,
           '20k_rtgs': true,
-          '20k_cash': false,
-          '20k_mcx': true,
+          '20k_cash': true,
           '18k_rtgs': true,
-          '18k_cash': false,
-          '18k_mcx': true,
+          '18k_cash': true,
           '14k_rtgs': true,
-          '14k_cash': false,
-          '14k_mcx': true,
+          '14k_cash': true,
           '9k_rtgs': true,
-          '9k_cash': false,
-          '9k_mcx': true,
+          '9k_cash': true,
           'edit_market_prices': true
         }
       };
@@ -105,9 +99,61 @@ const updateDashboardMatrices = async (req, res) => {
   }
 };
 
+const getSupremeRates = async (req, res) => {
+  try {
+    const redisService = require('../services/redis.service');
+    const SupremeChange = require('../models/supremeChange.model');
+
+    const mcx = await redisService.getMcxCache() || 160000;
+    const supreme = await SupremeChange.findOne();
+
+    const rtgsChange = supreme && typeof supreme.rtgsChange === 'number' ? supreme.rtgsChange : 0;
+    const cashChange = supreme && typeof supreme.cashChange === 'number' ? supreme.cashChange : 0;
+
+    const supremeRtgs = mcx + rtgsChange;
+    const supremeCash = mcx + cashChange;
+
+    res.status(200).json({ success: true, data: { mcx, rtgsChange, cashChange, supremeRtgs, supremeCash } });
+  } catch (error) {
+    console.error('Get Supreme Rates Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+const updateSupremeRates = async (req, res) => {
+  try {
+    const { rtgsChange, cashChange } = req.body;
+    const userId = req.user.userId;
+    const SupremeChange = require('../models/supremeChange.model');
+    const redisService = require('../services/redis.service');
+
+    const updateData = {};
+    if (typeof rtgsChange === 'number') updateData.rtgsChange = rtgsChange;
+    if (typeof cashChange === 'number') updateData.cashChange = cashChange;
+    updateData.updatedBy = userId;
+
+    const supreme = await SupremeChange.findOneAndUpdate({}, { $set: updateData }, { new: true, upsert: true });
+
+    const mcx = await redisService.getMcxCache() || 160000;
+    const supremeRtgs = mcx + (supreme.rtgsChange || 0);
+    const supremeCash = mcx + (supreme.cashChange || 0);
+
+    await redisService.setSupremeCache({ mcx, supremeRtgs, supremeCash, rtgsChange: supreme.rtgsChange, cashChange: supreme.cashChange });
+
+    // Invalidate per-business computed caches so owners see updated rates
+    await redisService.invalidateAllGoldRatesCache();
+
+    res.status(200).json({ success: true, data: { mcx, rtgsChange: supreme.rtgsChange, cashChange: supreme.cashChange, supremeRtgs, supremeCash } });
+  } catch (error) {
+    console.error('Update Supreme Rates Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getFormulaConfig,
   updateFormulaConfig,
   getDashboardMatrices,
   updateDashboardMatrices
+  ,getSupremeRates, updateSupremeRates
 };
