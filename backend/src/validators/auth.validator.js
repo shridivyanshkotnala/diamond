@@ -15,7 +15,7 @@ const contactDetailsSchema = Joi.object({
   businessId: Joi.string().required(),
   phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
   // Allow local domains in development and hosted domains in production
-  email: Joi.string().email({ tlds: { allow: false } }).required()
+  email: Joi.string().trim().email({ tlds: { allow: false }, minDomainSegments: 1 }).required()
 });
 
 const verifyOtpSchema = Joi.object({
@@ -33,7 +33,7 @@ const createPasswordSchema = Joi.object({
 
 const loginSchema = Joi.object({
   // Allow local domains (e.g., super@pratham.local) during development/testing
-  email: Joi.string().email({ tlds: { allow: false } }).required(),
+  email: Joi.string().trim().email({ tlds: { allow: false }, minDomainSegments: 1 }).required(),
   password: Joi.string().required()
 });
 
