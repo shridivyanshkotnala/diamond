@@ -83,7 +83,21 @@ function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
 function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
   const color = readString(raw.color) ?? '';
   const clarity = readString(raw.clarity) ?? '';
-  const shape = readString(raw.shape) ?? '';
+  const shape = (() => {
+    const rawShape = raw.shape;
+    if (rawShape == null) return '';
+    if (typeof rawShape === 'number') {
+      return rawShape === 0 ? '' : String(rawShape);
+    }
+    if (typeof rawShape === 'string') return rawShape.trim();
+    if (typeof rawShape === 'object' && 'value' in rawShape) {
+      const value = (rawShape as { value?: string | number | null }).value;
+      if (value == null) return '';
+      if (typeof value === 'number') return value === 0 ? '' : String(value);
+      if (typeof value === 'string') return value.trim();
+    }
+    return '';
+  })();
   const rate = readNumber(raw.rate);
 
   if (rate == null || (!color && !clarity)) {

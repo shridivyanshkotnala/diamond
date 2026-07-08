@@ -46,6 +46,13 @@ interface StoneRatesTableProps {
 function StoneRatesTable({ title, rates, showShape, onEdit, onDelete, onAdd }: StoneRatesTableProps) {
   const { width } = useWindowDimensions();
   const isCompact = width < 480;
+  const shapeLabelMap = useMemo(
+    () =>
+      new Map(
+        DIAMOND_SHAPE_OPTIONS.map((option) => [option.value.toUpperCase(), option.label]),
+      ),
+    [],
+  );
 
   return (
     <View>
@@ -86,7 +93,13 @@ function StoneRatesTable({ title, rates, showShape, onEdit, onDelete, onAdd }: S
                 </Text>
                 {showShape ? (
                   <Text style={[styles.cell, styles.shapeCol]}>
-                    {displayStoneField(rate.shape ?? '')}
+                    {(() => {
+                      const rawShape = rate.shape ?? '';
+                      const normalized = String(rawShape).trim();
+                      if (!normalized || normalized === '0') return '—';
+                      const label = shapeLabelMap.get(normalized.toUpperCase());
+                      return label ? label : normalized;
+                    })()}
                   </Text>
                 ) : null}
                 <Text style={[styles.cell, styles.rateCol, styles.rateText]}>
