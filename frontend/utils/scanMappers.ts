@@ -38,6 +38,8 @@ const API_FIELD_LABELS: Record<string, string> = {
   colorstoneColor: 'CS Color',
   colorstoneClarity: 'CS Clarity',
   labour: 'Labour',
+  otherCharges: 'Other Charges',
+  otherChargesRemarks: 'Other Charges Remarks',
   other: 'Other',
 };
 
@@ -106,6 +108,8 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   result.labourPurityPercent = '';
   result.labourChargeAmount = '';
   result.labourChargeUnit = DEFAULT_LABOUR_CHARGE_UNIT;
+  result.otherChargesAmount = '';
+  result.otherChargesRemarks = '';
   result.customPurityPercent = '';
   result.goldRate = '';
 
@@ -122,6 +126,14 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
     result.labourPurityPercent = parsed.labourPurityPercent;
     result.labourChargeAmount = parsed.labourChargeAmount;
     result.labourChargeUnit = parsed.labourChargeUnit;
+  }
+
+  if (data.otherCharges != null && String(data.otherCharges).trim() !== '') {
+    result.otherChargesAmount = String(data.otherCharges);
+  }
+
+  if (data.otherChargesRemarks != null && String(data.otherChargesRemarks).trim() !== '') {
+    result.otherChargesRemarks = String(data.otherChargesRemarks);
   }
 
   if (result.diamondColor || result.diamondClarity) {
@@ -156,6 +168,18 @@ export function scanItemToStructuredData(
   const labourValue = serializeLabourForApi(scanData);
   if (labourValue) {
     result.labour = labourValue;
+  }
+
+  if (scanData.otherChargesAmount?.trim()) {
+    result.otherCharges = scanData.otherChargesAmount.trim();
+  } else {
+    delete result.otherCharges;
+  }
+
+  if (scanData.otherChargesRemarks?.trim()) {
+    result.otherChargesRemarks = scanData.otherChargesRemarks.trim();
+  } else {
+    delete result.otherChargesRemarks;
   }
 
   return result;

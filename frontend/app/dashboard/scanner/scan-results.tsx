@@ -126,8 +126,9 @@ export default function ScanResultsScreen() {
         diamonds={diamonds}
         colorstones={colorstones}
         jewelleryType={activeSelectedType}
+        pricing={livePricing}
         editable={false}
-        gstNote={demoResult?.gstNote ?? 'MRP = Gold + Stones + Labour'}
+        gstNote={demoResult?.gstNote ?? 'MRP = Gold + Stones + Labour + Other Charges'}
       />
     </ScanScreenWrapper>
   );

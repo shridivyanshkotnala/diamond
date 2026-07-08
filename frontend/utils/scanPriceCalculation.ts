@@ -58,6 +58,8 @@ export interface FinalTabPricingResult {
   useFixedAmountMode: boolean;
   labourAmount: number;
   labourDisplay: string;
+  otherChargesAmount: number;
+  otherChargesDisplay: string;
   ultimateMrp: number;
   ultimateMrpDisplay: string;
 }
@@ -309,6 +311,9 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
   const labour = computeLabourAmount(input.scanData, netWtGrams);
   const usePercentageMode = labour.mode === 'percentage';
   const useFixedAmountMode = labour.mode === 'fixedAmount';
+  const otherChargesAmount = parseNumericValue(input.scanData.otherChargesAmount);
+  const otherChargesDisplay =
+    otherChargesAmount > 0 ? formatIndianCurrency(otherChargesAmount) : '—';
 
   return {
     grossWtDisplay: input.scanData.grossWt || '—',
@@ -329,8 +334,10 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
     useFixedAmountMode,
     labourAmount: labour.amount,
     labourDisplay: labour.display,
-    ultimateMrp: goldBasePrice + labour.amount,
-    ultimateMrpDisplay: formatIndianCurrency(goldBasePrice + labour.amount),
+    otherChargesAmount,
+    otherChargesDisplay,
+    ultimateMrp: goldBasePrice + labour.amount + otherChargesAmount,
+    ultimateMrpDisplay: formatIndianCurrency(goldBasePrice + labour.amount + otherChargesAmount),
   };
 }
 
@@ -339,7 +346,8 @@ export function withStoneRows(
   stoneRows: StoneAmountRow[],
 ): FinalTabPricingResult {
   const totalStoneAmount = stoneRows.reduce((sum, row) => sum + row.amount, 0);
-  const ultimateMrp = pricing.goldBasePrice + totalStoneAmount + pricing.labourAmount;
+  const ultimateMrp =
+    pricing.goldBasePrice + totalStoneAmount + pricing.labourAmount + pricing.otherChargesAmount;
 
   return {
     ...pricing,

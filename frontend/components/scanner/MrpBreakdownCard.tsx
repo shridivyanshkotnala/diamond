@@ -27,6 +27,7 @@ interface MrpBreakdownCardProps {
   goldBase: string;
   stoneTotal: string;
   labour: string;
+  otherCharges: string;
   ultimateMrp: string;
 }
 
@@ -34,6 +35,7 @@ export function MrpBreakdownCard({
   goldBase,
   stoneTotal,
   labour,
+  otherCharges,
   ultimateMrp,
 }: MrpBreakdownCardProps) {
   return (
@@ -41,6 +43,7 @@ export function MrpBreakdownCard({
       <BreakdownRow label="Gold Base Price" value={goldBase} />
       <BreakdownRow label="Stone Total" value={stoneTotal} />
       <BreakdownRow label="Labour" value={labour} />
+      <BreakdownRow label="Other Charges" value={otherCharges} />
       <BreakdownRow label="Total MRP" value={ultimateMrp} bold />
     </View>
   );

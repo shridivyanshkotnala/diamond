@@ -35,6 +35,8 @@ const defaultPricing: FinalTabPricingResult = {
   useFixedAmountMode: false,
   labourAmount: 0,
   labourDisplay: '—',
+  otherChargesAmount: 0,
+  otherChargesDisplay: '—',
   ultimateMrp: 0,
   ultimateMrpDisplay: '₹0',
 };
@@ -63,6 +65,7 @@ export function useFinalTabPricing({
       labourPurityPercent: scanData.labourPurityPercent,
       labourChargeAmount: scanData.labourChargeAmount,
       labourChargeUnit: scanData.labourChargeUnit,
+      otherCharges: parseNumericValue(scanData.otherChargesAmount),
       diamonds: diamonds.map(d => ({ weight: parseNumericValue(d.weight) || 0, rate: parseNumericValue(d.rate) || 0 })),
       colorstones: colorstones.map(c => ({ weight: parseNumericValue(c.weight) || 0, rate: parseNumericValue(c.rate) || 0 })),
     };
@@ -109,6 +112,8 @@ export function useFinalTabPricing({
           useFixedAmountMode: res.breakdown.labourChargeType === 'AMOUNT',
           labourAmount: res.breakdown.labourAmount,
           labourDisplay: formatIndianCurrency(res.breakdown.labourAmount),
+          otherChargesAmount: res.breakdown.otherCharges ?? 0,
+          otherChargesDisplay: formatIndianCurrency(res.breakdown.otherCharges ?? 0),
           ultimateMrp: res.finalMRP,
           ultimateMrpDisplay: formatIndianCurrency(res.finalMRP),
         });

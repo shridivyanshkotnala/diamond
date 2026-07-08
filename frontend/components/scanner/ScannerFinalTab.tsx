@@ -9,12 +9,13 @@ import { RawMaterialGoldSectionInteractive } from '@/components/scanner/RawMater
 import { RawMaterialSection } from '@/components/scanner/RawMaterialSection';
 import { StoneTypeRowCard } from '@/components/scanner/StoneTypeRowCard';
 import { StoneTypeSequence } from '@/components/scanner/StoneTypeResultSection';
-import { useFinalTabPricing } from '@/hooks/useFinalTabPricing';
+import type { FinalTabPricingResult } from '@/utils/scanPriceCalculation';
 import type { GoldRate, TaxSettings } from '@/types/rates';
 import type { JewelleryType, ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
 import { formatIndianCurrency } from '@/utils/scanPriceCalculation';
 import { buildSequentialStoneBlocks } from '@/utils/stoneSequenceUtils';
+import { OtherChargesSection } from '@/components/scanner/OtherChargesSection';
 
 interface ScannerFinalTabProps {
   scanData: ScanItemData;
@@ -22,6 +23,7 @@ interface ScannerFinalTabProps {
   diamonds: StoneEntry[];
   colorstones: StoneEntry[];
   jewelleryType: JewelleryType;
+  pricing: FinalTabPricingResult;
   goldRates?: GoldRate[];
   goldTaxSettings?: TaxSettings;
   mcxLiveRate?: number;
@@ -35,6 +37,7 @@ interface ScannerFinalTabProps {
   ) => void;
   onRateErrorChange?: (sequenceIndex: number, hasError: boolean) => void;
   showLabourValidation?: boolean;
+  showOtherChargesRemarksError?: boolean;
   gstNote?: string;
 }
 
@@ -44,6 +47,7 @@ export function ScannerFinalTab({
   diamonds,
   colorstones,
   jewelleryType,
+  pricing,
   goldRates,
   goldTaxSettings,
   mcxLiveRate,
@@ -53,19 +57,12 @@ export function ScannerFinalTab({
   onStoneEntryChange,
   onRateErrorChange,
   showLabourValidation = false,
-  gstNote = 'MRP = Gold + Stones + Labour (client-side)',
+  showOtherChargesRemarksError = false,
+  gstNote = 'MRP = Gold + Stones + Labour + Other Charges (client-side)',
 }: ScannerFinalTabProps) {
   const [selectedKarat, setSelectedKarat] = useState(
     () => resolveScannedKarat(scanData.karat, scanData.tunch) || '18K',
   );
-
-  const pricing = useFinalTabPricing({
-    scanData: { ...scanData, karat: selectedKarat },
-    structuredData,
-    selectedType: jewelleryType,
-    goldRates,
-    selectedKarat,
-  });
 
   const editableStoneBlocks = useMemo(
     () => buildSequentialStoneBlocks(diamonds, colorstones, jewelleryType),
@@ -157,11 +154,27 @@ export function ScannerFinalTab({
         <LabourChargeResultSection pricing={pricing} />
       )}
 
+      {editable ? (
+        <OtherChargesSection
+          amount={scanData.otherChargesAmount}
+          remarks={scanData.otherChargesRemarks}
+          onAmountChange={(value) => {
+            onFieldChange?.('otherChargesAmount', value);
+            if (!value || Number.parseFloat(value.replace(/[^\d.]/g, '')) <= 0) {
+              onFieldChange?.('otherChargesRemarks', '');
+            }
+          }}
+          onRemarksChange={(value) => onFieldChange?.('otherChargesRemarks', value)}
+          showRemarksError={showOtherChargesRemarksError}
+        />
+      ) : null}
+
       {!editable ? (
         <MrpBreakdownCard
           goldBase={pricing.goldBasePriceDisplay}
           stoneTotal={formatIndianCurrency(pricing.totalStoneAmount)}
           labour={pricing.labourDisplay}
+          otherCharges={pricing.otherChargesDisplay}
           ultimateMrp={pricing.ultimateMrpDisplay}
         />
       ) : null}

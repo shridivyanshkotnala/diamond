@@ -128,6 +128,8 @@ export interface ScanItemData {
   labourPurityPercent: string;
   labourChargeAmount: string;
   labourChargeUnit: LabourChargeUnit;
+  otherChargesAmount: string;
+  otherChargesRemarks: string;
   diamondAmount: string;
 }
 
@@ -234,6 +236,7 @@ export interface CalculateMrpPayload {
   labourPurityPercent?: string;
   labourChargeAmount?: string;
   labourChargeUnit?: string;
+  otherCharges?: number;
   diamonds: Array<{ weight: number; rate: number }>;
   colorstones: Array<{ weight: number; rate: number }>;
 }
@@ -247,6 +250,7 @@ export interface CalculateMrpResponse {
     goldAmount: number;
     labourAmount: number;
     labourChargeType: string;
+    otherCharges: number;
   };
   finalMRP: number;
 }

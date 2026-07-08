@@ -38,6 +38,8 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   labourPurityPercent: '',
   labourChargeAmount: '',
   labourChargeUnit: DEFAULT_LABOUR_CHARGE_UNIT,
+  otherChargesAmount: '',
+  otherChargesRemarks: '',
   diamondAmount: '11,400',
 };
 
@@ -264,4 +266,6 @@ export const MOCK_REVIEW_RESULTS = {
   labourPurityPercent: '',
   labourChargeAmount: '5465',
   labourChargeUnit: DEFAULT_LABOUR_CHARGE_UNIT,
+  otherChargesAmount: '',
+  otherChargesRemarks: '',
 };

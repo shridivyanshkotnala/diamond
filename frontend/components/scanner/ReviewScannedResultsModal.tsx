@@ -3,11 +3,15 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
+import { OutlineButton } from '@/components/scanner/OutlineButton';
+import { PrimaryGreenButton } from '@/components/scanner/PrimaryGreenButton';
 import { useFormulaStore } from '@/store/formulaStore';
 import type { ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import { DIAMOND_SHAPE_OPTIONS, type StoneSelectOption } from '@/constants/stoneRateOptions';
 import { fetchDiamondRates, fetchGoldRates } from '@/utils/ratesApi';
 import type { GoldRate, TaxSettings } from '@/types/rates';
+import type { FinalTabPricingResult } from '@/utils/scanPriceCalculation';
+import { parseNumericValue } from '@/utils/scanPriceCalculation';
 import {
   applyFormula2KaratConstraint,
   computeNetWeightFallback,
@@ -30,6 +34,12 @@ interface ReviewScannedResultsModalProps {
   onStoneEntriesChange: (diamonds: StoneEntry[], colorstones: StoneEntry[]) => void;
   onReScan: () => void;
   onConfirm: () => void;
+  onGenerateInvoice: () => void;
+  onAddToWishlist: () => void;
+  pricing: FinalTabPricingResult;
+  confirmed: boolean;
+  addingToWishlist?: boolean;
+  hasAddedToWishlist?: boolean;
   confirming?: boolean;
 }
 
@@ -41,6 +51,12 @@ export function ReviewScannedResultsModal({
   onStoneEntriesChange,
   onReScan,
   onConfirm,
+  onGenerateInvoice,
+  onAddToWishlist,
+  pricing,
+  confirmed,
+  addingToWishlist = false,
+  hasAddedToWishlist = false,
   confirming = false,
 }: ReviewScannedResultsModalProps) {
   const activeFormula = useFormulaStore((s) => s.activeFormula);
@@ -132,7 +148,11 @@ export function ReviewScannedResultsModal({
   }, []);
 
   const hasRateError = Object.values(rateErrors).some(Boolean);
-  const canConfirm = Boolean(scanData.grossWt.trim()) && !hasRateError;
+  const otherChargesAmount = parseNumericValue(scanData.otherChargesAmount);
+  const missingOtherChargesRemarks =
+    otherChargesAmount > 0 && !scanData.otherChargesRemarks.trim();
+  const canConfirm =
+    Boolean(scanData.grossWt.trim()) && !hasRateError && !missingOtherChargesRemarks;
 
   useEffect(() => {
     const scannedKarat = resolveScannedKarat(scanData.karat, scanData.tunch);
@@ -214,7 +234,7 @@ export function ReviewScannedResultsModal({
         Scanner Review Result 
       </Text>
 
-      {!wasNetWtScanned ? (
+      {!confirmed && !wasNetWtScanned ? (
         <Pressable
           onPress={handleNetWtFormulaToggle}
           className="mb-4 flex-row items-start gap-2.5 rounded-input border border-border bg-surface-muted px-3 py-3"
@@ -244,39 +264,58 @@ export function ReviewScannedResultsModal({
         diamonds={diamondEntries}
         colorstones={colorstoneEntries}
         jewelleryType={jewelleryType}
+        pricing={pricing}
         goldRates={goldRates}
         goldTaxSettings={goldTaxSettings}
         mcxLiveRate={mcxLiveRate}
         diamondShapeOptions={diamondShapeOptions}
-        editable
+        editable={!confirmed}
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}
         onRateErrorChange={handleStoneRateErrorChange}
+        showOtherChargesRemarksError={missingOtherChargesRemarks}
       />
 
-      <View className="mt-2 flex-row gap-3">
-        <Pressable
-          onPress={onReScan}
-          className="flex-1 items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
-        >
-          <Text className="text-sm font-semibold text-text-secondary">ReScan</Text>
-        </Pressable>
-        <Pressable
-          onPress={handleConfirm}
-          disabled={confirming || !canConfirm || (requiresKaratSelection && !scanData.karat)}
-          className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
-        >
-          {confirming ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text className="text-sm font-semibold text-white">Confirm</Text>
-          )}
-        </Pressable>
-      </View>
+      {!confirmed ? (
+        <View className="mt-2 flex-row gap-3">
+          <Pressable
+            onPress={onReScan}
+            className="flex-1 items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
+          >
+            <Text className="text-sm font-semibold text-text-secondary">ReScan</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleConfirm}
+            disabled={confirming || !canConfirm || (requiresKaratSelection && !scanData.karat)}
+            className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
+          >
+            {confirming ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text className="text-sm font-semibold text-white">Confirm</Text>
+            )}
+          </Pressable>
+        </View>
+      ) : (
+        <View className="mt-2 flex-row gap-3">
+          <OutlineButton
+            title={hasAddedToWishlist ? 'Item Added' : addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
+            onPress={onAddToWishlist}
+            disabled={hasAddedToWishlist || addingToWishlist}
+          />
+          <PrimaryGreenButton title="Generate Invoice" onPress={onGenerateInvoice} />
+        </View>
+      )}
 
       {hasRateError ? (
         <Text className="mt-3 text-center text-xs leading-5 text-danger-text">
           Resolve rate errors before saving.
+        </Text>
+      ) : null}
+
+      {missingOtherChargesRemarks ? (
+        <Text className="mt-2 text-center text-xs leading-5 text-danger-text">
+          Add remarks for other charges before confirming.
         </Text>
       ) : null}
 

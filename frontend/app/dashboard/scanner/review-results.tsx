@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,13 +11,14 @@ import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/dashboard/BottomNav';
-import { ItemSelectedBadge } from '@/components/scanner/ItemSelectedBadge';
 import { ReviewScannedResultsModal } from '@/components/scanner/ReviewScannedResultsModal';
 import { ScreenBackHeader } from '@/components/scanner/ScreenBackHeader';
 import { MOCK_REVIEW_RESULTS } from '@/constants/scannerData';
 import { isDemoScanMode } from '@/constants/scanMode';
+import { useFinalTabPricing } from '@/hooks/useFinalTabPricing';
 import { useFormulaStore } from '@/store/formulaStore';
 import { useScannerStore } from '@/store/scannerStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { ApiError } from '@/utils/apiClient';
 import { syncFormulaStoreFromApi } from '@/utils/formulaSettingsApi';
@@ -29,8 +30,10 @@ import { getReview, submitReview } from '@/utils/scanApi';
 import { scanItemToStructuredData, structuredDataToScanItem } from '@/utils/scanMappers';
 import {
   applyStoneEntriesToScanData,
+  parseStoneArraysFromStructuredData,
   stoneEntriesToStructuredData,
 } from '@/utils/stoneSequenceUtils';
+import { buildWishlistItem } from '@/utils/wishlistUtils';
 
 const SCANNER_BG =
   'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80';
@@ -67,8 +70,23 @@ export default function ReviewResultsScreen() {
   const updateScanData = useScannerStore((s) => s.updateScanData);
   const setStructuredData = useScannerStore((s) => s.setStructuredData);
   const setScanSide = useScannerStore((s) => s.setScanSide);
+  const addWishlistItem = useWishlistStore((s) => s.addItem);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [addingToWishlist, setAddingToWishlist] = useState(false);
+  const [hasAddedToWishlist, setHasAddedToWishlist] = useState(false);
+
+  const livePricing = useFinalTabPricing({
+    scanData,
+    structuredData,
+    selectedType,
+  });
+
+  const { diamonds, colorstones } = useMemo(
+    () => parseStoneArraysFromStructuredData(structuredData, scanData),
+    [structuredData, scanData],
+  );
 
   const loadReview = useCallback(async () => {
     if (!scanId) {
@@ -76,6 +94,9 @@ export default function ReviewResultsScreen() {
       return;
     }
 
+    setConfirmed(false);
+    setHasAddedToWishlist(false);
+    setAddingToWishlist(false);
     setLoading(true);
     try {
       if (!isDemoScanMode()) {
@@ -118,6 +139,8 @@ export default function ReviewResultsScreen() {
             labourPurityPercent: MOCK_REVIEW_RESULTS.labourPurityPercent,
             labourChargeAmount: MOCK_REVIEW_RESULTS.labourChargeAmount,
             labourChargeUnit: MOCK_REVIEW_RESULTS.labourChargeUnit,
+            otherChargesAmount: MOCK_REVIEW_RESULTS.otherChargesAmount,
+            otherChargesRemarks: MOCK_REVIEW_RESULTS.otherChargesRemarks,
           }),
         );
         return;
@@ -174,10 +197,10 @@ export default function ReviewResultsScreen() {
     setSubmitting(true);
     try {
       await submitReview(scanId, payload);
-      router.push('/dashboard/scanner/scan-results' as Href);
+      setConfirmed(true);
     } catch (error) {
       if (isDemoScanMode()) {
-        router.push('/dashboard/scanner/scan-results' as Href);
+        setConfirmed(true);
         return;
       }
       const message =
@@ -185,6 +208,36 @@ export default function ReviewResultsScreen() {
       Alert.alert('Approval Error', message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGenerateInvoice = () => {
+    router.push('/dashboard/scanner/invoice-preview' as Href);
+  };
+
+  const handleAddToWishlist = async () => {
+    if (addingToWishlist || hasAddedToWishlist) return;
+
+    setAddingToWishlist(true);
+    try {
+      const item = buildWishlistItem({
+        scanData,
+        structuredData,
+        selectedType,
+        diamonds,
+        colorstones,
+        pricing: livePricing,
+        scanTimestamp: new Date().toISOString(),
+      });
+      await addWishlistItem(item);
+      setHasAddedToWishlist(true);
+      Alert.alert('Wishlist', 'Item added to your wishlist.');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to add item. Please try again.';
+      Alert.alert('Wishlist Error', message);
+    } finally {
+      setAddingToWishlist(false);
     }
   };
 
@@ -208,10 +261,16 @@ export default function ReviewResultsScreen() {
                   scanData={scanData}
                   structuredData={structuredData}
                   jewelleryType={selectedType}
+                  pricing={livePricing}
                   onFieldChange={handleFieldChange}
                   onStoneEntriesChange={handleStoneEntriesChange}
                   onReScan={handleReScan}
                   onConfirm={handleConfirm}
+                  confirmed={confirmed}
+                  onGenerateInvoice={handleGenerateInvoice}
+                  onAddToWishlist={handleAddToWishlist}
+                  addingToWishlist={addingToWishlist}
+                  hasAddedToWishlist={hasAddedToWishlist}
                   confirming={submitting}
                 />
               </View>

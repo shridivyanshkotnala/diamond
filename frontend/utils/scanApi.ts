@@ -208,6 +208,8 @@ export async function calculateScanMrp(
         goldRateApplied: 0,
         goldAmount: 0,
         labourAmount: 0,
+        otherCharges: 0,
+        labourChargeType: 'NONE',
       },
       finalMRP: 0,
     };

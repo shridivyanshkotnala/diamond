@@ -40,6 +40,7 @@ const calculateMRP = async (req, res, next) => {
       labourPurityPercent,
       labourChargeAmount,
       labourChargeUnit,
+      otherCharges,
     } = req.body;
 
     // 2. Calculate Diamond Amount
@@ -118,8 +119,11 @@ const calculateMRP = async (req, res, next) => {
 
     const goldAmount = baseGoldRatePerGram * pureWeight;
 
+    const otherChargesAmount = parseFloat(otherCharges) || 0;
+
     // 6. Calculate Final MRP
-    const finalMRP = goldAmount + diamondAmount + colorstoneAmount + labourAmount;
+    const finalMRP =
+      goldAmount + diamondAmount + colorstoneAmount + labourAmount + otherChargesAmount;
 
     const resultData = {
       breakdown: {
@@ -129,7 +133,8 @@ const calculateMRP = async (req, res, next) => {
         goldRateApplied: baseGoldRatePerGram,
         goldAmount,
         labourAmount,
-        labourChargeType: labourCharge ? labourCharge.type : (labourPurityPercent ? 'PERCENTAGE' : (labourChargeAmount ? 'AMOUNT' : 'NONE'))
+        labourChargeType: labourCharge ? labourCharge.type : (labourPurityPercent ? 'PERCENTAGE' : (labourChargeAmount ? 'AMOUNT' : 'NONE')),
+        otherCharges: otherChargesAmount,
       },
       finalMRP
     };
