@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
+import { PriceCard } from '@/components/scanner/PriceCard';
 import { CalculationRateSection } from '@/components/scanner/CalculationRateSection';
 import { OutlineButton } from '@/components/scanner/OutlineButton';
 import { PrimaryGreenButton } from '@/components/scanner/PrimaryGreenButton';
@@ -281,6 +282,14 @@ export function ReviewScannedResultsModal({
         value={scanData.calculationRate}
         onChange={(value) => onFieldChange('calculationRate', value)}
       />
+
+      {confirmed ? (
+        <PriceCard
+          label="Calculated MRP Of Jewellery"
+          amount={pricing.ultimateMrpDisplay}
+          subtitle="Final Jewellery MRP"
+        />
+      ) : null}
 
       {!confirmed ? (
         <View className="mt-2 flex-row gap-3">
