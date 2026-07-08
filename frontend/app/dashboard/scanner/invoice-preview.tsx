@@ -21,7 +21,6 @@ import {
 import { apiGenerateInvoice, type InvoiceLineItemPayload } from '@/utils/invoiceApi';
 import { amountInWords } from '@/utils/numberToWords';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
-import type { ScannerCalculationUse } from '@/utils/goldRateUtils';
 import { parseStoneArraysFromStructuredData } from '@/utils/stoneSequenceUtils';
 import { buildDisplayStoneBlocks } from '@/utils/stoneSequenceUtils';
 import { fetchGoldRates } from '@/utils/ratesApi';
@@ -35,7 +34,6 @@ export default function InvoicePreviewScreen() {
   const [supremeCashChange, setSupremeCashChange] = useState(0);
   const [rtgsChange, setRtgsChange] = useState(0);
   const [cashChange, setCashChange] = useState(0);
-  const [scannerCalculationUse, setScannerCalculationUse] = useState<ScannerCalculationUse>('rtgs');
 
   const scanData = useScannerStore((state) => state.scanData);
   const structuredData = useScannerStore((state) => state.structuredData);
@@ -65,9 +63,6 @@ export default function InvoicePreviewScreen() {
         setSupremeCashChange(supremeCashBase - response.mcxLiveRate);
         setRtgsChange(response.taxSettings?.rtgsChangeBy ?? 0);
         setCashChange(response.taxSettings?.cashChangeBy ?? 0);
-        setScannerCalculationUse(
-          response.taxSettings?.scannerCalculationUse === 'cash' ? 'cash' : 'rtgs',
-        );
       })
       .catch(() => { /* keep zeros on error */ });
     return () => { cancelled = true; };
@@ -90,7 +85,7 @@ export default function InvoicePreviewScreen() {
       mcxLiveRate,
       supremeRtgsChange + rtgsChange,
       supremeCashChange + cashChange,
-      scannerCalculationUse,
+      scanData.calculationRate || 'rtgs',
     );
     const goldRow = buildGoldLineItemRow({
       scanData,
@@ -109,7 +104,6 @@ export default function InvoicePreviewScreen() {
     supremeCashChange,
     rtgsChange,
     cashChange,
-    scannerCalculationUse,
     scanData,
     selectedKarat,
     diamonds,

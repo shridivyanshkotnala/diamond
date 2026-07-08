@@ -21,7 +21,6 @@ import type { GoldRate } from '@/types/rates';
 import type { ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import { getBusinessProfile, formatProfileValue } from '@/utils/businessProfile';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
-import type { ScannerCalculationUse } from '@/utils/goldRateUtils';
 import {
   GST_RATE_OPTIONS,
   buildGoldLineItemRow,
@@ -273,7 +272,6 @@ export function InvoiceGenerationBilling({
   const [supremeCashChange, setSupremeCashChange] = useState(0);
   const [rtgsChange, setRtgsChange] = useState(0);
   const [cashChange, setCashChange] = useState(0);
-  const [scannerCalculationUse, setScannerCalculationUse] = useState<ScannerCalculationUse>('rtgs');
   const [ratesLoading, setRatesLoading] = useState(true);
   const [invoiceDateTime] = useState(() => formatInvoiceDateTime());
   const [previewInvoiceNumber, setPreviewInvoiceNumber] = useState<string>('Loading next number...');
@@ -305,9 +303,6 @@ export function InvoiceGenerationBilling({
         setSupremeCashChange(supremeCashBase - response.mcxLiveRate);
         setRtgsChange(response.taxSettings?.rtgsChangeBy ?? 0);
         setCashChange(response.taxSettings?.cashChangeBy ?? 0);
-        setScannerCalculationUse(
-          response.taxSettings?.scannerCalculationUse === 'cash' ? 'cash' : 'rtgs',
-        );
       } catch {
         if (!cancelled) {
           setGoldRates([]);
@@ -316,7 +311,6 @@ export function InvoiceGenerationBilling({
           setSupremeCashChange(0);
           setRtgsChange(0);
           setCashChange(0);
-          setScannerCalculationUse('rtgs');
         }
       } finally {
         if (!cancelled) setRatesLoading(false);
@@ -366,7 +360,7 @@ export function InvoiceGenerationBilling({
       mcxLiveRate,
       supremeRtgsChange + rtgsChange,
       supremeCashChange + cashChange,
-      scannerCalculationUse,
+      scanData.calculationRate || 'rtgs',
     );
     const goldRow = buildGoldLineItemRow({
       scanData,
@@ -383,7 +377,6 @@ export function InvoiceGenerationBilling({
     supremeCashChange,
     rtgsChange,
     cashChange,
-    scannerCalculationUse,
     scanData,
     selectedKarat,
     stoneEntries,

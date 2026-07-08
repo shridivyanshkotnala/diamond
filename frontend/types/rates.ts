@@ -41,8 +41,8 @@ export interface GoldRatesResponse {
 export interface UpdateGoldRatePayload {
   carat: string;
   purity: number;
-  increaseByAmount: number;
-  increaseByType: GoldIncreaseByType;
+  increaseByAmount?: number;
+  increaseByType?: GoldIncreaseByType;
 }
 
 export interface UpdateGoldRateVisibilityPayload {

@@ -91,6 +91,7 @@ export function ScannerFinalTab({
           goldRates={goldRates}
           goldTaxSettings={goldTaxSettings}
           mcxLiveRate={mcxLiveRate}
+          calculationMode={scanData.calculationRate}
           editable
           onFieldChange={(field, value) => {
             if (field === 'karat') {

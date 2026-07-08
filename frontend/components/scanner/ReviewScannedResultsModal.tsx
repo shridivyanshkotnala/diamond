@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
+import { CalculationRateSection } from '@/components/scanner/CalculationRateSection';
 import { OutlineButton } from '@/components/scanner/OutlineButton';
 import { PrimaryGreenButton } from '@/components/scanner/PrimaryGreenButton';
 import { useFormulaStore } from '@/store/formulaStore';
@@ -234,7 +235,7 @@ export function ReviewScannedResultsModal({
         Scanner Review Result 
       </Text>
 
-      {!confirmed && !wasNetWtScanned ? (
+      {!wasNetWtScanned ? (
         <Pressable
           onPress={handleNetWtFormulaToggle}
           className="mb-4 flex-row items-start gap-2.5 rounded-input border border-border bg-surface-muted px-3 py-3"
@@ -269,11 +270,16 @@ export function ReviewScannedResultsModal({
         goldTaxSettings={goldTaxSettings}
         mcxLiveRate={mcxLiveRate}
         diamondShapeOptions={diamondShapeOptions}
-        editable={!confirmed}
+        editable
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}
         onRateErrorChange={handleStoneRateErrorChange}
         showOtherChargesRemarksError={missingOtherChargesRemarks}
+      />
+
+      <CalculationRateSection
+        value={scanData.calculationRate}
+        onChange={(value) => onFieldChange('calculationRate', value)}
       />
 
       {!confirmed ? (

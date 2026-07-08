@@ -2,7 +2,6 @@ import type { GoldRate } from '@/types/rates';
 import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { normalizeKarat, parseWeightValue } from '@/utils/formulaUtils';
 import {
-  computeDisplayGoldRates,
   deriveActiveBaseRate,
   type ScannerCalculationUse,
 } from '@/utils/goldRateUtils';
@@ -42,8 +41,8 @@ export function computeGoldPerGramPrice(input: InvoiceGoldPriceInput): number {
   const tableMatch = input.goldRates.find(
     (rate) => normalizeKarat(rate.carat) === normalizedKarat,
   );
-  if (tableMatch?.finalRate && tableMatch.finalRate > 0) {
-    return tableMatch.finalRate / 10;
+  if (tableMatch?.purity && input.activeBaseRate > 0) {
+    return (input.activeBaseRate * (tableMatch.purity / 100)) / 10;
   }
 
   const fromScan = parseNumericValue(input.scanData.goldRate);
@@ -146,6 +145,5 @@ export function prepareDisplayGoldRates(
     rtgsFinalRate,
     cashFinalRate,
   );
-  const displayRates = computeDisplayGoldRates(rates, activeBaseRate);
-  return { displayRates, activeBaseRate };
+  return { displayRates: rates, activeBaseRate };
 }

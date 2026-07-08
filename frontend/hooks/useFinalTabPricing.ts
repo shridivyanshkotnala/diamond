@@ -65,6 +65,7 @@ export function useFinalTabPricing({
       labourPurityPercent: scanData.labourPurityPercent,
       labourChargeAmount: scanData.labourChargeAmount,
       labourChargeUnit: scanData.labourChargeUnit,
+      calculationMode: scanData.calculationRate,
       otherCharges: parseNumericValue(scanData.otherChargesAmount),
       diamonds: diamonds.map(d => ({ weight: parseNumericValue(d.weight) || 0, rate: parseNumericValue(d.rate) || 0 })),
       colorstones: colorstones.map(c => ({ weight: parseNumericValue(c.weight) || 0, rate: parseNumericValue(c.rate) || 0 })),

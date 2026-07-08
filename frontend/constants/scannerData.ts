@@ -38,6 +38,7 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   labourPurityPercent: '',
   labourChargeAmount: '',
   labourChargeUnit: DEFAULT_LABOUR_CHARGE_UNIT,
+  calculationRate: 'rtgs',
   otherChargesAmount: '',
   otherChargesRemarks: '',
   diamondAmount: '11,400',

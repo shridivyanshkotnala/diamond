@@ -41,6 +41,7 @@ const calculateMRP = async (req, res, next) => {
       labourChargeAmount,
       labourChargeUnit,
       otherCharges,
+      calculationMode,
     } = req.body;
 
     // 2. Calculate Diamond Amount
@@ -102,16 +103,20 @@ const calculateMRP = async (req, res, next) => {
       }
     }
 
+    const scan = scanId ? await redisService.getScan(scanId) : null;
+    const resolvedMode =
+      calculationMode || scan?.calculationMode || 'rtgs';
+
     // 5. Calculate Gold Amount
-    let baseGoldRatePer10g = liveRatesData.taxSettings?.scannerCalculationUse === 'cash' 
-        ? liveRatesData.taxSettings.cashFinalRate 
+    let baseGoldRatePer10g = resolvedMode === 'cash'
+        ? liveRatesData.taxSettings.cashFinalRate
         : liveRatesData.taxSettings.rtgsFinalRate;
         
     // Fallback if cache is old and doesn't contain pre-calculated final rates
     if (baseGoldRatePer10g === undefined && liveRatesData.mcxLiveRate) {
-        const changeBy = liveRatesData.taxSettings?.scannerCalculationUse === 'cash'
-           ? (liveRatesData.taxSettings?.cashChangeBy || 0)
-           : (liveRatesData.taxSettings?.rtgsChangeBy || 0);
+      const changeBy = resolvedMode === 'cash'
+         ? (liveRatesData.taxSettings?.cashChangeBy || 0)
+         : (liveRatesData.taxSettings?.rtgsChangeBy || 0);
         baseGoldRatePer10g = liveRatesData.mcxLiveRate + changeBy;
     }
     
@@ -140,13 +145,11 @@ const calculateMRP = async (req, res, next) => {
     };
 
     // Store in Redis
-    if (scanId) {
-       const scan = await redisService.getScan(scanId);
-       if (scan) {
-         await redisService.updateScanStatus(scanId, scan.status, {
-             calculation: resultData
-         });
-       }
+    if (scanId && scan) {
+      await redisService.updateScanStatus(scanId, scan.status, {
+        calculation: resultData,
+        calculationMode: resolvedMode,
+      });
     }
 
     sendSuccess(res, resultData);

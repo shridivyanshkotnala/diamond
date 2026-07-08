@@ -128,6 +128,7 @@ export interface ScanItemData {
   labourPurityPercent: string;
   labourChargeAmount: string;
   labourChargeUnit: LabourChargeUnit;
+  calculationRate: 'rtgs' | 'cash';
   otherChargesAmount: string;
   otherChargesRemarks: string;
   diamondAmount: string;
@@ -236,6 +237,7 @@ export interface CalculateMrpPayload {
   labourPurityPercent?: string;
   labourChargeAmount?: string;
   labourChargeUnit?: string;
+  calculationMode?: 'rtgs' | 'cash';
   otherCharges?: number;
   diamonds: Array<{ weight: number; rate: number }>;
   colorstones: Array<{ weight: number; rate: number }>;

@@ -2,14 +2,13 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Eye, EyeOff, Pencil, TrendingUp } from 'lucide-react-native';
 
 import type { GoldRate } from '@/types/rates';
-import { formatInr } from '@/utils/rateMappers';
 import { formatKaratLabel } from '@/utils/goldRateUtils';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 
 interface GoldRatesTableProps {
   rates: GoldRate[];
   onEdit: (rate: GoldRate) => void;
-  onIncreaseBy: (rate: GoldRate) => void;
+  onIncreaseBy?: (rate: GoldRate) => void;
   onToggleVisibility?: (rate: GoldRate) => void;
   visibilityAction?: 'hide' | 'restore';
   showHeader?: boolean;
@@ -24,9 +23,6 @@ function TableHeader() {
       </Text>
       <Text numberOfLines={1} style={[styles.headerCell, styles.purityCol]}>
         Purity %
-      </Text>
-      <Text numberOfLines={1} style={[styles.headerCell, styles.rateCol]}>
-        Final Rate
       </Text>
       <Text numberOfLines={1} style={[styles.headerCell, styles.actionsCol, styles.actionsHeader]}>
         Actions
@@ -80,14 +76,6 @@ export function GoldRatesTable({
               </Pressable>
             ) : null}
           </View>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.85}
-            style={[styles.cell, styles.rateCol, styles.rateText]}
-          >
-            {formatInr(rate.finalRate)}
-          </Text>
           <View style={[styles.actionsCol, styles.actionsWrap]}>
             {onToggleVisibility ? (
               <Pressable
@@ -144,21 +132,15 @@ export function McxLiveBanner({ mcxLiveRate }: McxLiveBannerProps) {
 interface GoldEditModalFieldsProps {
   karatLabel: string;
   purity: string;
-  finalRate: string;
   purityError: string | null;
-  finalRateError: string | null;
   onPurityChange: (value: string) => void;
-  onFinalRateChange: (value: string) => void;
 }
 
 export function GoldEditModalFields({
   karatLabel,
   purity,
-  finalRate,
   purityError,
-  finalRateError,
   onPurityChange,
-  onFinalRateChange,
 }: GoldEditModalFieldsProps) {
   return (
     <View>
@@ -173,78 +155,6 @@ export function GoldEditModalFields({
         style={[styles.input, purityError ? styles.inputError : null]}
       />
       {purityError ? <Text style={styles.errorText}>{purityError}</Text> : null}
-      <Text style={styles.fieldLabel}>Final Rate (₹)</Text>
-      <TextInput
-        value={finalRate}
-        onChangeText={onFinalRateChange}
-        keyboardType="number-pad"
-        placeholder="150000"
-        placeholderTextColor={Colors.placeholder}
-        editable={false}
-        style={[styles.input, styles.inputDisabled, finalRateError ? styles.inputError : null]}
-      />
-      {finalRateError ? <Text style={styles.errorText}>{finalRateError}</Text> : null}
-    </View>
-  );
-}
-
-interface GoldIncreaseModalFieldsProps {
-  currentFinalRate: number;
-  increaseAmount: string;
-  increaseType: 'FLAT' | 'PERCENTAGE';
-  increaseError: string | null;
-  onIncreaseAmountChange: (value: string) => void;
-  onIncreaseTypeChange: (type: 'FLAT' | 'PERCENTAGE') => void;
-}
-
-export function GoldIncreaseModalFields({
-  currentFinalRate,
-  increaseAmount,
-  increaseType,
-  increaseError,
-  onIncreaseAmountChange,
-  onIncreaseTypeChange,
-}: GoldIncreaseModalFieldsProps) {
-  return (
-    <View>
-      <Text style={styles.fieldLabel}>Current Final Rate</Text>
-      <Text style={styles.currentRate}>{formatInr(currentFinalRate)}</Text>
-      <Text style={styles.fieldLabel}>Increase By</Text>
-      <TextInput
-        value={increaseAmount}
-        onChangeText={onIncreaseAmountChange}
-        keyboardType="decimal-pad"
-        placeholder={increaseType === 'PERCENTAGE' ? '5' : '500'}
-        placeholderTextColor={Colors.placeholder}
-        style={[styles.input, increaseError ? styles.inputError : null]}
-      />
-      {increaseError ? <Text style={styles.errorText}>{increaseError}</Text> : null}
-      <Text style={styles.fieldLabel}>Type</Text>
-      <View style={styles.typeRow}>
-        <Pressable
-          onPress={() => onIncreaseTypeChange('PERCENTAGE')}
-          style={[styles.typeBtn, increaseType === 'PERCENTAGE' && styles.typeBtnActive]}
-        >
-          <Text
-            style={[
-              styles.typeBtnText,
-              increaseType === 'PERCENTAGE' && styles.typeBtnTextActive,
-            ]}
-          >
-            Percentage (%)
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => onIncreaseTypeChange('FLAT')}
-          style={[styles.typeBtn, increaseType === 'FLAT' && styles.typeBtnActive]}
-        >
-          <Text
-            style={[styles.typeBtnText, increaseType === 'FLAT' && styles.typeBtnTextActive]}
-          >
-            Rupees (₹)
-          </Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -278,15 +188,13 @@ const styles = StyleSheet.create({
   },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
   cell: { fontSize: 14, color: Colors.textPrimary, flexShrink: 1 },
-  karatCol: { flex: 0.82 },
-  purityCol: { flex: 0.78 },
-  rateCol: { flex: 1, textAlign: 'right', paddingRight: 2 },
+  karatCol: { flex: 0.9 },
+  purityCol: { flex: 0.8 },
   actionsCol: { flex: 0.6, alignItems: 'flex-end' },
   actionsHeader: { textAlign: 'right' },
   karatText: { fontWeight: '700' },
   purityWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   purityText: { fontWeight: '600' },
-  rateText: { fontWeight: '600', textAlign: 'right', fontSize: 13.5 },
   actionsWrap: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
   inlineEditBtn: {
     width: 24,

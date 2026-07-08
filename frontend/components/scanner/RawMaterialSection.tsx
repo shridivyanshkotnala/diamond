@@ -29,6 +29,7 @@ interface RawMaterialSectionProps {
   goldRates?: GoldRate[];
   goldTaxSettings?: TaxSettings;
   mcxLiveRate?: number;
+  calculationMode?: 'rtgs' | 'cash';
 }
 
 function formatPurityLabel(percent: number): string {
@@ -46,6 +47,7 @@ export function RawMaterialSection({
   goldRates,
   goldTaxSettings,
   mcxLiveRate = 0,
+  calculationMode,
 }: RawMaterialSectionProps) {
   const [karatOpen, setKaratOpen] = useState(false);
 
@@ -85,7 +87,7 @@ export function RawMaterialSection({
     return '';
   }, [scanData.customPurityPercent, defaultPurity]);
 
-  const scannerUse = goldTaxSettings?.scannerCalculationUse ?? 'rtgs';
+  const scannerUse = calculationMode ?? 'rtgs';
   const baseFinalRate =
     scannerUse === 'cash' ? goldTaxSettings?.cashFinalRate : goldTaxSettings?.rtgsFinalRate;
   const fallbackBase = mcxLiveRate
