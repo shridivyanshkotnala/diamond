@@ -35,7 +35,7 @@ export function JewelleryTypeSelector({
               key={type}
               onPress={() => handleSelect(type)}
               disabled={disabled}
-              className={`flex-1 items-center rounded-button border py-3 active:opacity-80 ${
+              className={`flex-1 items-center rounded-[12px] border py-[15px] active:opacity-80 ${
                 isActive ? 'border-primary bg-primary' : 'border-border bg-white'
               }`}
             >
@@ -54,17 +54,7 @@ export function JewelleryTypeSelector({
   }
 
   if (variant === 'modal') {
-    return (
-      <View>
-        <Text className="text-lg font-bold text-text-primary">Select Jewellery Type</Text>
-        <Text className="mt-2 text-sm leading-5 text-text-secondary">
-          Please select Jewellery type which will be scanned.
-        </Text>
-        <View className="mt-6">
-          <JewelleryTypeSelector variant="buttons" onSelect={onSelect} disabled={disabled} />
-        </View>
-      </View>
-    );
+    return <JewelleryTypeSelector variant="buttons" onSelect={onSelect} disabled={disabled} />;
   }
 
   return (

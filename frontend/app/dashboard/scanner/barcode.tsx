@@ -5,7 +5,6 @@ import { useRouter, type Href } from 'expo-router';
 import { BarcodeOverlay } from '@/components/scanner/BarcodeOverlay';
 import { CapturedSidesStrip, type CaptureSource } from '@/components/scanner/CapturedSidesStrip';
 import { CapturePreviewOverlay } from '@/components/scanner/CapturePreviewOverlay';
-import { CaptureSummaryOverlay } from '@/components/scanner/CaptureSummaryOverlay';
 import { ScannerScreenLayout } from '@/components/scanner/ScannerScreenLayout';
 import type { TagCameraPreviewRef } from '@/components/scanner/TagCameraPreview';
 import { isDemoScanMode } from '@/constants/scanMode';
@@ -42,7 +41,6 @@ export default function BarcodeScannerScreen() {
   const [uploading, setUploading] = useState(false);
   const [isPickingImage, setIsPickingImage] = useState(false);
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
   const [confirmedFront, setConfirmedFront] = useState<ConfirmedCapture | null>(null);
   const [confirmedBack, setConfirmedBack] = useState<ConfirmedCapture | null>(null);
 
@@ -53,8 +51,8 @@ export default function BarcodeScannerScreen() {
   const instruction =
     scanSide === 'front'
       ? isBothSides
-        ? 'Align the front of the tag in the frame, then tap capture'
-        : 'Align the tag in the frame, then tap capture'
+        ? 'Align the front of the tag in the frame and tap capture'
+        : 'Align the tag in the frame and tap capture'
       : 'Now align the back side of the tag and tap capture';
 
   const goToProcessing = () => {
@@ -117,42 +115,19 @@ export default function BarcodeScannerScreen() {
         return;
       }
 
-      setShowSummary(true);
+      void finishCapture(uri, null);
       return;
     }
 
     const backCapture = { uri, source };
     setConfirmedBack(backCapture);
     setBackImageUri(uri);
-    setShowSummary(true);
+    void finishCapture(confirmedFront?.uri ?? uri, uri);
   };
 
   const handlePreviewRetake = () => {
     setPendingPreview(null);
     setIsPickingImage(false);
-  };
-
-  const handleSummaryContinue = async () => {
-    if (!confirmedFront) return;
-
-    await finishCapture(
-      confirmedFront.uri,
-      isBothSides ? confirmedBack?.uri ?? null : null,
-    );
-  };
-
-  const handleEditFront = () => {
-    setShowSummary(false);
-    setConfirmedFront(null);
-    setFrontImageUri(null);
-    setScanSide('front');
-  };
-
-  const handleEditBack = () => {
-    setShowSummary(false);
-    setConfirmedBack(null);
-    setBackImageUri(null);
-    setScanSide('back');
   };
 
   const resolveCaptureUri = async (): Promise<string | null> => {
@@ -165,7 +140,7 @@ export default function BarcodeScannerScreen() {
   };
 
   const handleShutter = async () => {
-    if (uploading || overlayVisible || showSummary) return;
+    if (uploading || overlayVisible) return;
 
     const uri = await resolveCaptureUri();
     if (!uri) {
@@ -180,7 +155,7 @@ export default function BarcodeScannerScreen() {
   };
 
   const handleUpload = async () => {
-    if (uploading || overlayVisible || showSummary) return;
+    if (uploading || overlayVisible) return;
 
     setIsPickingImage(true);
     try {
@@ -212,8 +187,7 @@ export default function BarcodeScannerScreen() {
         instruction={instruction}
         onShutterPress={handleShutter}
         onUploadPress={handleUpload}
-        uploadDisabled={uploading}
-        controlsHidden={overlayVisible || showSummary}
+        controlsHidden={overlayVisible || uploading}
         cameraRef={cameraRef}
         headerContent={
           <CapturedSidesStrip
@@ -237,20 +211,8 @@ export default function BarcodeScannerScreen() {
         loading={isPickingImage}
         uri={pendingPreview?.uri}
         side={pendingPreview?.side ?? scanSide}
-        source={pendingPreview?.source ?? 'gallery'}
         onRetake={handlePreviewRetake}
         onConfirm={handlePreviewConfirm}
-      />
-
-      <CaptureSummaryOverlay
-        visible={showSummary && Boolean(confirmedFront)}
-        scanMode={scanMode}
-        front={confirmedFront!}
-        back={confirmedBack}
-        submitting={uploading}
-        onEditFront={handleEditFront}
-        onEditBack={isBothSides ? handleEditBack : undefined}
-        onContinue={handleSummaryContinue}
       />
     </View>
   );

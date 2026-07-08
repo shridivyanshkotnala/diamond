@@ -4,8 +4,8 @@ import { Text, View } from 'react-native';
 import { FormFieldGrid, FormFieldGridItem } from '@/components/scanner/FormFieldGrid';
 import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
-import { RateField } from '@/components/scanner/RateField';
 import { RateNotFoundModal } from '@/components/scanner/RateNotFoundModal';
+import { InvoiceSelectDropdown } from '@/components/scanner/InvoiceSelectDropdown';
 import { useStoneRateFetch } from '@/hooks/useStoneRateFetch';
 import type { StoneKind } from '@/types/scanner';
 import { buildQuality } from '@/utils/qualityUtils';
@@ -29,19 +29,18 @@ interface StoneTypeRowCardProps {
   editable?: boolean;
   onChange?: (values: Partial<StoneTypeRowValues>) => void;
   onRateErrorChange?: (hasError: boolean) => void;
+  shapeOptions?: { value: string; label?: string }[];
 }
 
-const STONE_LABELS: Record<StoneKind, { rate: string; quality: string; weight: string; amount: string }> = {
+const STONE_LABELS: Record<StoneKind, { rate: string; weight: string; amount: string }> = {
   diamond: {
-    rate: 'Diamond Rate',
-    quality: 'Diamond Quality',
-    weight: 'Diamond Wt (Ct)',
+    rate: 'Diamond Rate (₹/ct)',
+    weight: 'Diamond Weight (ct)',
     amount: 'Diamond Amount',
   },
   colorstone: {
-    rate: 'CS Rate',
-    quality: 'CS Quality',
-    weight: 'CS Wt (Ct)',
+    rate: 'CS Rate (₹/ct)',
+    weight: 'CS Weight (ct)',
     amount: 'CS Amount',
   },
 };
@@ -58,17 +57,27 @@ export function StoneTypeRowCard({
   editable = false,
   onChange,
   onRateErrorChange,
+  shapeOptions,
 }: StoneTypeRowCardProps) {
   const labels = STONE_LABELS[stoneType];
-  const quality = values.quality || buildQuality(values.color, values.clarity);
   const weightCt = parseWeightValue(values.weight);
   const rate = parseNumericLabourValue(values.rate) ?? 0;
   const amount = computeStoneAmount(values.weight, values.rate);
-
-  const hasColorClarity = Boolean(values.color.trim() && values.clarity.trim());
+  const resolvedShape = (() => {
+    const raw = values.shape?.trim() ?? '';
+    if (!raw) return '';
+    if (raw.toLowerCase() === 'none') return '';
+    const match = shapeOptions?.find((opt) => opt.value.toLowerCase() === raw.toLowerCase());
+    return match?.value ?? raw;
+  })();
+  const hasLookupCriteria =
+    stoneType === 'diamond'
+      ? Boolean(resolvedShape.trim() || values.color.trim() || values.clarity.trim())
+      : Boolean(values.color.trim() && values.clarity.trim());
 
   const handleRateFetched = useCallback(
     (fetchedRate: string) => {
+      if (!fetchedRate) return;
       onChange?.({ rate: fetchedRate });
     },
     [onChange],
@@ -85,7 +94,8 @@ export function StoneTypeRowCard({
     type: stoneType,
     color: values.color,
     clarity: values.clarity,
-    enabled: editable && hasColorClarity,
+    shape: stoneType === 'diamond' ? resolvedShape : undefined,
+    enabled: editable && hasLookupCriteria,
     onRateFetched: handleRateFetched,
   });
 
@@ -106,81 +116,61 @@ export function StoneTypeRowCard({
   return (
     <>
       <FormSection title={title} variant="card">
-        {editable ? (
-          <FormFieldGrid>
-            <FormFieldGridItem>
-              <FormInput
-                label={`${labels.weight} (edit)`}
-                value={values.weight}
-                onChangeText={(weight) => onChange?.({ weight })}
-                editable={!isFetching}
-                placeholder="from scan result"
-                containerClassName="mb-2.5"
-              />
-            </FormFieldGridItem>
-            <FormFieldGridItem>
-              <FormInput
-                label="Color"
-                value={values.color}
-                onChangeText={handleColorChange}
-                editable={!isFetching}
-                placeholder="e.g. GH"
-                containerClassName="mb-2.5"
-              />
-            </FormFieldGridItem>
-            <FormFieldGridItem>
-              <FormInput
-                label="Clarity"
-                value={values.clarity}
-                onChangeText={handleClarityChange}
-                editable={!isFetching}
-                placeholder="e.g. VVS"
-                containerClassName="mb-2.5"
-              />
-            </FormFieldGridItem>
-            <FormFieldGridItem>
-              <FormInput
-                label={`${labels.rate} (Manual)`}
-                value={values.rate}
-                onChangeText={(text) => onChange?.({ rate: text.replace(/[^0-9.]/g, '') })}
-                editable={!isFetching}
-                placeholder="Enter override rate"
-                keyboardType="decimal-pad"
-                containerClassName="mb-2.5"
-              />
-            </FormFieldGridItem>
-          </FormFieldGrid>
-        ) : null}
-
         <FormFieldGrid>
+          {stoneType === 'diamond' ? (
+            <FormFieldGridItem>
+              <InvoiceSelectDropdown
+                label="Shape"
+                value={resolvedShape}
+                options={shapeOptions?.map((opt) => opt.value) ?? ['']}
+                onChange={(shape) => onChange?.({ shape })}
+                formatOption={(value) => {
+                  const option = shapeOptions?.find((opt) => opt.value === value);
+                  return option?.label ?? (value || 'None');
+                }}
+                placeholder="None"
+                containerClassName="mb-2.5"
+              />
+            </FormFieldGridItem>
+          ) : null}
           <FormFieldGridItem>
             <FormInput
-              label={labels.rate}
-              value={isFetching ? '' : values.rate ? `₹${values.rate}/ct` : ''}
-              editable={false}
-              placeholder="from scan result"
+              label="Color"
+              value={values.color}
+              onChangeText={handleColorChange}
+              editable={editable && !isFetching}
+              placeholder="e.g. GH"
               containerClassName="mb-2.5"
             />
-            {editable && isFetching ? (
-              <RateField label="" value="" isFetching />
-            ) : null}
           </FormFieldGridItem>
           <FormFieldGridItem>
             <FormInput
-              label={labels.quality}
-              value={quality}
-              editable={false}
-              placeholder="color + clarity"
+              label="Clarity"
+              value={values.clarity}
+              onChangeText={handleClarityChange}
+              editable={editable && !isFetching}
+              placeholder="e.g. VVS"
               containerClassName="mb-2.5"
             />
           </FormFieldGridItem>
           <FormFieldGridItem>
             <FormInput
               label={labels.weight}
-              value={values.weight ? `${values.weight} ct` : ''}
-              onChangeText={(weight) => editable && onChange?.({ weight })}
+              value={values.weight}
+              onChangeText={(weight) => onChange?.({ weight })}
               editable={editable && !isFetching}
               placeholder="from scan result"
+              containerClassName="mb-2.5"
+            />
+          </FormFieldGridItem>
+          <FormFieldGridItem>
+            <FormInput
+              label={labels.rate}
+              value={values.rate}
+              onChangeText={(text) => onChange?.({ rate: text.replace(/[^0-9.]/g, '') })}
+              editable={editable && !isFetching}
+              placeholder="Enter rate"
+              keyboardType="decimal-pad"
               containerClassName="mb-2.5"
             />
           </FormFieldGridItem>

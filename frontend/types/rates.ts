@@ -20,6 +20,8 @@ export interface TaxSettings {
   rtgsChangeBy: number;
   cashChangeBy: number;
   scannerCalculationUse: 'rtgs' | 'cash';
+  rtgsFinalRate?: number;
+  cashFinalRate?: number;
 }
 
 export interface SupremeChanges {

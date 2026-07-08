@@ -83,6 +83,7 @@ console.log("==============================");
         parsedData.structuredData.diamondQuality = firstDia.quality || { value: '', confidence: 0 };
         parsedData.structuredData.diamondColor = firstDia.color || { value: '', confidence: 0 };
         parsedData.structuredData.diamondClarity = firstDia.clarity || { value: '', confidence: 0 };
+        parsedData.structuredData.diamondShape = firstDia.shape || { value: '', confidence: 0 };
       }
 
       if (parsedData.structuredData.colorstones && parsedData.structuredData.colorstones.length > 0) {

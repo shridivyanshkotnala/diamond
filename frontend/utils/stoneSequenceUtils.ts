@@ -7,6 +7,7 @@ import type {
   StructuredScanData,
 } from '@/types/scanner';
 import { buildQuality } from '@/utils/qualityUtils';
+import { parseWeightValue } from '@/utils/formulaUtils';
 
 const STONE_ARRAY_KEYS: Record<StoneKind, 'diamonds' | 'colorstones'> = {
   diamond: 'diamonds',
@@ -49,6 +50,13 @@ function hasStoneData(entry: StoneEntry): boolean {
       entry.rate ||
       entry.pieces,
   );
+}
+
+function shouldRenderStone(entry: StoneEntry): boolean {
+  if (entry.stoneType === 'colorstone') {
+    return parseWeightValue(entry.weight) > 0;
+  }
+  return hasStoneData(entry);
 }
 
 function normalizeStoneEntry(raw: unknown, stoneType: StoneKind): StoneEntry {
@@ -148,24 +156,11 @@ export function resolveStoneEntryArrays(
   colorstones: StoneEntry[],
   jewelleryType: JewelleryType,
 ): { diamonds: StoneEntry[]; colorstones: StoneEntry[] } {
-  let resolvedDiamonds = [...diamonds];
-  let resolvedColorstones = [...colorstones];
-
-  const diamondsFromScan = diamonds.length > 0;
-  const colorstonesFromScan = colorstones.length > 0;
-
-  if (jewelleryType === 'Diamond' && resolvedDiamonds.length === 0) {
-    resolvedDiamonds = [createEmptyStoneEntry('diamond')];
-  }
+  const resolvedDiamonds = diamonds.filter(hasStoneData);
+  const resolvedColorstones = colorstones.filter(shouldRenderStone);
 
   if (jewelleryType !== 'Diamond') {
-    resolvedDiamonds = resolvedDiamonds.filter(hasStoneData);
-  }
-
-  if (diamondsFromScan && !colorstonesFromScan) {
-    resolvedColorstones = [createEmptyStoneEntry('colorstone')];
-  } else if (resolvedColorstones.length === 0) {
-    resolvedColorstones = [createEmptyStoneEntry('colorstone')];
+    return { diamonds: resolvedDiamonds, colorstones: resolvedColorstones };
   }
 
   return { diamonds: resolvedDiamonds, colorstones: resolvedColorstones };
@@ -178,13 +173,16 @@ export function buildDisplayStoneBlocks(
 ): SequentialStoneBlock[] {
   const blocks: SequentialStoneBlock[] = [];
   let sequenceIndex = 0;
+  let diamondIndex = 0;
+  let colorstoneIndex = 0;
 
   for (let sourceIndex = 0; sourceIndex < diamonds.length; sourceIndex++) {
     const entry = diamonds[sourceIndex];
-    if (!hasStoneData(entry)) continue;
+    if (!shouldRenderStone(entry)) continue;
+    diamondIndex += 1;
     blocks.push({
       sequenceIndex,
-      displayTitle: `Stone Type ${sequenceIndex + 1} (${STONE_TYPE_LABELS.diamond})`,
+      displayTitle: `${STONE_TYPE_LABELS.diamond} ${diamondIndex}`,
       stoneType: 'diamond',
       entry,
       sourceIndex,
@@ -194,10 +192,11 @@ export function buildDisplayStoneBlocks(
 
   for (let sourceIndex = 0; sourceIndex < colorstones.length; sourceIndex++) {
     const entry = colorstones[sourceIndex];
-    if (!hasStoneData(entry)) continue;
+    if (!shouldRenderStone(entry)) continue;
+    colorstoneIndex += 1;
     blocks.push({
       sequenceIndex,
-      displayTitle: `Stone Type ${sequenceIndex + 1} (${STONE_TYPE_LABELS.colorstone})`,
+      displayTitle: `${STONE_TYPE_LABELS.colorstone} ${colorstoneIndex}`,
       stoneType: 'colorstone',
       entry,
       sourceIndex,
@@ -221,24 +220,32 @@ export function buildSequentialStoneBlocks(
 
   const blocks: SequentialStoneBlock[] = [];
   let sequenceIndex = 0;
+  let diamondIndex = 0;
+  let colorstoneIndex = 0;
 
   for (let sourceIndex = 0; sourceIndex < resolvedDiamonds.length; sourceIndex++) {
+    const entry = resolvedDiamonds[sourceIndex];
+    if (!shouldRenderStone(entry)) continue;
+    diamondIndex += 1;
     blocks.push({
       sequenceIndex,
-      displayTitle: `Stone Type ${sequenceIndex + 1} (${STONE_TYPE_LABELS.diamond})`,
+      displayTitle: `${STONE_TYPE_LABELS.diamond} ${diamondIndex}`,
       stoneType: 'diamond',
-      entry: resolvedDiamonds[sourceIndex],
+      entry,
       sourceIndex,
     });
     sequenceIndex += 1;
   }
 
   for (let sourceIndex = 0; sourceIndex < resolvedColorstones.length; sourceIndex++) {
+    const entry = resolvedColorstones[sourceIndex];
+    if (!shouldRenderStone(entry)) continue;
+    colorstoneIndex += 1;
     blocks.push({
       sequenceIndex,
-      displayTitle: `Stone Type ${sequenceIndex + 1} (${STONE_TYPE_LABELS.colorstone})`,
+      displayTitle: `${STONE_TYPE_LABELS.colorstone} ${colorstoneIndex}`,
       stoneType: 'colorstone',
-      entry: resolvedColorstones[sourceIndex],
+      entry,
       sourceIndex,
     });
     sequenceIndex += 1;

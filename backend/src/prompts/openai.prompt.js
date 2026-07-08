@@ -287,8 +287,9 @@ Rules for unknownFields:
 
 const getUserPrompt = (jewelleryType, scanType, scannerSettings = {}) => {
   const typeContext = {
-    DIAMOND: `Focus on: grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, labour, and ANY colorstones (coloredStoneWeight, coloredStonePieces, coloredStoneRate).
-Diamond quality = colour grade (D/E/F/G/H/I/J or EF/FG/GH/HI/IJ) + clarity grade (VVS/VS/SI etc.) combined into one string.`,
+    DIAMOND: `Focus on: grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, diamondShape, labour, and ANY colorstones (coloredStoneWeight, coloredStonePieces, coloredStoneRate).
+  Diamond quality = colour grade (D/E/F/G/H/I/J or EF/FG/GH/HI/IJ) + clarity grade (VVS/VS/SI etc.) combined into one string.
+  Extract diamondShape whenever shape codes are present (RD/MQ/PR/EM/BG/PC or custom shapes).`,
     GOLD: `Focus on: grossWeight, netWeight, purity (Tunch/Karat), labour.
 Purity may appear as Tunch value (750/916/999) or Karat (18K/22K/24K).`,
     SILVER: `Focus on: netWeight (silver weight), purity (925/999), labour.`,

@@ -50,8 +50,13 @@ export function useStoneRateFetch({
   const fetchRate = useCallback(async () => {
     const trimmedColor = color.trim();
     const trimmedClarity = clarity.trim();
+    const trimmedShape = shape?.trim() ?? '';
+    const hasLookupCriteria =
+      type === 'diamond'
+        ? Boolean(trimmedShape || trimmedColor || trimmedClarity)
+        : Boolean(trimmedColor && trimmedClarity);
 
-    if (!trimmedColor || !trimmedClarity) {
+    if (!hasLookupCriteria) {
       setRate('');
       setRateNotFound(false);
       return;
@@ -67,7 +72,7 @@ export function useStoneRateFetch({
         type,
         color: trimmedColor,
         clarity: trimmedClarity,
-        shape: shape?.trim(),
+        shape: trimmedShape,
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -100,8 +105,13 @@ export function useStoneRateFetch({
 
     const trimmedColor = color.trim();
     const trimmedClarity = clarity.trim();
+    const trimmedShape = shape?.trim() ?? '';
+    const hasLookupCriteria =
+      type === 'diamond'
+        ? Boolean(trimmedShape || trimmedColor || trimmedClarity)
+        : Boolean(trimmedColor && trimmedClarity);
 
-    if (!trimmedColor || !trimmedClarity) {
+    if (!hasLookupCriteria) {
       setRate('');
       setRateNotFound(false);
       return;
@@ -112,7 +122,7 @@ export function useStoneRateFetch({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [color, clarity, shape, enabled, fetchRate]);
+  }, [color, clarity, shape, enabled, fetchRate, type]);
 
   const dismissRateNotFoundModal = useCallback(() => {
     setModalDismissed(true);

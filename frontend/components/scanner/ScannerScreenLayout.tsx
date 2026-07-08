@@ -1,5 +1,6 @@
 import { type RefObject } from 'react';
-import { Dimensions, Pressable, View } from 'react-native';
+import { Dimensions, Pressable, Text, View } from 'react-native';
+import { ImageUp } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemSelectedBadge } from './ItemSelectedBadge';
@@ -14,10 +15,32 @@ interface ScannerScreenLayoutProps {
   instruction: string;
   onShutterPress: () => void;
   onUploadPress?: () => void;
-  uploadDisabled?: boolean;
   cameraRef?: RefObject<TagCameraPreviewRef | null>;
   headerContent?: React.ReactNode;
   controlsHidden?: boolean;
+}
+
+function UploadAction({
+  onPress,
+  hidden,
+}: {
+  onPress?: () => void;
+  hidden?: boolean;
+}) {
+  if (!onPress || hidden) {
+    return null;
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      className="mt-4 h-[46px] self-center flex-row items-center gap-2 rounded-[24px] bg-white px-5 shadow-md active:opacity-90"
+      style={{ elevation: 3 }}
+    >
+      <ImageUp size={18} color="#1E332E" />
+      <Text className="text-sm font-semibold text-text-primary">Upload Image</Text>
+    </Pressable>
+  );
 }
 
 export function ScannerScreenLayout({
@@ -25,7 +48,6 @@ export function ScannerScreenLayout({
   instruction,
   onShutterPress,
   onUploadPress,
-  uploadDisabled = false,
   cameraRef,
   headerContent,
   controlsHidden = false,
@@ -44,16 +66,17 @@ export function ScannerScreenLayout({
           {headerContent}
         </View>
 
-        <Pressable className="flex-1 items-center justify-center" onPress={onShutterPress}>
-          {children}
-        </Pressable>
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="items-center">
+            <Pressable onPress={onShutterPress}>{children}</Pressable>
+            <UploadAction onPress={onUploadPress} hidden={controlsHidden} />
+          </View>
+        </View>
       </View>
 
       <ScannerBottomSheet
         instruction={instruction}
         onShutterPress={onShutterPress}
-        onUploadPress={onUploadPress}
-        uploadDisabled={uploadDisabled || controlsHidden}
         hidden={controlsHidden}
       />
     </View>

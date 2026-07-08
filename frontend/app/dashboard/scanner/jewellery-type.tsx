@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { JewelleryTypeModal } from '@/components/scanner/JewelleryTypeModal';
+import { ScannerTypeModal } from '@/components/scanner/ScannerTypeModal';
 import { ScreenBackHeader } from '@/components/scanner/ScreenBackHeader';
 import { useScannerStore } from '@/store/scannerStore';
 import type { JewelleryType } from '@/types/scanner';
@@ -17,18 +18,25 @@ const SCANNER_BG =
 
 export default function JewelleryTypeScreen() {
   const router = useRouter();
-  const scanMode = useScannerStore((s) => s.scanMode);
+  const [showScannerType, setShowScannerType] = useState(false);
+  const [loading, setLoading] = useState(false);
   const setSelectedType = useScannerStore((s) => s.setSelectedType);
+  const setScanMode = useScannerStore((s) => s.setScanMode);
   const setScanId = useScannerStore((s) => s.setScanId);
   const setScanSide = useScannerStore((s) => s.setScanSide);
   const setFrontImageUri = useScannerStore((s) => s.setFrontImageUri);
   const setBackImageUri = useScannerStore((s) => s.setBackImageUri);
   const setStructuredData = useScannerStore((s) => s.setStructuredData);
   const updateScanData = useScannerStore((s) => s.updateScanData);
-  const [loading, setLoading] = useState(false);
 
-  const handleStartScan = async (type: JewelleryType) => {
+  const handleTypeSelected = (type: JewelleryType) => {
     setSelectedType(type);
+    // Show scanner type modal after jewellery type is selected
+    setShowScannerType(true);
+  };
+
+  const handleScannerTypeSelected = async (mode: 'single' | 'both', type: JewelleryType) => {
+    setScanMode(mode);
     setScanSide('front');
     setFrontImageUri(null);
     setBackImageUri(null);
@@ -37,17 +45,20 @@ export default function JewelleryTypeScreen() {
     setLoading(true);
 
     try {
-      const session = await createScan(type, scanMode);
+      const session = await createScan(type, mode);
       setScanId(session.scanId);
+      // Auto-proceed to camera scanner
       router.push('/dashboard/scanner/barcode' as Href);
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'Failed to start scan. Please try again.';
       Alert.alert('Scan Error', message);
-    } finally {
       setLoading(false);
+      setShowScannerType(false);
     }
   };
+
+  const selectedType = useScannerStore((s) => s.selectedType);
 
   return (
     <View className="flex-1 bg-white">
@@ -59,7 +70,14 @@ export default function JewelleryTypeScreen() {
         <View className="absolute inset-0 bg-black/50" />
         <View className="flex-1 items-center justify-center px-6 pb-28">
           <View className="w-full">
-            <JewelleryTypeModal onStartScan={handleStartScan} loading={loading} />
+            {!showScannerType ? (
+              <JewelleryTypeModal onTypeSelected={handleTypeSelected} />
+            ) : (
+              <ScannerTypeModal
+                onSingleSide={() => handleScannerTypeSelected('single', selectedType)}
+                onBothSide={() => handleScannerTypeSelected('both', selectedType)}
+              />
+            )}
           </View>
         </View>
       </ImageBackground>

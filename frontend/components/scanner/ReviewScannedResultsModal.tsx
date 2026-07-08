@@ -5,6 +5,9 @@ import { Check } from 'lucide-react-native';
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
 import { useFormulaStore } from '@/store/formulaStore';
 import type { ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
+import { DIAMOND_SHAPE_OPTIONS, type StoneSelectOption } from '@/constants/stoneRateOptions';
+import { fetchDiamondRates, fetchGoldRates } from '@/utils/ratesApi';
+import type { GoldRate, TaxSettings } from '@/types/rates';
 import {
   applyFormula2KaratConstraint,
   computeNetWeightFallback,
@@ -53,6 +56,13 @@ export function ReviewScannedResultsModal({
     parsedStones.colorstones,
   );
   const [rateErrors, setRateErrors] = useState<Record<number, boolean>>({});
+  const [diamondShapeOptions, setDiamondShapeOptions] = useState<StoneSelectOption[]>([
+    { value: '', label: 'None' },
+    ...DIAMOND_SHAPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+  ]);
+  const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
+  const [goldTaxSettings, setGoldTaxSettings] = useState<TaxSettings | undefined>();
+  const [mcxLiveRate, setMcxLiveRate] = useState(0);
 
   const [karatDropdownMode, setKaratDropdownMode] = useState(false);
   const [useNetWtFormula, setUseNetWtFormula] = useState(!scanData.netWt);
@@ -71,6 +81,55 @@ export function ReviewScannedResultsModal({
     setColorstoneEntries(resolved.colorstones);
     setRateErrors({});
   }, [stoneDataKey, jewelleryType, structuredData, scanData]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchGoldRates()
+      .then((response) => {
+        if (cancelled) return;
+        setGoldRates(response.rates ?? []);
+        setGoldTaxSettings(response.taxSettings);
+        setMcxLiveRate(response.mcxLiveRate ?? 0);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setGoldRates([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const baseOptions: StoneSelectOption[] = [
+      { value: '', label: 'None' },
+      ...DIAMOND_SHAPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+    ];
+
+    fetchDiamondRates()
+      .then((rates) => {
+        if (cancelled) return;
+        const baseValues = new Set(baseOptions.map((opt) => opt.value.toLowerCase()));
+        const customShapes = rates
+          .map((rate) => rate.shape?.trim())
+          .filter((shape): shape is string => Boolean(shape))
+          .filter((shape) => !baseValues.has(shape.toLowerCase()))
+          .map((shape) => ({ value: shape, label: shape }));
+
+        setDiamondShapeOptions([...baseOptions, ...customShapes]);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDiamondShapeOptions(baseOptions);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const hasRateError = Object.values(rateErrors).some(Boolean);
   const canConfirm = Boolean(scanData.grossWt.trim()) && !hasRateError;
@@ -185,6 +244,10 @@ export function ReviewScannedResultsModal({
         diamonds={diamondEntries}
         colorstones={colorstoneEntries}
         jewelleryType={jewelleryType}
+        goldRates={goldRates}
+        goldTaxSettings={goldTaxSettings}
+        mcxLiveRate={mcxLiveRate}
+        diamondShapeOptions={diamondShapeOptions}
         editable
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}

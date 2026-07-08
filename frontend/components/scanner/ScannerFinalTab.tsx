@@ -10,7 +10,7 @@ import { RawMaterialSection } from '@/components/scanner/RawMaterialSection';
 import { StoneTypeRowCard } from '@/components/scanner/StoneTypeRowCard';
 import { StoneTypeSequence } from '@/components/scanner/StoneTypeResultSection';
 import { useFinalTabPricing } from '@/hooks/useFinalTabPricing';
-import type { GoldRate } from '@/types/rates';
+import type { GoldRate, TaxSettings } from '@/types/rates';
 import type { JewelleryType, ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
 import { formatIndianCurrency } from '@/utils/scanPriceCalculation';
@@ -23,6 +23,9 @@ interface ScannerFinalTabProps {
   colorstones: StoneEntry[];
   jewelleryType: JewelleryType;
   goldRates?: GoldRate[];
+  goldTaxSettings?: TaxSettings;
+  mcxLiveRate?: number;
+  diamondShapeOptions?: { value: string; label?: string }[];
   editable?: boolean;
   onFieldChange?: (field: keyof ScanItemData, value: string) => void;
   onStoneEntryChange?: (
@@ -42,6 +45,9 @@ export function ScannerFinalTab({
   colorstones,
   jewelleryType,
   goldRates,
+  goldTaxSettings,
+  mcxLiveRate,
+  diamondShapeOptions,
   editable = false,
   onFieldChange,
   onStoneEntryChange,
@@ -85,6 +91,9 @@ export function ScannerFinalTab({
       {editable ? (
         <RawMaterialSection
           scanData={{ ...scanData, karat: selectedKarat }}
+          goldRates={goldRates}
+          goldTaxSettings={goldTaxSettings}
+          mcxLiveRate={mcxLiveRate}
           editable
           onFieldChange={(field, value) => {
             if (field === 'karat') {
@@ -115,6 +124,7 @@ export function ScannerFinalTab({
                 rate: block.entry.rate,
                 shape: block.entry.shape,
               }}
+              shapeOptions={block.stoneType === 'diamond' ? diamondShapeOptions : undefined}
               editable
               onChange={(values) =>
                 onStoneEntryChange?.(block.stoneType, block.sourceIndex, values)

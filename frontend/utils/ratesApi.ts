@@ -139,6 +139,8 @@ export function normalizeGoldRatesResponse(response: unknown): GoldRatesResponse
       rtgsChangeBy: readNumber(rawTax.rtgsChangeBy ?? rawTax.rtgs_change_by) ?? 0,
       cashChangeBy: readNumber(rawTax.cashChangeBy ?? rawTax.cash_change_by) ?? 0,
       scannerCalculationUse: (readString(rawTax.scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash',
+      rtgsFinalRate: readNumber(rawTax.rtgsFinalRate ?? rawTax.rtgs_final_rate),
+      cashFinalRate: readNumber(rawTax.cashFinalRate ?? rawTax.cash_final_rate),
     };
   }
 
@@ -312,21 +314,46 @@ export async function lookupStoneRate(
     // Proceed with empty rates so we can still check for local fallbacks
   }
 
-  const match = rates.find(
-    (item) => {
+  if (payload.type === 'diamond') {
+    const normalizedShape = trimmedShape?.toLowerCase() === 'none' ? '' : trimmedShape ?? '';
+    const normalizedColor = trimmedColor.toLowerCase();
+    const normalizedClarity = trimmedClarity.toLowerCase();
+
+    const scoredMatches = rates
+      .map((item) => {
+        const itemShape = (item.shape ?? '').trim().toLowerCase();
+        const itemColor = item.color.trim().toLowerCase();
+        const itemClarity = item.clarity.trim().toLowerCase();
+
+        if (normalizedShape && itemShape !== normalizedShape) return null;
+        if (normalizedColor && itemColor !== normalizedColor) return null;
+        if (normalizedClarity && itemClarity !== normalizedClarity) return null;
+
+        let score = 0;
+        if (normalizedShape) score += 4;
+        if (normalizedColor) score += 2;
+        if (normalizedClarity) score += 1;
+
+        return { rate: item.rate, score };
+      })
+      .filter((item): item is { rate: number; score: number } => item !== null);
+
+    scoredMatches.sort((a, b) => b.score - a.score);
+    if (scoredMatches.length > 0) {
+      return { rate: scoredMatches[0].rate };
+    }
+  } else {
+    const match = rates.find((item) => {
       const colorMatch =
         item.color.trim().toLowerCase() === trimmedColor.toLowerCase();
       const clarityMatch =
         item.clarity.trim().toLowerCase() === trimmedClarity.toLowerCase();
-      const shapeMatch = trimmedShape
-        ? item.shape?.trim().toLowerCase() === trimmedShape.toLowerCase()
-        : true;
-      return colorMatch && clarityMatch && shapeMatch;
-    },
-  );
+      return colorMatch && clarityMatch;
+    });
 
-  if (match) {
-    return { rate: match.rate };
+    if (match) {
+      return { rate: match.rate };
+    }
   }
 
   throw new RateNotFoundError(quality);

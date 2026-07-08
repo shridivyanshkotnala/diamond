@@ -1,32 +1,19 @@
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { JewelleryTypeSelector } from '@/components/scanner/JewelleryTypeSelector';
-import { useScannerStore } from '@/store/scannerStore';
 import type { JewelleryType } from '@/types/scanner';
 
 interface JewelleryTypeModalProps {
-  onStartScan: (type: JewelleryType) => void;
-  loading?: boolean;
+  onTypeSelected: (type: JewelleryType) => void;
 }
 
-export function JewelleryTypeModal({ onStartScan, loading = false }: JewelleryTypeModalProps) {
-  const selectedType = useScannerStore((s) => s.selectedType);
-
+export function JewelleryTypeModal({ onTypeSelected }: JewelleryTypeModalProps) {
   return (
     <View className="rounded-[20px] bg-white px-6 py-7 shadow-lg">
-      <JewelleryTypeSelector variant="modal" disabled={loading} />
-
-      <Pressable
-        onPress={() => onStartScan(selectedType)}
-        disabled={loading}
-        className="mt-6 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
-      >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text className="text-sm font-semibold text-white">Start Scan</Text>
-        )}
-      </Pressable>
+      <Text className="text-lg font-bold text-text-primary">Select Jewellery Type</Text>
+      <View className="mt-6">
+        <JewelleryTypeSelector variant="buttons" onSelect={onTypeSelected} />
+      </View>
     </View>
   );
 }

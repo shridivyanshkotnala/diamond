@@ -1,22 +1,18 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Home, ImageUp } from 'lucide-react-native';
+import { Home } from 'lucide-react-native';
 
 const NAV_GREEN = '#1E332E';
 
 interface ScannerBottomSheetProps {
   instruction: string;
   onShutterPress: () => void;
-  onUploadPress?: () => void;
-  uploadDisabled?: boolean;
   hidden?: boolean;
 }
 
 export function ScannerBottomSheet({
   instruction,
   onShutterPress,
-  onUploadPress,
-  uploadDisabled = false,
   hidden = false,
 }: ScannerBottomSheetProps) {
   const router = useRouter();
@@ -28,7 +24,7 @@ export function ScannerBottomSheet({
   return (
     <View className="rounded-t-[28px] bg-white px-6 pb-8 pt-3 shadow-lg">
       <View className="mb-5 h-1 w-10 self-center rounded-full bg-border" />
-      <Text className="mb-8 text-center text-base font-bold text-text-primary">{instruction}</Text>
+      <Text className="mb-12 text-center text-base font-bold text-text-primary">{instruction}</Text>
 
       <View className="flex-row items-end justify-between px-2">
         <Pressable
@@ -46,14 +42,7 @@ export function ScannerBottomSheet({
           <View className="h-[52px] w-[52px] rounded-full bg-white" />
         </Pressable>
 
-        <Pressable
-          className="min-w-[64px] items-center"
-          onPress={onUploadPress}
-          disabled={uploadDisabled || !onUploadPress}
-        >
-          <ImageUp size={22} color={uploadDisabled || !onUploadPress ? '#A0A0A0' : NAV_GREEN} />
-          <Text className="mt-1 text-xs font-medium text-text-muted">Upload</Text>
-        </Pressable>
+        <View className="min-w-[64px]" />
       </View>
     </View>
   );
