@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Pencil, Trash2 } from 'lucide-react-native';
 
 import { DeleteStoneRateModal } from '@/components/dashboard/market-rates/DeleteStoneRateModal';
@@ -44,8 +44,6 @@ interface StoneRatesTableProps {
 }
 
 function StoneRatesTable({ title, rates, showShape, onEdit, onDelete, onAdd }: StoneRatesTableProps) {
-  const { width } = useWindowDimensions();
-  const isCompact = width < 480;
   const shapeLabelMap = useMemo(
     () =>
       new Map(
@@ -68,57 +66,66 @@ function StoneRatesTable({ title, rates, showShape, onEdit, onDelete, onAdd }: S
           </Text>
         </View>
       ) : (
-        <ScrollView horizontal={isCompact} showsHorizontalScrollIndicator={false}>
-          <View
-            style={[
-              styles.table,
-              isCompact && (showShape ? styles.tableCompactWide : styles.tableCompact),
-            ]}
-          >
-            <View style={styles.headerRow}>
-              <Text style={[styles.headerCell, styles.colorCol]}>Color</Text>
-              <Text style={[styles.headerCell, styles.clarityCol]}>Clarity</Text>
-              {showShape ? <Text style={[styles.headerCell, styles.shapeCol]}>Shape</Text> : null}
-              <Text style={[styles.headerCell, styles.rateCol]}>Rate/ct</Text>
-              <Text style={[styles.headerCell, styles.actionsCol]}>Actions</Text>
-            </View>
-            {rates.map((rate, index) => (
-              <View
-                key={rate.id}
-                style={[styles.dataRow, index < rates.length - 1 && styles.rowBorder]}
-              >
-                <Text style={[styles.cell, styles.colorCol]}>{displayStoneField(rate.color)}</Text>
-                <Text style={[styles.cell, styles.clarityCol]}>
-                  {displayStoneField(rate.clarity)}
-                </Text>
+        <View style={styles.cardList}>
+          {rates.map((rate) => {
+            const shapeValue = (() => {
+              if (!showShape) return null;
+              const rawShape = rate.shape ?? '';
+              const normalized = String(rawShape).trim();
+              if (!normalized || normalized === '0') return 'None';
+              const label = shapeLabelMap.get(normalized.toUpperCase());
+              return label ? label : normalized;
+            })();
+
+            return (
+              <View key={rate.id} style={styles.rateCard}>
+                <View style={styles.cardRow}>
+                  <View style={styles.cardField}>
+                    <Text style={styles.cardLabel}>Color</Text>
+                    <Text style={styles.cardValue}>{displayStoneField(rate.color)}</Text>
+                  </View>
+                  <View style={styles.cardField}>
+                    <Text style={styles.cardLabel}>Clarity</Text>
+                    <Text style={styles.cardValue}>{displayStoneField(rate.clarity)}</Text>
+                  </View>
+                </View>
+
                 {showShape ? (
-                  <Text style={[styles.cell, styles.shapeCol]}>
-                    {(() => {
-                      const rawShape = rate.shape ?? '';
-                      const normalized = String(rawShape).trim();
-                      if (!normalized || normalized === '0') return '—';
-                      const label = shapeLabelMap.get(normalized.toUpperCase());
-                      return label ? label : normalized;
-                    })()}
-                  </Text>
-                ) : null}
-                <Text style={[styles.cell, styles.rateCol, styles.rateText]}>
-                  {formatStoneRatePerCt(rate.rate)}
-                </Text>
-                <View style={[styles.actionsCol, styles.actionsWrap]}>
+                  <View style={styles.cardRow}>
+                    <View style={styles.cardField}>
+                      <Text style={styles.cardLabel}>Shape</Text>
+                      <Text style={styles.cardValue}>{shapeValue}</Text>
+                    </View>
+                    <View style={styles.cardField}>
+                      <Text style={styles.cardLabel}>Rate</Text>
+                      <Text style={styles.cardValue}>{formatStoneRatePerCt(rate.rate)}</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.cardRow}>
+                    <View style={styles.cardField}>
+                      <Text style={styles.cardLabel}>Rate</Text>
+                      <Text style={styles.cardValue}>{formatStoneRatePerCt(rate.rate)}</Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.cardDivider} />
+
+                <View style={styles.cardActions}>
                   <Pressable onPress={() => onEdit(rate)} style={styles.editBtn}>
-                    <Pencil size={12} color={Colors.white} />
+                    <Pencil size={14} color={Colors.white} />
                     <Text style={styles.editText}>Edit</Text>
                   </Pressable>
                   <Pressable onPress={() => onDelete(rate)} style={styles.deleteBtn}>
-                    <Trash2 size={12} color={DELETE_RED} />
+                    <Trash2 size={14} color={DELETE_RED} />
                     <Text style={styles.deleteText}>Delete</Text>
                   </Pressable>
                 </View>
               </View>
-            ))}
-          </View>
-        </ScrollView>
+            );
+          })}
+        </View>
       )}
     </View>
   );
@@ -193,7 +200,7 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
       .map(normalizeShape)
       .filter(Boolean);
     const unique = Array.from(new Set(merged));
-    const labelMap = new Map(
+    const labelMap = new Map<string, string>(
       DIAMOND_SHAPE_OPTIONS.map((option) => [option.value, option.label]),
     );
     return unique.map((option) => ({
@@ -434,44 +441,75 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
   emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
-  table: {
-    width: '100%',
-    ...screenStyles.table,
+  cardList: {
+    gap: Spacing.md,
   },
-  tableCompact: { minWidth: 520 },
-  tableCompactWide: { minWidth: 580 },
-  headerRow: screenStyles.tableHeaderRow,
-  headerCell: screenStyles.tableHeaderCell,
-  dataRow: screenStyles.tableDataRow,
-  rowBorder: screenStyles.tableRowBorder,
-  cell: screenStyles.tableCell,
-  colorCol: { width: 72, flexShrink: 0 },
-  clarityCol: { width: 72, flexShrink: 0 },
-  shapeCol: { width: 72, flexShrink: 0 },
-  rateCol: { width: 120, flexShrink: 0 },
-  actionsCol: { flex: 1, minWidth: 150 },
-  rateText: { fontWeight: '600' },
-  actionsWrap: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', alignItems: 'center' },
+  rateCard: {
+    borderRadius: 18,
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  cardField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cardLabel: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    fontWeight: '600',
+    color: Colors.textMuted,
+  },
+  cardValue: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginBottom: Spacing.md,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
   editBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: BUTTON_GREEN,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flex: 1,
   },
-  editText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
+  editText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
   deleteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: '#F5C6C2',
     backgroundColor: '#FCE8E6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flex: 1,
   },
-  deleteText: { color: DELETE_RED, fontSize: 11, fontWeight: '600' },
+  deleteText: { color: DELETE_RED, fontSize: 13, fontWeight: '600' },
 });
