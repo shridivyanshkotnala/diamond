@@ -4,7 +4,6 @@ import {
   Animated,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,7 +17,7 @@ import { formatMcxLiveRate } from '@/utils/goldRateUtils';
 import { formatInr } from '@/utils/rateMappers';
 
 const BUTTON_GREEN = '#1B3022';
-const GOLD_ACTION_BAR_HEIGHT = 92;
+const GOLD_ACTION_BAR_HEIGHT = 72;
 
 type Sign = '+' | '-';
 export type ScannerCalculationUse = 'rtgs' | 'cash';
@@ -171,7 +170,7 @@ function RateCard({
         {icon ? <View style={styles.rateCardIconWrap}>{icon}</View> : null}
         <View style={styles.rateCardHeaderTextWrap}>
           <Text style={styles.rateCardTitle}>{title}</Text>
-          <Text style={styles.rateCardSubtitle}>{subtitle}</Text>
+          {subtitle ? <Text style={styles.rateCardSubtitle}>{subtitle}</Text> : null}
         </View>
       </View>
 
@@ -326,7 +325,7 @@ export function GoldRateSettingsModal({
 
           <Text style={styles.modalTitle}>Gold Rate Settings</Text>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalBody}>
+          <View style={styles.modalBody}>
             <View style={styles.mcxHeroCard}>
               <View style={styles.mcxHeroTopRow}>
                 <View>
@@ -364,7 +363,7 @@ export function GoldRateSettingsModal({
               onSignChange={setCashSign}
               onAmountChange={setCashAmount}
             />
-          </ScrollView>
+          </View>
 
           <Animated.View
             pointerEvents={hasChanges ? 'auto' : 'none'}
@@ -565,15 +564,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   modalBody: {
-    gap: Spacing.md,
-    paddingBottom: GOLD_ACTION_BAR_HEIGHT,
+    gap: Spacing.sm,
+    paddingBottom: GOLD_ACTION_BAR_HEIGHT + 4,
   },
   mcxHeroCard: {
     borderRadius: 24,
-    padding: Spacing.cardPadding,
+    padding: Spacing.md,
     backgroundColor: BUTTON_GREEN,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -600,22 +599,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.78)',
   },
   mcxHeroIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(212, 193, 156, 0.16)',
   },
   mcxHeroIconText: {
     color: Colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   mcxHeroValue: {
-    marginTop: Spacing.md,
-    fontSize: 34,
-    lineHeight: 40,
+    marginTop: Spacing.sm,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '700',
     color: Colors.white,
   },
@@ -627,10 +626,10 @@ const styles = StyleSheet.create({
   rateCard: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 24,
-    padding: Spacing.lg,
+    borderRadius: 20,
+    padding: Spacing.md,
     backgroundColor: Colors.white,
-    gap: Spacing.sm,
+    gap: Spacing.xs,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -656,12 +655,12 @@ const styles = StyleSheet.create({
     color: BUTTON_GREEN,
   },
   rateCardHeaderTextWrap: { flex: 1 },
-  rateCardTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
+  rateCardTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
   rateCardSubtitle: { marginTop: 4, fontSize: 13, color: Colors.textSecondary },
   currentRatePill: {
     borderRadius: Radius.input,
     backgroundColor: '#F4F7F5',
-    padding: Spacing.md,
+    padding: Spacing.sm,
     gap: 4,
   },
   currentRateLabel: {
@@ -672,7 +671,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   currentRateValue: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: BUTTON_GREEN,
   },
@@ -689,9 +688,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  signToggleWrap: { width: 96 },
+  signToggleWrap: { width: 88 },
   signToggle: {
-    minHeight: 48,
+    minHeight: 42,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
@@ -703,7 +702,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 42,
   },
   signToggleBtnActive: { backgroundColor: '#E8F0EC' },
   signToggleText: {
@@ -714,16 +713,16 @@ const styles = StyleSheet.create({
   },
   signToggleTextActive: { color: BUTTON_GREEN, fontWeight: '700' },
   amountInputWrap: {
-    minHeight: 48,
+    minHeight: 42,
     flex: 1,
-    minWidth: 140,
+    minWidth: 120,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
     backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
   },
   amountPrefix: {
     marginRight: 8,
@@ -751,8 +750,8 @@ const styles = StyleSheet.create({
   },
   finalValue: {
     marginTop: 2,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: '700',
     color: BUTTON_GREEN,
   },
@@ -768,12 +767,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: Spacing.md,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    borderRadius: 20,
+    borderRadius: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
@@ -782,29 +781,29 @@ const styles = StyleSheet.create({
   },
   restoreBtn: {
     flex: 1,
-    height: 52,
+    height: 44,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.white,
   },
   restoreBtnText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
   },
   applyBtn: {
     flex: 1,
-    height: 52,
-    borderRadius: 14,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: BUTTON_GREEN,
   },
   applyBtnText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.white,
   },

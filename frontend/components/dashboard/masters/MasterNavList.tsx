@@ -23,7 +23,9 @@ export function MasterNavList({ items }: MasterNavListProps) {
         >
           <View style={screenStyles.listRowText}>
             <Text style={screenStyles.listRowTitle}>{item.title}</Text>
-            <Text style={screenStyles.listRowSubtitle}>{item.subtitle}</Text>
+            {item.subtitle ? (
+              <Text style={screenStyles.listRowSubtitle}>{item.subtitle}</Text>
+            ) : null}
           </View>
           <ChevronRight size={18} color={Colors.textMuted} />
         </Pressable>

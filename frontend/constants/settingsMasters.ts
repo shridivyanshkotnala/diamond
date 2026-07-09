@@ -12,13 +12,13 @@ export const MASTER_SECTION_ITEMS: MasterNavItem[] = [
   {
     id: 'section-rates',
     title: 'Rates',
-    subtitle: 'Gold, Diamond, Colorstone and Labour charges',
+    subtitle: '',
     route: '/dashboard/masters/rates',
   },
   {
     id: 'section-formulas',
     title: 'Formulas',
-    subtitle: 'Gold amount calculation formulas',
+    subtitle: '',
     route: '/dashboard/masters/formulas',
   },
 ];
@@ -27,25 +27,25 @@ export const MASTER_RATES_ITEMS: MasterNavItem[] = [
   {
     id: 'rates-gold',
     title: 'Gold',
-    subtitle: 'Karat-wise purity and final rates',
+    subtitle: '',
     route: '/dashboard/market-rates?tab=gold',
   },
   {
     id: 'rates-diamond',
     title: 'Diamond',
-    subtitle: 'Color and clarity based diamond rates',
+    subtitle: '',
     route: '/dashboard/market-rates?tab=diamond',
   },
   {
     id: 'rates-colorstone',
     title: 'Colorstone',
-    subtitle: 'Color and clarity based colorstone rates',
+    subtitle: '',
     route: '/dashboard/market-rates?tab=colorstone',
   },
   {
     id: 'rates-labour',
     title: 'Labour Charges',
-    subtitle: 'Labour charge reference rates',
+    subtitle: '',
     route: '/dashboard/market-rates?tab=labour',
   },
 ];
