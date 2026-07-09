@@ -5,7 +5,6 @@ import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
 import { QualityField } from '@/components/scanner/QualityField';
 import { RateField } from '@/components/scanner/RateField';
-import { RateNotFoundModal } from '@/components/scanner/RateNotFoundModal';
 import { useStoneRateFetch } from '@/hooks/useStoneRateFetch';
 import { buildQuality } from '@/utils/qualityUtils';
 
@@ -42,14 +41,7 @@ export function ColorstoneSection({
     [onChange],
   );
 
-  const {
-    isFetching,
-    rateNotFound,
-    showRateNotFoundModal,
-    notFoundQuality,
-    fetchRate,
-    dismissRateNotFoundModal,
-  } = useStoneRateFetch({
+  const { isFetching, rateNotFound } = useStoneRateFetch({
     type: 'colorstone',
     color: values.color,
     clarity: values.clarity,
@@ -77,7 +69,7 @@ export function ColorstoneSection({
         <FormFieldGrid>
           <FormFieldGridItem>
             <FormInput
-              label="CS Weight (ct)"
+              label="Weight (CT)"
               value={values.weight}
               onChangeText={(weight) => onChange({ weight })}
               editable={!inputsDisabled}
@@ -110,13 +102,6 @@ export function ColorstoneSection({
         <RateField label="CS Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
       </FormSection>
 
-      <RateNotFoundModal
-        visible={showRateNotFoundModal}
-        quality={notFoundQuality}
-        onCancel={dismissRateNotFoundModal}
-        onRefresh={fetchRate}
-        onRetry={fetchRate}
-      />
     </>
   );
 }

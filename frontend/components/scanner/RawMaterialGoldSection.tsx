@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
+import { Text, View } from 'react-native';
 
 import { DataGridSection } from '@/components/scanner/DataGridSection';
+import { SearchableSelectDropdown } from '@/components/scanner/SearchableSelectDropdown';
 import {
   KARAT_DROPDOWN_OPTIONS,
   type FinalTabPricingResult,
@@ -14,50 +13,6 @@ interface RawMaterialGoldSectionProps {
   onKaratChange?: (karat: string) => void;
 }
 
-function KaratDropdown({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: readonly string[];
-  onChange: (karat: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <View>
-      <Pressable
-        onPress={() => setOpen((prev) => !prev)}
-        className="mt-1.5 flex-row items-center justify-between"
-      >
-        <Text className="text-sm text-text-secondary">{value || 'Select karat'}</Text>
-        <ChevronDown size={14} color="#757575" />
-      </Pressable>
-      {open ? (
-        <View className="absolute left-0 right-0 top-8 z-20 overflow-hidden rounded-input border border-border bg-white shadow-md">
-          {options.map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              className={`px-3 py-2.5 ${option === value ? 'bg-primary/10' : 'bg-white'}`}
-            >
-              <Text
-                className={`text-sm ${option === value ? 'font-semibold text-primary' : 'text-text-secondary'}`}
-              >
-                {option}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 export function RawMaterialGoldSection({
   badge,
   pricing,
@@ -65,10 +20,10 @@ export function RawMaterialGoldSection({
 }: RawMaterialGoldSectionProps) {
   const purityNote =
     pricing.puritySource === 'labourOverride'
-      ? `${pricing.effectivePurityPercent}% (custom purity)`
+      ? `${pricing.effectivePurityPercent} (custom purity)`
       : pricing.puritySource === 'tunchOverride'
-        ? `${pricing.effectivePurityPercent}% (admin override)`
-        : `${pricing.effectivePurityPercent}%`;
+        ? `${pricing.effectivePurityPercent} (admin override)`
+        : `${pricing.effectivePurityPercent}`;
 
   return (
     <DataGridSection
@@ -98,10 +53,10 @@ export function RawMaterialGoldSectionInteractive({
 }: RawMaterialGoldSectionProps) {
   const purityNote =
     pricing.puritySource === 'labourOverride'
-      ? `${pricing.effectivePurityPercent}% (custom purity)`
+      ? `${pricing.effectivePurityPercent} (custom purity)`
       : pricing.puritySource === 'tunchOverride'
-        ? `${pricing.effectivePurityPercent}% (admin override)`
-        : `${pricing.effectivePurityPercent}% from backend`;
+        ? `${pricing.effectivePurityPercent} (admin override)`
+        : `${pricing.effectivePurityPercent} from backend`;
 
   return (
     <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-white">
@@ -127,10 +82,12 @@ export function RawMaterialGoldSectionInteractive({
         <View className="flex-1 border-r border-border p-4">
           <Text className="text-xs text-text-muted">Tunch Purity</Text>
           {onKaratChange ? (
-            <KaratDropdown
+            <SearchableSelectDropdown
               value={pricing.selectedKarat}
-              options={KARAT_DROPDOWN_OPTIONS}
+              options={KARAT_DROPDOWN_OPTIONS.map((option) => ({ value: option, label: option }))}
               onChange={onKaratChange}
+              placeholder="Select karat"
+              containerClassName="mt-1.5 flex-1"
             />
           ) : (
             <Text className="mt-1.5 text-sm text-text-secondary">{pricing.selectedKarat}</Text>
@@ -140,7 +97,6 @@ export function RawMaterialGoldSectionInteractive({
         <View className="flex-1 p-4">
           <Text className="text-xs text-text-muted">Pure Wt.</Text>
           <Text className="mt-1.5 text-sm text-text-secondary">{pricing.pureWtDisplay}</Text>
-          <Text className="mt-1 text-[10px] text-text-muted">Net wt × % purity</Text>
         </View>
       </View>
     </View>

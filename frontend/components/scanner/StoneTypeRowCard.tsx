@@ -4,13 +4,12 @@ import { Text, View } from 'react-native';
 import { FormFieldGrid, FormFieldGridItem } from '@/components/scanner/FormFieldGrid';
 import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
-import { RateNotFoundModal } from '@/components/scanner/RateNotFoundModal';
-import { InvoiceSelectDropdown } from '@/components/scanner/InvoiceSelectDropdown';
+import { SearchableSelectDropdown } from '@/components/scanner/SearchableSelectDropdown';
 import { useStoneRateFetch } from '@/hooks/useStoneRateFetch';
+import { DIAMOND_SHAPE_OPTIONS } from '@/constants/stoneRateOptions';
 import type { StoneKind } from '@/types/scanner';
 import { buildQuality } from '@/utils/qualityUtils';
 import { computeStoneAmount } from '@/utils/scanPriceCalculation';
-import { parseWeightValue } from '@/utils/formulaUtils';
 import { parseNumericLabourValue } from '@/utils/labourUtils';
 
 export interface StoneTypeRowValues {
@@ -35,12 +34,12 @@ interface StoneTypeRowCardProps {
 const STONE_LABELS: Record<StoneKind, { rate: string; weight: string; amount: string }> = {
   diamond: {
     rate: 'Diamond Rate (₹/ct)',
-    weight: 'Diamond Weight (ct)',
+    weight: 'Weight (CT)',
     amount: 'Diamond Amount',
   },
   colorstone: {
     rate: 'CS Rate (₹/ct)',
-    weight: 'CS Weight (ct)',
+    weight: 'Weight (CT)',
     amount: 'CS Amount',
   },
 };
@@ -60,8 +59,6 @@ export function StoneTypeRowCard({
   shapeOptions,
 }: StoneTypeRowCardProps) {
   const labels = STONE_LABELS[stoneType];
-  const weightCt = parseWeightValue(values.weight);
-  const rate = parseNumericLabourValue(values.rate) ?? 0;
   const amount = computeStoneAmount(values.weight, values.rate);
   const resolvedShape = (() => {
     const raw = values.shape?.trim() ?? '';
@@ -69,6 +66,23 @@ export function StoneTypeRowCard({
     if (raw.toLowerCase() === 'none') return '';
     const match = shapeOptions?.find((opt) => opt.value.toLowerCase() === raw.toLowerCase());
     return match?.value ?? raw;
+  })();
+  const dropdownOptions = (() => {
+    const rawOptions = [
+      { value: '', label: 'None' },
+      ...(shapeOptions ?? DIAMOND_SHAPE_OPTIONS).map((opt) => ({
+        value: opt.value,
+        label: opt.label ?? opt.value,
+      })),
+    ];
+    const seen = new Set<string>();
+    return rawOptions.filter((option) => {
+      const normalized = option.value.trim().toLowerCase();
+      const key = normalized === 'none' ? '' : normalized;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   })();
   const hasLookupCriteria =
     stoneType === 'diamond'
@@ -83,14 +97,7 @@ export function StoneTypeRowCard({
     [onChange],
   );
 
-  const {
-    isFetching,
-    rateNotFound,
-    showRateNotFoundModal,
-    notFoundQuality,
-    fetchRate,
-    dismissRateNotFoundModal,
-  } = useStoneRateFetch({
+  const { isFetching, rateNotFound } = useStoneRateFetch({
     type: stoneType,
     color: values.color,
     clarity: values.clarity,
@@ -119,15 +126,11 @@ export function StoneTypeRowCard({
         <FormFieldGrid>
           {stoneType === 'diamond' ? (
             <FormFieldGridItem>
-              <InvoiceSelectDropdown
+              <SearchableSelectDropdown
                 label="Shape"
                 value={resolvedShape}
-                options={shapeOptions?.map((opt) => opt.value) ?? ['']}
+                options={dropdownOptions}
                 onChange={(shape) => onChange?.({ shape })}
-                formatOption={(value) => {
-                  const option = shapeOptions?.find((opt) => opt.value === value);
-                  return option?.label ?? (value || 'None');
-                }}
                 placeholder="None"
                 containerClassName="mb-2.5"
               />
@@ -183,24 +186,12 @@ export function StoneTypeRowCard({
                 <Text className="text-sm font-semibold text-text-primary">
                   {formatInr(amount)}
                 </Text>
-                <Text className="mt-0.5 text-[10px] text-text-muted">
-                  {weightCt > 0 && rate > 0 ? `${weightCt} ct × ₹${rate}/ct` : 'Wt × Rate'}
-                </Text>
               </View>
             </View>
           </FormFieldGridItem>
         </FormFieldGrid>
       </FormSection>
 
-      {editable ? (
-        <RateNotFoundModal
-          visible={showRateNotFoundModal}
-          quality={notFoundQuality}
-          onCancel={dismissRateNotFoundModal}
-          onRefresh={fetchRate}
-          onRetry={fetchRate}
-        />
-      ) : null}
     </>
   );
 }

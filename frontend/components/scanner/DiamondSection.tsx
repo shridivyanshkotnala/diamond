@@ -3,9 +3,10 @@ import { useCallback, useEffect } from 'react';
 import { FormFieldGrid, FormFieldGridItem } from '@/components/scanner/FormFieldGrid';
 import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
+import { SearchableSelectDropdown } from '@/components/scanner/SearchableSelectDropdown';
 import { QualityField } from '@/components/scanner/QualityField';
 import { RateField } from '@/components/scanner/RateField';
-import { RateNotFoundModal } from '@/components/scanner/RateNotFoundModal';
+import { DIAMOND_SHAPE_OPTIONS, type StoneSelectOption } from '@/constants/stoneRateOptions';
 import { useStoneRateFetch } from '@/hooks/useStoneRateFetch';
 import { buildQuality } from '@/utils/qualityUtils';
 
@@ -24,6 +25,7 @@ interface DiamondSectionProps {
   onChange: (values: Partial<DiamondSectionValues>) => void;
   onRateErrorChange?: (hasError: boolean) => void;
   disabled?: boolean;
+  shapeOptions?: readonly StoneSelectOption[];
 }
 
 export function DiamondSection({
@@ -32,6 +34,7 @@ export function DiamondSection({
   onChange,
   onRateErrorChange,
   disabled = false,
+  shapeOptions,
 }: DiamondSectionProps) {
   const hasColorClarity = Boolean(values.color.trim() && values.clarity.trim());
   const quality = buildQuality(values.color, values.clarity);
@@ -43,14 +46,7 @@ export function DiamondSection({
     [onChange],
   );
 
-  const {
-    isFetching,
-    rateNotFound,
-    showRateNotFoundModal,
-    notFoundQuality,
-    fetchRate,
-    dismissRateNotFoundModal,
-  } = useStoneRateFetch({
+  const { isFetching, rateNotFound } = useStoneRateFetch({
     type: 'diamond',
     color: values.color,
     clarity: values.clarity,
@@ -71,6 +67,23 @@ export function DiamondSection({
   }, [rateNotFound, onRateErrorChange]);
 
   const inputsDisabled = disabled || isFetching;
+  const dropdownOptions = (() => {
+    const rawOptions = [
+      { value: '', label: 'None' },
+      ...(shapeOptions ?? DIAMOND_SHAPE_OPTIONS).map((option) => ({
+        value: option.value,
+        label: option.label ?? option.value,
+      })),
+    ];
+    const seen = new Set<string>();
+    return rawOptions.filter((option) => {
+      const normalized = option.value.trim().toLowerCase();
+      const key = normalized === 'none' ? '' : normalized;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
 
   return (
     <>
@@ -78,7 +91,7 @@ export function DiamondSection({
         <FormFieldGrid>
           <FormFieldGridItem>
             <FormInput
-              label="Diamond Weight (ct)"
+              label="Weight (CT)"
               value={values.weight}
               onChangeText={(weight) => onChange({ weight })}
               editable={!inputsDisabled}
@@ -87,12 +100,12 @@ export function DiamondSection({
             />
           </FormFieldGridItem>
           <FormFieldGridItem>
-            <FormInput
+            <SearchableSelectDropdown
               label="Diamond Shape"
               value={values.shape}
-              onChangeText={(shape) => onChange({ shape: shape.toUpperCase() })}
-              editable={!inputsDisabled}
-              placeholder="e.g. RD"
+              options={dropdownOptions}
+              onChange={(shape) => onChange({ shape })}
+              placeholder="None"
               containerClassName="mb-2.5"
             />
           </FormFieldGridItem>
@@ -121,13 +134,6 @@ export function DiamondSection({
         <RateField label="Diamond Rate (₹/ct)" value={values.rate} isFetching={isFetching} />
       </FormSection>
 
-      <RateNotFoundModal
-        visible={showRateNotFoundModal}
-        quality={notFoundQuality}
-        onCancel={dismissRateNotFoundModal}
-        onRefresh={fetchRate}
-        onRetry={fetchRate}
-      />
     </>
   );
 }

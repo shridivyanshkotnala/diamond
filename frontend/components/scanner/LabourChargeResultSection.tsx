@@ -16,7 +16,7 @@ export function LabourChargeResultSection({ pricing }: LabourChargeResultSection
   const modeHint = pricing.usePercentageMode
     ? 'Custom % purity selected — labour charge is ₹0; purity drives pure wt recalculation.'
     : pricing.useFixedAmountMode
-      ? 'Labour = Net wt (g) × labour rate.'
+      ? 'Fixed amount mode active.'
       : 'Enter % purity or fixed labour amount during review.';
 
   return (

@@ -18,10 +18,7 @@ interface UseStoneRateFetchResult {
   rate: string;
   isFetching: boolean;
   rateNotFound: boolean;
-  showRateNotFoundModal: boolean;
-  notFoundQuality: string;
   fetchRate: () => Promise<void>;
-  dismissRateNotFoundModal: () => void;
   setRate: (rate: string) => void;
 }
 
@@ -36,8 +33,6 @@ export function useStoneRateFetch({
   const [rate, setRate] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [rateNotFound, setRateNotFound] = useState(false);
-  const [notFoundQuality, setNotFoundQuality] = useState('');
-  const [modalDismissed, setModalDismissed] = useState(false);
   const requestIdRef = useRef(0);
 
   const quality = buildQuality(color, clarity);
@@ -65,7 +60,6 @@ export function useStoneRateFetch({
     const requestId = ++requestIdRef.current;
     setIsFetching(true);
     setRateNotFound(false);
-    setModalDismissed(false);
 
     try {
       const response = await lookupStoneRate({
@@ -84,15 +78,11 @@ export function useStoneRateFetch({
       if (requestId !== requestIdRef.current) return;
 
       if (error instanceof RateNotFoundError) {
-        setRate('');
-        setRateNotFound(true);
-        setNotFoundQuality(error.quality);
-        onRateFetchedRef.current?.('');
+        setRateNotFound(false);
         return;
       }
 
-      setRate('');
-      onRateFetchedRef.current?.('');
+      setRateNotFound(false);
     } finally {
       if (requestId === requestIdRef.current) {
         setIsFetching(false);
@@ -124,19 +114,12 @@ export function useStoneRateFetch({
     return () => clearTimeout(timer);
   }, [color, clarity, shape, enabled, fetchRate, type]);
 
-  const dismissRateNotFoundModal = useCallback(() => {
-    setModalDismissed(true);
-  }, []);
-
   return {
     quality,
     rate,
     isFetching,
     rateNotFound,
-    showRateNotFoundModal: rateNotFound && !modalDismissed,
-    notFoundQuality,
     fetchRate,
-    dismissRateNotFoundModal,
     setRate,
   };
 }

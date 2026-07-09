@@ -192,7 +192,7 @@ export function LaborSection({
           Case II — Fixed Amount Mode
         </Text>
         <Text className="mb-2 text-[10px] leading-4 text-text-muted">
-          Labour = Net wt (gms) × rate per unit
+          Enter a fixed rate per unit
         </Text>
         <View className="flex-row items-center gap-2">
           <View className="h-11 min-w-0 flex-1 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
@@ -215,9 +215,7 @@ export function LaborSection({
           />
         </View>
         {useFixedAmountMode && netWt > 0 ? (
-          <Text className="mt-2 text-[10px] text-text-muted">
-            {netWt} g × ₹{values.labourChargeAmount} ({values.labourChargeUnit})
-          </Text>
+          <Text className="mt-2 text-[10px] text-text-muted">Calculated from net weight</Text>
         ) : null}
       </View>
 

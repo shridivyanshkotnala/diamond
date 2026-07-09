@@ -27,7 +27,7 @@ export function OtherChargesSection({
   const hasAmount = numericAmount > 0;
 
   return (
-    <FormSection title="Other Charges">
+    <FormSection variant="card">
       <View className="mb-3">
         <FieldLabel label="Other Charges (₹)" />
         <View className="h-11 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">

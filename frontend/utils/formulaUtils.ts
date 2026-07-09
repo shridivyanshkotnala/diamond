@@ -1,4 +1,4 @@
-export const ALL_FORMULA_KARATS = ['24K', '22K', '20K', '18K', '14K', '9K'] as const;
+export const ALL_FORMULA_KARATS = ['22K', '20K', '18K', '14K', '9K'] as const;
 
 export type FormulaKarat = (typeof ALL_FORMULA_KARATS)[number];
 
