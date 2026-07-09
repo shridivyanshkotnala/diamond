@@ -27,6 +27,8 @@ interface ScannerState {
   scanData: ScanItemData;
   isLoading: boolean;
   error: string | null;
+  mrpRefreshToken: number;
+  bumpMrpRefresh: () => void;
   setSelectedType: (type: JewelleryType) => void;
   setScanMode: (mode: ScanMode) => void;
   setScanSide: (side: ScanSide) => void;
@@ -113,4 +115,6 @@ export const useScannerStore = create<ScannerState>((set) => ({
       scanData: { ...DEFAULT_SCAN_ITEM },
       ...initialSessionState,
     }),
+  mrpRefreshToken: 0,
+  bumpMrpRefresh: () => set((state) => ({ mrpRefreshToken: Date.now() })),
 }));

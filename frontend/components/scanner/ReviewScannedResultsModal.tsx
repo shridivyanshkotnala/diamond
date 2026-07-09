@@ -5,6 +5,8 @@ import { Check } from 'lucide-react-native';
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
 import { PriceCard } from '@/components/scanner/PriceCard';
 import { CalculationRateSection } from '@/components/scanner/CalculationRateSection';
+import { useScannerStore } from '@/store/scannerStore';
+import { RefreshCw } from 'lucide-react-native';
 import { OutlineButton } from '@/components/scanner/OutlineButton';
 import { PrimaryGreenButton } from '@/components/scanner/PrimaryGreenButton';
 import { useFormulaStore } from '@/store/formulaStore';
@@ -284,11 +286,21 @@ export function ReviewScannedResultsModal({
       />
 
       {confirmed ? (
-        <PriceCard
-          label="Calculated MRP Of Jewellery"
-          amount={pricing.ultimateMrpDisplay}
-          subtitle="Final Jewellery MRP"
-        />
+        <View className="mb-3">
+          <View className="relative">
+            <PriceCard
+              label="Calculated MRP Of Jewellery"
+              amount={pricing.ultimateMrpDisplay}
+              subtitle="Final Jewellery MRP"
+            />
+            <Pressable
+              onPress={() => useScannerStore.getState().bumpMrpRefresh()}
+              className="absolute right-4 top-4 h-8 w-8 items-center justify-center rounded-full bg-white/10"
+            >
+              <RefreshCw size={16} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        </View>
       ) : null}
 
       {!confirmed ? (

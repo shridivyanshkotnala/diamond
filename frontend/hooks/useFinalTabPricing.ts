@@ -48,6 +48,7 @@ export function useFinalTabPricing({
   selectedKarat,
 }: UseFinalTabPricingOptions): FinalTabPricingResult {
   const scanId = useScannerStore((s) => s.scanId);
+  const mrpRefreshToken = useScannerStore((s) => s.mrpRefreshToken);
   const [pricing, setPricing] = useState<FinalTabPricingResult>(defaultPricing);
 
   useEffect(() => {
@@ -126,7 +127,7 @@ export function useFinalTabPricing({
     return () => {
       isMounted = false;
     };
-  }, [scanId, scanData, structuredData, selectedType, selectedKarat]);
+  }, [scanId, scanData, structuredData, selectedType, selectedKarat, mrpRefreshToken]);
 
   return pricing;
 }

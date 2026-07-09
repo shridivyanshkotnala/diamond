@@ -68,6 +68,7 @@ export default function ReviewResultsScreen() {
   const selectedType = useScannerStore((s) => s.selectedType);
   const structuredData = useScannerStore((s) => s.structuredData);
   const updateScanData = useScannerStore((s) => s.updateScanData);
+  const bumpMrpRefresh = useScannerStore((s) => s.bumpMrpRefresh);
   const setStructuredData = useScannerStore((s) => s.setStructuredData);
   const setScanSide = useScannerStore((s) => s.setScanSide);
   const addWishlistItem = useWishlistStore((s) => s.addItem);
@@ -165,6 +166,10 @@ export default function ReviewResultsScreen() {
     setStructuredData(
       scanItemToStructuredData(updated, useScannerStore.getState().structuredData),
     );
+    if (field === 'calculationRate') {
+      // ensure pricing is refreshed immediately when switching RTGS/Cash
+      bumpMrpRefresh();
+    }
   }, [updateScanData, setStructuredData]);
 
   const handleStoneEntriesChange = useCallback(
