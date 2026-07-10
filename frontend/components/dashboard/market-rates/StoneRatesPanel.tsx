@@ -22,7 +22,7 @@ import {
 } from '@/constants/stoneRateOptions';
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import type { StoneRate } from '@/types/rates';
+import type { StoneRate, UpsertStoneRatePayload } from '@/types/rates';
 import {
   displayStoneField,
   findDuplicateStoneRate,
@@ -289,12 +289,15 @@ export function StoneRatesPanel({ stoneType, onToast }: StoneRatesPanelProps) {
 
     setSaving(true);
     try {
-      const payload = {
+      const payload: UpsertStoneRatePayload = {
         color: trimmedColor,
         clarity: trimmedClarity,
-        shape: showShape ? trimmedShape : undefined,
         rate,
       };
+      // Only include shape if it's not empty and for diamond rates
+      if (showShape && trimmedShape) {
+        payload.shape = trimmedShape;
+      }
       const savedRate =
         stoneType === 'diamond'
           ? await upsertDiamondRate(payload)
