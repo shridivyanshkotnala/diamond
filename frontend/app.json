@@ -59,10 +59,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "e755e021-b3c6-46b9-b4cd-cfea53ef2733"
-      }
+      "router": {}
     },
     "owner": "divyanshkotnala"
   }
