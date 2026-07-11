@@ -16,7 +16,11 @@
         "EXPO_PUBLIC_API_URL": "https://jewellery-tag-intelligence-platform.onrender.com"
       }
     },
-    "production": {}
+    "production": {
+      "android": {
+        "buildType": "apk"
+      }
+    }
   },
   "submit": {
     "production": {}
