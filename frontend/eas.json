@@ -13,12 +13,15 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://jewellery-tag-intelligence-platform.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://diamond-a1an.onrender.com"
       }
     },
     "production": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://diamond-a1an.onrender.com"
       }
     }
   },
