@@ -36,7 +36,9 @@ export function DiamondSection({
   disabled = false,
   shapeOptions,
 }: DiamondSectionProps) {
-  const hasColorClarity = Boolean(values.color.trim() && values.clarity.trim());
+  const hasLookupCriteria = Boolean(
+    values.shape.trim() || values.color.trim() || values.clarity.trim(),
+  );
   const quality = buildQuality(values.color, values.clarity);
 
   const handleRateFetched = useCallback(
@@ -50,7 +52,8 @@ export function DiamondSection({
     type: 'diamond',
     color: values.color,
     clarity: values.clarity,
-    enabled: hasColorClarity && !disabled,
+    shape: values.shape,
+    enabled: hasLookupCriteria && !disabled,
     onRateFetched: handleRateFetched,
   });
 

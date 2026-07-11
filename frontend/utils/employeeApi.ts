@@ -24,6 +24,9 @@ export type ApiEmployeePermissions = {
   editRateDiamond: boolean;
   editRateColorstone: boolean;
   editRateLabour: boolean;
+  scanEditPurityPercent?: boolean;
+  scanRateRtgs?: boolean;
+  scanRateCash?: boolean;
 };
 
 const MATRIX_KEYS = Object.keys(DEFAULT_MATRIX_VALUES) as MatrixKey[];
@@ -79,6 +82,9 @@ export function mapDraftPermissionsToApi(permissions: EmployeePermissions): ApiE
     editRateDiamond: permissions.edit_rate_diamond,
     editRateColorstone: permissions.edit_rate_colorstone,
     editRateLabour: permissions.edit_rate_labour,
+    scanEditPurityPercent: permissions.scan_edit_purity_percent,
+    scanRateRtgs: permissions.scan_rate_rtgs,
+    scanRateCash: permissions.scan_rate_cash,
   };
 }
 
@@ -104,6 +110,12 @@ export function mapApiPermissionsToEmployee(apiPermissions: Partial<ApiEmployeeP
   permissions.edit_rate_diamond = apiPermissions.editRateDiamond ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_diamond;
   permissions.edit_rate_colorstone = apiPermissions.editRateColorstone ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_colorstone;
   permissions.edit_rate_labour = apiPermissions.editRateLabour ?? DEFAULT_EMPLOYEE_PERMISSIONS.edit_rate_labour;
+  permissions.scan_edit_purity_percent =
+    apiPermissions.scanEditPurityPercent ?? DEFAULT_EMPLOYEE_PERMISSIONS.scan_edit_purity_percent;
+  permissions.scan_rate_rtgs =
+    apiPermissions.scanRateRtgs ?? DEFAULT_EMPLOYEE_PERMISSIONS.scan_rate_rtgs;
+  permissions.scan_rate_cash =
+    apiPermissions.scanRateCash ?? DEFAULT_EMPLOYEE_PERMISSIONS.scan_rate_cash;
 
   return permissions;
 }

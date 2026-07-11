@@ -45,6 +45,8 @@ interface ReviewScannedResultsModalProps {
   addingToWishlist?: boolean;
   hasAddedToWishlist?: boolean;
   confirming?: boolean;
+  canEditPurityPercent?: boolean;
+  calculationRateAccess?: 'rtgs' | 'cash' | 'both';
 }
 
 export function ReviewScannedResultsModal({
@@ -62,6 +64,8 @@ export function ReviewScannedResultsModal({
   addingToWishlist = false,
   hasAddedToWishlist = false,
   confirming = false,
+  canEditPurityPercent = true,
+  calculationRateAccess = 'both',
 }: ReviewScannedResultsModalProps) {
   const activeFormula = useFormulaStore((s) => s.activeFormula);
   const formula2Rules = useFormulaStore((s) => s.formula2Rules);
@@ -274,6 +278,7 @@ export function ReviewScannedResultsModal({
         mcxLiveRate={mcxLiveRate}
         diamondShapeOptions={diamondShapeOptions}
         editable
+        canEditPurityPercent={canEditPurityPercent}
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}
         onRateErrorChange={handleStoneRateErrorChange}
@@ -283,6 +288,7 @@ export function ReviewScannedResultsModal({
       <CalculationRateSection
         value={scanData.calculationRate}
         onChange={(value) => onFieldChange('calculationRate', value)}
+        access={calculationRateAccess}
       />
 
       {confirmed ? (

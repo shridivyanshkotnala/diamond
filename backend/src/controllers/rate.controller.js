@@ -234,6 +234,7 @@ const addOrUpdateDiamondRate = async (req, res) => {
     const trimmedColor = typeof color === 'string' ? color.trim().toUpperCase() : '';
     const trimmedClarity = typeof clarity === 'string' ? clarity.trim().toUpperCase() : '';
     const rawShape = typeof shape === 'string' ? shape.trim() : '';
+    const normalizedShapeInput = rawShape && rawShape.toLowerCase() !== 'none' ? rawShape : '';
 
     const SHAPE_MAP = {
       RD: 'Rd',
@@ -243,14 +244,14 @@ const addOrUpdateDiamondRate = async (req, res) => {
       BG: 'Bg',
       PC: 'Pc',
     };
-    const normalizedShape = rawShape
-      ? SHAPE_MAP[rawShape.toUpperCase()] ?? rawShape.toUpperCase()
+    const normalizedShape = normalizedShapeInput
+      ? SHAPE_MAP[normalizedShapeInput.toUpperCase()] ?? normalizedShapeInput.toUpperCase()
       : 0;
 
-    if (!trimmedColor && !trimmedClarity) {
+    if (!trimmedColor && !trimmedClarity && !normalizedShapeInput) {
       return res
         .status(400)
-        .json({ success: false, message: 'At least one of color or clarity is required' });
+        .json({ success: false, message: 'At least one of shape, color or clarity is required' });
     }
 
     if (rate == null) {

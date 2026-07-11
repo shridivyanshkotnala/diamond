@@ -26,7 +26,8 @@ import {
   McxLiveBanner,
 } from '@/components/dashboard/market-rates/GoldRatesTable';
 import { LabourRatesPanel } from '@/components/dashboard/market-rates/LabourRatesPanel';
-import { StoneRatesPanel } from '@/components/dashboard/market-rates/StoneRatesPanel';
+import { DiamondRatesPanel } from '@/components/dashboard/market-rates/DiamondRatesPanel';
+import { ColorstoneRatesPanel } from '@/components/dashboard/market-rates/ColorstoneRatesPanel';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { ToastNotification, type ToastType } from '@/components/scanner/ToastNotification';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
@@ -385,7 +386,11 @@ export default function MarketRatesScreen() {
           (activeTab === 'diamond' && access.canEditDiamond) ||
           (activeTab === 'colorstone' && access.canEditColorstone) ? (
             <View style={screenStyles.screenSection}>
-              <StoneRatesPanel stoneType={activeTab} onToast={showToast} />
+              {activeTab === 'diamond' ? (
+                <DiamondRatesPanel onToast={showToast} />
+              ) : (
+                <ColorstoneRatesPanel onToast={showToast} />
+              )}
             </View>
           ) : (
             <View style={screenStyles.emptyCard}>

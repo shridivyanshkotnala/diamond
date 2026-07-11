@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { PlusCircle } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Radius } from '@/constants/theme';
 
@@ -17,9 +18,17 @@ export function EmployeeFab({
   label = 'Add New Employee',
 }: EmployeeFabProps) {
   const isMuted = variant === 'muted';
+  const insets = useSafeAreaInsets();
 
   return (
-    <Pressable onPress={onPress} style={[styles.fab, isMuted && styles.fabMuted]}>
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.fab,
+        isMuted && styles.fabMuted,
+        { position: 'absolute', right: -2, bottom: insets.bottom + 3 },
+      ]}
+    >
       <PlusCircle size={18} color={isMuted ? Colors.textSecondary : Colors.white} />
       <Text style={[styles.label, isMuted && styles.labelMuted]}>{label}</Text>
     </Pressable>

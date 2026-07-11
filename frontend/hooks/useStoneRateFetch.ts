@@ -45,7 +45,8 @@ export function useStoneRateFetch({
   const fetchRate = useCallback(async () => {
     const trimmedColor = color.trim();
     const trimmedClarity = clarity.trim();
-    const trimmedShape = shape?.trim() ?? '';
+    const trimmedShapeRaw = shape?.trim() ?? '';
+    const trimmedShape = trimmedShapeRaw.toLowerCase() === 'none' ? '' : trimmedShapeRaw;
     const hasLookupCriteria =
       type === 'diamond'
         ? Boolean(trimmedShape || trimmedColor || trimmedClarity)
@@ -95,7 +96,8 @@ export function useStoneRateFetch({
 
     const trimmedColor = color.trim();
     const trimmedClarity = clarity.trim();
-    const trimmedShape = shape?.trim() ?? '';
+    const trimmedShapeRaw = shape?.trim() ?? '';
+    const trimmedShape = trimmedShapeRaw.toLowerCase() === 'none' ? '' : trimmedShapeRaw;
     const hasLookupCriteria =
       type === 'diamond'
         ? Boolean(trimmedShape || trimmedColor || trimmedClarity)

@@ -1,0 +1,443 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
+
+import { DeleteStoneRateModal } from '@/components/dashboard/market-rates/DeleteStoneRateModal';
+import { DiamondRateFormModal } from '@/components/dashboard/market-rates/DiamondRateFormModal';
+import type { ToastType } from '@/components/scanner/ToastNotification';
+import {
+  deleteDiamondRate,
+  fetchDiamondRates,
+  upsertDiamondRate,
+} from '@/utils/ratesApi';
+import {
+  DIAMOND_SHAPE_OPTIONS,
+  STONE_CLARITY_OPTIONS,
+  getColorOptionsForStoneType,
+  type StoneSelectOption,
+} from '@/constants/stoneRateOptions';
+import { screenStyles } from '@/constants/screenLayout';
+import { Colors, Radius, Spacing } from '@/constants/theme';
+import type { StoneRate, UpsertStoneRatePayload } from '@/types/rates';
+import { findDuplicateStoneRate } from '@/utils/stoneRateUtils';
+
+const BUTTON_GREEN = '#1B3022';
+const DELETE_RED = '#EA4335';
+
+interface DiamondRatesPanelProps {
+  onToast?: (message: string, type?: ToastType) => void;
+}
+
+interface DiamondRateFormErrors {
+  shape?: string;
+  color?: string;
+  clarity?: string;
+  rate?: string;
+  duplicate?: string;
+}
+
+const SHAPE_LABEL_MAP = new Map(
+  DIAMOND_SHAPE_OPTIONS.map((option) => [option.value.toUpperCase(), option.label]),
+);
+const SHAPE_VALUE_MAP = new Map(
+  DIAMOND_SHAPE_OPTIONS.map((option) => [option.value.toUpperCase(), option.value]),
+);
+
+function normalizeDiamondShape(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'none') return '';
+  const upper = trimmed.toUpperCase();
+  return SHAPE_VALUE_MAP.get(upper) ?? upper;
+}
+
+function formatInr(rate: number): string {
+  if (!Number.isFinite(rate)) return '₹0';
+  return `₹${Math.round(rate).toLocaleString('en-IN')}`;
+}
+
+function formatTableValue(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return 'None';
+  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+  if (wordCount > 4) return trimmed.slice(0, 4);
+  return trimmed;
+}
+
+function shapeLabel(value?: string): string {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed || trimmed === '0') return 'None';
+  const label = SHAPE_LABEL_MAP.get(trimmed.toUpperCase());
+  return label ?? trimmed;
+}
+
+function sortDiamondRates(rates: StoneRate[]): StoneRate[] {
+  return [...rates].sort((a, b) => {
+    const shapeA = normalizeDiamondShape(a.shape ?? '').toLowerCase();
+    const shapeB = normalizeDiamondShape(b.shape ?? '').toLowerCase();
+    if (shapeA !== shapeB) return shapeA.localeCompare(shapeB);
+    const colorA = a.color.trim().toLowerCase();
+    const colorB = b.color.trim().toLowerCase();
+    if (colorA !== colorB) return colorA.localeCompare(colorB);
+    const clarityA = a.clarity.trim().toLowerCase();
+    const clarityB = b.clarity.trim().toLowerCase();
+    return clarityA.localeCompare(clarityB);
+  });
+}
+
+export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
+  const [rates, setRates] = useState<StoneRate[]>([]);
+  const [editingRate, setEditingRate] = useState<StoneRate | null>(null);
+  const [isNew, setIsNew] = useState(false);
+  const [color, setColor] = useState('');
+  const [clarity, setClarity] = useState('');
+  const [shape, setShape] = useState('');
+  const shapeRef = useRef('');
+  const [rateValue, setRateValue] = useState('');
+  const [formErrors, setFormErrors] = useState<DiamondRateFormErrors>({});
+  const [deletingRate, setDeletingRate] = useState<StoneRate | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const notify = (message: string, type: ToastType = 'info') => {
+    onToast?.(message, type);
+  };
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await fetchDiamondRates();
+        if (active) setRates(data);
+      } catch (err) {
+        if (active) notify('Failed to load diamond rates', 'error');
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const sortedRates = useMemo(() => sortDiamondRates(rates), [rates]);
+
+  const colorOptions = useMemo<StoneSelectOption[]>(() => {
+    const defaults = getColorOptionsForStoneType('diamond');
+    const fromRates = rates.map((rate) => rate.color).filter(Boolean);
+    const merged = [...defaults, ...fromRates]
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean);
+    const unique = Array.from(new Set(merged));
+    return unique.map((option) => ({ value: option, label: option }));
+  }, [rates]);
+
+  const clarityOptions = useMemo<StoneSelectOption[]>(() => {
+    const fromRates = rates.map((rate) => rate.clarity).filter(Boolean);
+    const merged = [...STONE_CLARITY_OPTIONS, ...fromRates]
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean);
+    const unique = Array.from(new Set(merged));
+    return unique.map((option) => ({ value: option, label: option }));
+  }, [rates]);
+
+  const shapeOptions = useMemo<StoneSelectOption[]>(() => {
+    const defaultShapes = DIAMOND_SHAPE_OPTIONS.map((option) => option.value);
+    const fromRates = rates.map((rate) => rate.shape ?? '').filter(Boolean);
+    const merged = [...defaultShapes, ...fromRates]
+      .map(normalizeDiamondShape)
+      .filter(Boolean);
+    const unique = Array.from(new Set(merged.map((value) => value.toUpperCase())));
+    const labelMap = new Map(
+      DIAMOND_SHAPE_OPTIONS.map((option) => [option.value.toUpperCase(), option.label]),
+    );
+    return unique.map((value) => {
+      const label = labelMap.get(value) ?? value;
+      const storedValue = SHAPE_VALUE_MAP.get(value) ?? value;
+      return { value: storedValue, label };
+    });
+  }, [rates]);
+
+  const resetForm = () => {
+    setColor('');
+    setClarity('');
+    setShape('');
+    shapeRef.current = '';
+    setRateValue('');
+    setFormErrors({});
+  };
+
+  const openAdd = () => {
+    setIsNew(true);
+    setEditingRate(null);
+    resetForm();
+  };
+
+  const openEdit = (rate: StoneRate) => {
+    setIsNew(false);
+    setEditingRate(rate);
+    setColor(rate.color ?? '');
+    setClarity(rate.clarity ?? '');
+    const normalized = normalizeDiamondShape(rate.shape ?? '');
+    setShape(normalized);
+    shapeRef.current = normalized;
+    setRateValue(String(rate.rate));
+    setFormErrors({});
+  };
+
+  const closeForm = () => {
+    setIsNew(false);
+    setEditingRate(null);
+    setFormErrors({});
+  };
+
+  const handleSave = async () => {
+    const normalizedColor = color.trim().toUpperCase();
+    const normalizedClarity = clarity.trim().toUpperCase();
+    const normalizedShape = normalizeDiamondShape(shapeRef.current);
+    const hasAnyField = Boolean(
+      normalizedShape || normalizedColor || normalizedClarity,
+    );
+
+    const nextErrors: DiamondRateFormErrors = {};
+    if (!hasAnyField) {
+      nextErrors.shape = 'Select at least Shape, Color or Clarity.';
+      nextErrors.color = 'Select at least Shape, Color or Clarity.';
+      nextErrors.clarity = 'Select at least Shape, Color or Clarity.';
+    }
+
+    const rate = Number(rateValue);
+    if (!rateValue.trim() || !Number.isFinite(rate) || rate <= 0) {
+      nextErrors.rate = 'Enter a valid rate.';
+    }
+
+    if (
+      findDuplicateStoneRate(
+        rates,
+        normalizedColor,
+        normalizedClarity,
+        normalizedShape,
+        editingRate?.id,
+      )
+    ) {
+      nextErrors.duplicate =
+        'A rate with the same Shape, Color and Clarity already exists.';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFormErrors(nextErrors);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload: UpsertStoneRatePayload = {
+        color: normalizedColor,
+        clarity: normalizedClarity,
+        rate,
+        shape: normalizedShape,
+      };
+
+      const savedRate = await upsertDiamondRate(payload);
+
+      setRates((prev) => {
+        if (!editingRate) return [...prev, savedRate];
+        return [
+          ...prev.filter((item) => item.id !== editingRate.id),
+          savedRate,
+        ];
+      });
+
+      closeForm();
+      notify(`Diamond rate ${editingRate ? 'updated' : 'added'}`, 'success');
+    } catch (err) {
+      notify('Failed to save diamond rate', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingRate) return;
+    setSaving(true);
+    try {
+      await deleteDiamondRate(deletingRate.id);
+      setRates((prev) => prev.filter((item) => item.id !== deletingRate.id));
+      notify('Diamond rate deleted', 'success');
+      setDeletingRate(null);
+    } catch (err) {
+      notify('Failed to delete diamond rate', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Pressable onPress={openAdd} style={styles.addBtn}>
+        <Text style={styles.addBtnText}>+ Add Diamond Rate</Text>
+      </Pressable>
+
+      {sortedRates.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>No diamond rates yet</Text>
+          <Text style={styles.emptyText}>Tap Add Diamond Rate to configure rates.</Text>
+        </View>
+      ) : (
+        <View style={styles.table}>
+          <View style={[styles.row, styles.headerRow]}>
+            <Text style={[styles.headerCell, styles.shapeCell]}>Shape</Text>
+            <Text style={[styles.headerCell, styles.colorCell]}>Color</Text>
+            <Text style={[styles.headerCell, styles.clarityCell]}>Clarity</Text>
+            <Text style={[styles.headerCell, styles.rateCell]}>Rate</Text>
+            <Text style={[styles.headerCell, styles.actionCell]}>Edit</Text>
+            <Text style={[styles.headerCell, styles.actionCell]}>Del</Text>
+          </View>
+
+          {sortedRates.map((rate, index) => {
+            const shapeText = formatTableValue(shapeLabel(rate.shape));
+            const colorText = formatTableValue(rate.color || 'None');
+            const clarityText = formatTableValue(rate.clarity || 'None');
+            const rowBorder = index < sortedRates.length - 1;
+            return (
+              <View
+                key={rate.id}
+                style={[styles.row, rowBorder && styles.rowBorder]}
+              >
+                <Text style={[styles.cell, styles.shapeCell]} numberOfLines={1}>
+                  {shapeText}
+                </Text>
+                <Text style={[styles.cell, styles.colorCell]} numberOfLines={1}>
+                  {colorText}
+                </Text>
+                <Text style={[styles.cell, styles.clarityCell]} numberOfLines={1}>
+                  {clarityText}
+                </Text>
+                <Text style={[styles.cell, styles.rateCell]} numberOfLines={1}>
+                  {formatInr(rate.rate)}
+                </Text>
+                <Pressable
+                  onPress={() => openEdit(rate)}
+                  style={[styles.iconBtn, styles.actionCell]}
+                >
+                  <Pencil size={14} color={Colors.textPrimary} />
+                </Pressable>
+                <Pressable
+                  onPress={() => setDeletingRate(rate)}
+                  style={[styles.iconBtn, styles.actionCell]}
+                >
+                  <Trash2 size={14} color={DELETE_RED} />
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      <DiamondRateFormModal
+        visible={isNew || editingRate !== null}
+        isNew={isNew}
+        shape={shape}
+        color={color}
+        clarity={clarity}
+        rateValue={rateValue}
+        errors={formErrors}
+        saving={saving}
+        shapeOptions={shapeOptions}
+        colorOptions={colorOptions}
+        clarityOptions={clarityOptions}
+        onShapeChange={(value) => {
+          setShape(value);
+          shapeRef.current = value;
+          if (formErrors.shape || formErrors.duplicate) {
+            setFormErrors((prev) => ({ ...prev, shape: undefined, duplicate: undefined }));
+          }
+        }}
+        onColorChange={(value) => {
+          setColor(value);
+          if (formErrors.color || formErrors.duplicate) {
+            setFormErrors((prev) => ({ ...prev, color: undefined, duplicate: undefined }));
+          }
+        }}
+        onClarityChange={(value) => {
+          setClarity(value);
+          if (formErrors.clarity || formErrors.duplicate) {
+            setFormErrors((prev) => ({ ...prev, clarity: undefined, duplicate: undefined }));
+          }
+        }}
+        onRateChange={(value) => {
+          setRateValue(value.replace(/[^\d.]/g, ''));
+          if (formErrors.rate || formErrors.duplicate) {
+            setFormErrors((prev) => ({ ...prev, rate: undefined, duplicate: undefined }));
+          }
+        }}
+        onClose={closeForm}
+        onSave={handleSave}
+      />
+
+      <DeleteStoneRateModal
+        visible={deletingRate !== null}
+        title="Delete Diamond Rate?"
+        subtitle={
+          deletingRate
+            ? `This will permanently remove ${shapeLabel(deletingRate.shape)} / ${
+                deletingRate.color || 'None'
+              } / ${deletingRate.clarity || 'None'}.`
+            : ''
+        }
+        onClose={() => setDeletingRate(null)}
+        onConfirm={handleConfirmDelete}
+        confirming={saving}
+      />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  addBtn: {
+    height: Spacing.buttonHeight,
+    borderRadius: Radius.button,
+    backgroundColor: BUTTON_GREEN,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  addBtnText: { color: Colors.white, fontWeight: '600', fontSize: 14 },
+  emptyCard: {
+    ...screenStyles.emptyCard,
+    alignItems: 'center',
+  },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
+  emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  table: {
+    ...screenStyles.table,
+  },
+  row: {
+    ...screenStyles.tableDataRow,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    minHeight: 44,
+  },
+  headerRow: {
+    ...screenStyles.tableHeaderRow,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  headerCell: {
+    ...screenStyles.tableHeaderCell,
+    textAlign: 'center',
+  },
+  cell: {
+    ...screenStyles.tableCell,
+    textAlign: 'center',
+  },
+  rowBorder: {
+    ...screenStyles.tableRowBorder,
+  },
+  shapeCell: { width: 70 },
+  colorCell: { width: 48 },
+  clarityCell: { width: 52 },
+  rateCell: { width: 74 },
+  actionCell: { width: 32, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

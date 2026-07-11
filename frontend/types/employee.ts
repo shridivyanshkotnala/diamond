@@ -20,7 +20,17 @@ export type RateEditPermissionKey =
   | 'edit_rate_colorstone'
   | 'edit_rate_labour';
 
-export type EmployeePermissionKey = MatrixKey | ExtraPermissionKey | SettingsPermissionKey | RateEditPermissionKey;
+export type ScannerCalculationPermissionKey =
+  | 'scan_edit_purity_percent'
+  | 'scan_rate_rtgs'
+  | 'scan_rate_cash';
+
+export type EmployeePermissionKey =
+  | MatrixKey
+  | ExtraPermissionKey
+  | SettingsPermissionKey
+  | RateEditPermissionKey
+  | ScannerCalculationPermissionKey;
 
 export type EmployeePermissions = Record<EmployeePermissionKey, boolean>;
 

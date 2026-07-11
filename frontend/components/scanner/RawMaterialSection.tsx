@@ -26,6 +26,7 @@ interface RawMaterialSectionProps {
     'grossWt' | 'netWt' | 'karat' | 'tunch' | 'customPurityPercent' | 'labourPurityPercent'
   >;
   editable?: boolean;
+  canEditPurityPercent?: boolean;
   onFieldChange?: (field: keyof ScanItemData, value: string) => void;
   goldRates?: GoldRate[];
   goldTaxSettings?: TaxSettings;
@@ -62,6 +63,7 @@ function sanitizePurityInput(text: string): string {
 export function RawMaterialSection({
   scanData,
   editable = false,
+  canEditPurityPercent = true,
   onFieldChange,
   goldRates,
   goldTaxSettings,
@@ -192,7 +194,7 @@ export function RawMaterialSection({
             label="Purity"
             value={purityInputValue}
             onChangeText={handlePurityEdit}
-            editable={editable}
+            editable={editable && canEditPurityPercent}
             placeholder="e.g. 91.6"
             keyboardType="decimal-pad"
             containerClassName="mb-2.5"

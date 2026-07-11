@@ -8,7 +8,7 @@ import type { BottomNavRoute } from '@/types/scanner';
 const ACCENT_GOLD = '#D4C19C';
 const NAV_GREEN = '#1E332E';
 const NAV_HEIGHT = 70;
-const NAV_OFFSET = -1;
+const NAV_OFFSET = -4;
 const ICON_SIZE = 26;
 const SCAN_ICON_SIZE = 28;
 const FAB_SIZE = 60;

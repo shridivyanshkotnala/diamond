@@ -100,7 +100,7 @@ function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
   })();
   const rate = readNumber(raw.rate);
 
-  if (rate == null || (!color && !clarity)) {
+  if (rate == null || (!color && !clarity && !shape)) {
     return null;
   }
 
@@ -330,31 +330,23 @@ export async function lookupStoneRate(
 
   if (payload.type === 'diamond') {
     const normalizedShape = trimmedShape?.toLowerCase() === 'none' ? '' : trimmedShape ?? '';
-    const normalizedColor = trimmedColor.toLowerCase();
-    const normalizedClarity = trimmedClarity.toLowerCase();
+    const normalizedColor = trimmedColor;
+    const normalizedClarity = trimmedClarity;
 
-    const scoredMatches = rates
-      .map((item) => {
-        const itemShape = (item.shape ?? '').trim().toLowerCase();
-        const itemColor = item.color.trim().toLowerCase();
-        const itemClarity = item.clarity.trim().toLowerCase();
+    const targetShape = normalizedShape.trim().toLowerCase();
+    const targetColor = normalizedColor.trim().toLowerCase();
+    const targetClarity = normalizedClarity.trim().toLowerCase();
 
-        if (normalizedShape && itemShape !== normalizedShape) return null;
-        if (normalizedColor && itemColor !== normalizedColor) return null;
-        if (normalizedClarity && itemClarity !== normalizedClarity) return null;
+    const match = rates.find((item) => {
+      const itemShape = (item.shape ?? '').trim().toLowerCase();
+      const itemColor = item.color.trim().toLowerCase();
+      const itemClarity = item.clarity.trim().toLowerCase();
 
-        let score = 0;
-        if (normalizedShape) score += 4;
-        if (normalizedColor) score += 2;
-        if (normalizedClarity) score += 1;
+      return itemShape === targetShape && itemColor === targetColor && itemClarity === targetClarity;
+    });
 
-        return { rate: item.rate, score };
-      })
-      .filter((item): item is { rate: number; score: number } => item !== null);
-
-    scoredMatches.sort((a, b) => b.score - a.score);
-    if (scoredMatches.length > 0) {
-      return { rate: scoredMatches[0].rate };
+    if (match) {
+      return { rate: match.rate };
     }
   } else {
     const match = rates.find((item) => {

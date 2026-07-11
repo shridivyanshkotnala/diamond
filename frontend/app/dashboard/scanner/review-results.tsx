@@ -19,6 +19,8 @@ import { useFinalTabPricing } from '@/hooks/useFinalTabPricing';
 import { useFormulaStore } from '@/store/formulaStore';
 import { useScannerStore } from '@/store/scannerStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { useAuthStore } from '@/store/authStore';
+import { useEmployeeStore } from '@/store/employeeStore';
 import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { ApiError } from '@/utils/apiClient';
 import { syncFormulaStoreFromApi } from '@/utils/formulaSettingsApi';
@@ -28,6 +30,7 @@ import {
 } from '@/utils/formulaUtils';
 import { getReview, submitReview } from '@/utils/scanApi';
 import { scanItemToStructuredData, structuredDataToScanItem } from '@/utils/scanMappers';
+import { resolveCurrentEmployee } from '@/utils/settingsAccess';
 import {
   applyStoneEntriesToScanData,
   parseStoneArraysFromStructuredData,
@@ -72,11 +75,33 @@ export default function ReviewResultsScreen() {
   const setStructuredData = useScannerStore((s) => s.setStructuredData);
   const setScanSide = useScannerStore((s) => s.setScanSide);
   const addWishlistItem = useWishlistStore((s) => s.addItem);
+  const userRole = useAuthStore((s) => s.userRole);
+  const isSuper = useAuthStore((s) => s.isSuper);
+  const loggedInEmployeeId = useAuthStore((s) => s.loggedInEmployeeId);
+  const savedPhone = useAuthStore((s) => s.savedPhone);
+  const employees = useEmployeeStore((s) => s.employees);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
   const [hasAddedToWishlist, setHasAddedToWishlist] = useState(false);
+
+  const employee = useMemo(
+    () => resolveCurrentEmployee(employees, loggedInEmployeeId, savedPhone),
+    [employees, loggedInEmployeeId, savedPhone],
+  );
+  const isEmployeeRestricted = userRole === 'employee' && !isSuper;
+  const canEditPurityPercent =
+    !isEmployeeRestricted || employee?.permissions.scan_edit_purity_percent === true;
+  const calculationRateAccess = useMemo(() => {
+    if (!isEmployeeRestricted) return 'both' as const;
+    const allowRtgs = employee?.permissions.scan_rate_rtgs === true;
+    const allowCash = employee?.permissions.scan_rate_cash === true;
+    if (allowRtgs && allowCash) return 'both' as const;
+    if (allowRtgs) return 'rtgs' as const;
+    if (allowCash) return 'cash' as const;
+    return 'both' as const;
+  }, [employee?.permissions, isEmployeeRestricted]);
 
   const livePricing = useFinalTabPricing({
     scanData,
@@ -109,40 +134,62 @@ export default function ReviewResultsScreen() {
       }
 
       const data = await getReview(scanId);
+      const baseScanData = applyClientFormulaRules(structuredDataToScanItem(data.structuredData));
+      const adjustedScanData =
+        calculationRateAccess === 'both'
+          ? baseScanData
+          : {
+              ...baseScanData,
+              calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
+            };
       setStructuredData(data.structuredData);
-      updateScanData(applyClientFormulaRules(structuredDataToScanItem(data.structuredData)));
+      updateScanData(adjustedScanData);
     } catch (error) {
       const existing = useScannerStore.getState().structuredData;
       if (Object.keys(existing).length > 0) {
-        updateScanData(applyClientFormulaRules(structuredDataToScanItem(existing)));
+        const baseScanData = applyClientFormulaRules(structuredDataToScanItem(existing));
+        updateScanData(
+          calculationRateAccess === 'both'
+            ? baseScanData
+            : {
+                ...baseScanData,
+                calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
+              },
+        );
         return;
       }
       if (isDemoScanMode()) {
         const base = useScannerStore.getState().scanData;
+        const demoScanData = applyClientFormulaRules({
+          ...base,
+          grossWt: MOCK_REVIEW_RESULTS.grossWt || '42.500',
+          netWt: MOCK_REVIEW_RESULTS.netWt,
+          tunch: MOCK_REVIEW_RESULTS.tunch,
+          karat: resolveScannedKarat('', MOCK_REVIEW_RESULTS.tunch),
+          diamondWeight: MOCK_REVIEW_RESULTS.diamondWeight,
+          diamondColor: MOCK_REVIEW_RESULTS.diamondColor,
+          diamondClarity: MOCK_REVIEW_RESULTS.diamondClarity,
+          diamondPieces: MOCK_REVIEW_RESULTS.diamondPieces,
+          diamondRate: MOCK_REVIEW_RESULTS.diamondRate,
+          diamondQuality: MOCK_REVIEW_RESULTS.diamondQuality,
+          colorstoneWeight: MOCK_REVIEW_RESULTS.colorstoneWeight,
+          colorstoneColor: MOCK_REVIEW_RESULTS.colorstoneColor,
+          colorstoneClarity: MOCK_REVIEW_RESULTS.colorstoneClarity,
+          colorstoneQuality: MOCK_REVIEW_RESULTS.colorstoneQuality,
+          colorstoneRate: MOCK_REVIEW_RESULTS.colorstoneRate,
+          labourPurityPercent: MOCK_REVIEW_RESULTS.labourPurityPercent,
+          labourChargeAmount: MOCK_REVIEW_RESULTS.labourChargeAmount,
+          labourChargeUnit: MOCK_REVIEW_RESULTS.labourChargeUnit,
+          otherChargesAmount: MOCK_REVIEW_RESULTS.otherChargesAmount,
+          otherChargesRemarks: MOCK_REVIEW_RESULTS.otherChargesRemarks,
+        });
         updateScanData(
-          applyClientFormulaRules({
-            ...base,
-            grossWt: MOCK_REVIEW_RESULTS.grossWt || '42.500',
-            netWt: MOCK_REVIEW_RESULTS.netWt,
-            tunch: MOCK_REVIEW_RESULTS.tunch,
-            karat: resolveScannedKarat('', MOCK_REVIEW_RESULTS.tunch),
-            diamondWeight: MOCK_REVIEW_RESULTS.diamondWeight,
-            diamondColor: MOCK_REVIEW_RESULTS.diamondColor,
-            diamondClarity: MOCK_REVIEW_RESULTS.diamondClarity,
-            diamondPieces: MOCK_REVIEW_RESULTS.diamondPieces,
-            diamondRate: MOCK_REVIEW_RESULTS.diamondRate,
-            diamondQuality: MOCK_REVIEW_RESULTS.diamondQuality,
-            colorstoneWeight: MOCK_REVIEW_RESULTS.colorstoneWeight,
-            colorstoneColor: MOCK_REVIEW_RESULTS.colorstoneColor,
-            colorstoneClarity: MOCK_REVIEW_RESULTS.colorstoneClarity,
-            colorstoneQuality: MOCK_REVIEW_RESULTS.colorstoneQuality,
-            colorstoneRate: MOCK_REVIEW_RESULTS.colorstoneRate,
-            labourPurityPercent: MOCK_REVIEW_RESULTS.labourPurityPercent,
-            labourChargeAmount: MOCK_REVIEW_RESULTS.labourChargeAmount,
-            labourChargeUnit: MOCK_REVIEW_RESULTS.labourChargeUnit,
-            otherChargesAmount: MOCK_REVIEW_RESULTS.otherChargesAmount,
-            otherChargesRemarks: MOCK_REVIEW_RESULTS.otherChargesRemarks,
-          }),
+          calculationRateAccess === 'both'
+            ? demoScanData
+            : {
+                ...demoScanData,
+                calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
+              },
         );
         return;
       }
@@ -154,7 +201,7 @@ export default function ReviewResultsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [scanId, router, setStructuredData, updateScanData]);
+  }, [scanId, router, setStructuredData, updateScanData, calculationRateAccess]);
 
   useEffect(() => {
     loadReview();
@@ -171,6 +218,14 @@ export default function ReviewResultsScreen() {
       bumpMrpRefresh();
     }
   }, [updateScanData, setStructuredData]);
+
+  useEffect(() => {
+    if (calculationRateAccess === 'both') return;
+    const enforced = calculationRateAccess === 'cash' ? 'cash' : 'rtgs';
+    if (scanData.calculationRate !== enforced) {
+      handleFieldChange('calculationRate', enforced);
+    }
+  }, [calculationRateAccess, scanData.calculationRate, handleFieldChange]);
 
   const handleStoneEntriesChange = useCallback(
     (diamonds: StoneEntry[], colorstones: StoneEntry[]) => {
@@ -277,6 +332,8 @@ export default function ReviewResultsScreen() {
                   addingToWishlist={addingToWishlist}
                   hasAddedToWishlist={hasAddedToWishlist}
                   confirming={submitting}
+                  canEditPurityPercent={canEditPurityPercent}
+                  calculationRateAccess={calculationRateAccess}
                 />
               </View>
             )}

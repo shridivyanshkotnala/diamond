@@ -29,6 +29,7 @@ interface ScannerFinalTabProps {
   mcxLiveRate?: number;
   diamondShapeOptions?: { value: string; label?: string }[];
   editable?: boolean;
+  canEditPurityPercent?: boolean;
   onFieldChange?: (field: keyof ScanItemData, value: string) => void;
   onStoneEntryChange?: (
     stoneType: 'diamond' | 'colorstone',
@@ -53,6 +54,7 @@ export function ScannerFinalTab({
   mcxLiveRate,
   diamondShapeOptions,
   editable = false,
+  canEditPurityPercent = true,
   onFieldChange,
   onStoneEntryChange,
   onRateErrorChange,
@@ -93,6 +95,7 @@ export function ScannerFinalTab({
           mcxLiveRate={mcxLiveRate}
           calculationMode={scanData.calculationRate}
           editable
+          canEditPurityPercent={canEditPurityPercent}
           onFieldChange={(field, value) => {
             if (field === 'karat') {
               handleKaratChange(value);

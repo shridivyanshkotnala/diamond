@@ -1,4 +1,4 @@
-import { getApiUrl } from '@/constants/api';
+import { API_BASE_URL, getApiUrl } from '@/constants/api';
 import { useAuthStore } from '@/store/authStore';
 
 export class ApiError extends Error {
@@ -91,6 +91,19 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   const url = getApiUrl(path);
+  const safeHeaders = Object.fromEntries(
+    Array.from(headers.entries()).map(([key, value]) =>
+      key.toLowerCase() === 'authorization' ? [key, 'Bearer ***'] : [key, value],
+    ),
+  );
+  const loggedBody = requestBody instanceof FormData ? '[FormData]' : requestBody;
+  console.log('[API] Request', {
+    baseUrl: API_BASE_URL,
+    url,
+    method: rest.method ?? 'GET',
+    headers: safeHeaders,
+    body: loggedBody,
+  });
 
   let response: Response;
   try {

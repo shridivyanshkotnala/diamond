@@ -22,17 +22,45 @@ export default function EmployeePermissionsScreen() {
   const draft = useEmployeeDraftStore((s) => s.draft);
   const permissions = draft.permissions;
   const togglePermission = useEmployeeDraftStore((s) => s.togglePermission);
+  const setPermissions = useEmployeeDraftStore((s) => s.setPermissions);
   const mode = useEmployeeDraftStore((s) => s.mode);
   const editEmployeeId = useEmployeeDraftStore((s) => s.editEmployeeId);
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee);
 
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [rateOptionError, setRateOptionError] = useState<string | null>(null);
 
   const toggle = (key: EmployeePermissionKey) => togglePermission(key);
 
+  const resolveRateOption = () => {
+    const allowRtgs = permissions.scan_rate_rtgs;
+    const allowCash = permissions.scan_rate_cash;
+    if (allowRtgs && allowCash) return 'both' as const;
+    if (allowRtgs) return 'rtgs' as const;
+    if (allowCash) return 'cash' as const;
+    return null;
+  };
+
+  const applyRateOption = (option: 'rtgs' | 'cash' | 'both') => {
+    setPermissions({
+      ...permissions,
+      scan_rate_rtgs: option === 'rtgs' || option === 'both',
+      scan_rate_cash: option === 'cash' || option === 'both',
+    });
+    setRateOptionError(null);
+  };
+
+  const rateOption = resolveRateOption();
+
   const handleContinue = async () => {
     setFormError(null);
+
+    if (!rateOption) {
+      setRateOptionError('Select a gold rate option before continuing.');
+      return;
+    }
+    setRateOptionError(null);
 
     if (mode === 'edit' && editEmployeeId) {
       setSaving(true);
@@ -146,6 +174,55 @@ export default function EmployeePermissionsScreen() {
           />
         </View>
 
+        <View style={styles.permissionCard}>
+          <Text style={styles.cardTitle}>Edit Purity Percentage During Calculation</Text>
+          <Text style={styles.cardSubtitle}>
+            Allow employee to modify the purity percentage while calculating jewellery price.
+          </Text>
+          <MatrixCheckboxRow
+            label="Edit Purity (%)"
+            checked={permissions.scan_edit_purity_percent}
+            onToggle={() => toggle('scan_edit_purity_percent')}
+            showDivider={false}
+          />
+        </View>
+
+        <View style={styles.permissionCard}>
+          <Text style={styles.cardTitle}>Gold Rate Options While Calculating</Text>
+          <Text style={styles.cardSubtitle}>
+            Choose which Gold Rate options the employee can use while calculating jewellery price.
+          </Text>
+          <View style={styles.radioGroup}>
+            {[
+              { value: 'rtgs', label: 'RTGS Rate Only' },
+              { value: 'cash', label: 'Cash Rate Only' },
+              { value: 'both', label: 'Both RTGS & Cash Rate' },
+            ].map((option, index) => {
+              const selected = rateOption === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  activeOpacity={0.8}
+                  onPress={() => applyRateOption(option.value as 'rtgs' | 'cash' | 'both')}
+                  style={styles.radioRow}
+                >
+                  <Text style={styles.radioLabel}>{option.label}</Text>
+                  <View
+                    style={[
+                      styles.radioOuter,
+                      selected && styles.radioOuterSelected,
+                    ]}
+                  >
+                    {selected ? <View style={styles.radioInner} /> : null}
+                  </View>
+                  {index < 2 ? <View style={styles.radioDivider} /> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {rateOptionError ? <Text style={styles.errorText}>{rateOptionError}</Text> : null}
+        </View>
+
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={handleContinue}
@@ -253,7 +330,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.button,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 14,
   },
   continueBtnDisabled: {
     opacity: 0.7,
@@ -268,5 +345,49 @@ const styles = StyleSheet.create({
     color: Colors.dangerText,
     marginTop: 12,
     textAlign: 'center',
+  },
+  radioGroup: {
+    marginTop: 12,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+  },
+  radioLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    lineHeight: 20,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  radioOuterSelected: {
+    borderColor: ACCENT_GOLD,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: ACCENT_GOLD,
+  },
+  radioDivider: {
+    position: 'absolute',
+    bottom: 0,
+    left: 4,
+    right: 4,
+    height: 1,
+    backgroundColor: Colors.border,
   },
 });
