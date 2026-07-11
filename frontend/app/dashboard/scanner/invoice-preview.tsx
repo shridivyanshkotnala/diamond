@@ -12,6 +12,7 @@ import { useScannerStore } from '@/store/scannerStore';
 import type { GoldRate } from '@/types/rates';
 import {
   buildGoldLineItemRow,
+  buildOtherChargeLineItemRows,
   buildStoneLineItemRows,
   computeGrandTotal,
   computeGstAmount,
@@ -96,7 +97,11 @@ export default function InvoicePreviewScreen() {
     const stoneBlocks = buildDisplayStoneBlocks(diamonds, colorstones);
     const stoneEntries = stoneBlocks.map((b) => b.entry);
     const stoneRows = buildStoneLineItemRows(stoneEntries);
-    return [goldRow, ...stoneRows];
+    const otherChargeRows = buildOtherChargeLineItemRows(
+      scanData.otherChargesItems || [],
+      scanData.otherChargesRemarks,
+    );
+    return [goldRow, ...stoneRows, ...otherChargeRows];
   }, [
     goldRates,
     mcxLiveRate,
@@ -108,6 +113,7 @@ export default function InvoicePreviewScreen() {
     selectedKarat,
     diamonds,
     colorstones,
+    scanData.otherChargesItems,
   ]);
 
   const subtotal = useMemo(() => computeInvoiceSubtotal(lineItemRows), [lineItemRows]);

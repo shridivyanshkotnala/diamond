@@ -10,6 +10,7 @@ import { DEFAULT_LABOUR_CHARGE_UNIT, DEFAULT_LABOUR_WEIGHT_BASIS } from '@/const
 import { buildQuality } from '@/utils/qualityUtils';
 import { getClarificationFieldLabel } from '@/utils/clarificationFields';
 import { parseLabourFromApi, serializeLabourForApi } from '@/utils/labourUtils';
+import { parseNumericValue } from '@/utils/scanPriceCalculation';
 
 const JEWELLERY_TYPE_TO_API: Record<JewelleryType, ApiJewelleryType> = {
   Diamond: 'DIAMOND',
@@ -113,6 +114,7 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   result.labourChargeUnit = DEFAULT_LABOUR_CHARGE_UNIT;
   result.labourWeightBasis = DEFAULT_LABOUR_WEIGHT_BASIS;
   result.otherChargesAmount = '';
+  result.otherChargesItems = [];
   result.otherChargesRemarks = '';
   result.customPurityPercent = '';
   result.goldRate = '';
@@ -133,7 +135,17 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   }
 
   if (data.otherCharges != null && String(data.otherCharges).trim() !== '') {
+    const amount = parseNumericValue(String(data.otherCharges));
     result.otherChargesAmount = String(data.otherCharges);
+    if (amount > 0) {
+      result.otherChargesItems = [
+        {
+          id: 'legacy-other-charges',
+          name: 'Other Charges',
+          amount,
+        },
+      ];
+    }
   }
 
   if (data.otherChargesRemarks != null && String(data.otherChargesRemarks).trim() !== '') {
@@ -174,8 +186,11 @@ export function scanItemToStructuredData(
     result.labour = labourValue;
   }
 
-  if (scanData.otherChargesAmount?.trim()) {
-    result.otherCharges = scanData.otherChargesAmount.trim();
+  const otherChargesTotal = scanData.otherChargesItems?.length
+    ? scanData.otherChargesItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+    : parseNumericValue(scanData.otherChargesAmount);
+  if (otherChargesTotal > 0) {
+    result.otherCharges = String(otherChargesTotal);
   } else {
     delete result.otherCharges;
   }

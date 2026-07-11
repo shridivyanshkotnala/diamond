@@ -30,7 +30,7 @@ interface ScannerFinalTabProps {
   diamondShapeOptions?: { value: string; label?: string }[];
   editable?: boolean;
   canEditPurityPercent?: boolean;
-  onFieldChange?: (field: keyof ScanItemData, value: string) => void;
+  onFieldChange?: (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => void;
   onStoneEntryChange?: (
     stoneType: 'diamond' | 'colorstone',
     sourceIndex: number,
@@ -158,6 +158,7 @@ export function ScannerFinalTab({
           grossWeightGrams={scanData.grossWt}
           netWeightGrams={scanData.netWt}
           pureWeightDisplay={pricing.pureWtDisplay}
+          goldAmountDisplay={pricing.goldBasePriceDisplay}
         />
       ) : (
         <LabourChargeResultSection pricing={pricing} />
@@ -165,11 +166,13 @@ export function ScannerFinalTab({
 
       {editable ? (
         <OtherChargesSection
-          amount={scanData.otherChargesAmount}
+          charges={scanData.otherChargesItems}
           remarks={scanData.otherChargesRemarks}
-          onAmountChange={(value) => {
-            onFieldChange?.('otherChargesAmount', value);
-            if (!value || Number.parseFloat(value.replace(/[^\d.]/g, '')) <= 0) {
+          onChargesChange={(items) => {
+            const total = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+            onFieldChange?.('otherChargesItems', items);
+            onFieldChange?.('otherChargesAmount', total ? String(total) : '');
+            if (items.length === 0) {
               onFieldChange?.('otherChargesRemarks', '');
             }
           }}

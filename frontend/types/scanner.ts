@@ -132,8 +132,15 @@ export interface ScanItemData {
   labourWeightBasis: LabourWeightBasis;
   calculationRate: 'rtgs' | 'cash';
   otherChargesAmount: string;
+  otherChargesItems: OtherChargeItem[];
   otherChargesRemarks: string;
   diamondAmount: string;
+}
+
+export interface OtherChargeItem {
+  id: string;
+  name: string;
+  amount: number;
 }
 
 export type StoneKind = 'diamond' | 'colorstone';

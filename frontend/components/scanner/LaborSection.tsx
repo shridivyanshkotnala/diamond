@@ -25,12 +25,16 @@ interface LaborSectionProps {
   grossWeightGrams?: string;
   netWeightGrams?: string;
   pureWeightDisplay?: string;
+  goldAmountDisplay?: string;
 }
 
 function sanitizePurityInput(text: string): string {
   const digits = text.replace(/[^0-9.]/g, '');
   if (!digits) return '';
-  return `${digits}%`;
+  const parsed = Number.parseFloat(digits);
+  if (!Number.isFinite(parsed)) return '';
+  const clamped = Math.min(100, Math.max(0, parsed));
+  return `${clamped}%`;
 }
 
 function sanitizeChargeAmount(text: string): string {
@@ -96,6 +100,7 @@ export function LaborSection({
   grossWeightGrams = '',
   netWeightGrams = '',
   pureWeightDisplay = '—',
+  goldAmountDisplay = '—',
 }: LaborSectionProps) {
   const inferredMethod = values.labourChargeAmount.trim()
     ? 'rate'
@@ -113,6 +118,11 @@ export function LaborSection({
   const grossWt = parseWeightValue(grossWeightGrams);
   const netWt = parseWeightValue(netWeightGrams);
   const selectedWeight = values.labourWeightBasis === 'gross' ? grossWt : netWt;
+  const purityPercent = Number.parseFloat(values.labourPurityPercent.replace(/[^0-9.]/g, '')) || 0;
+  const newPureWeight = netWt > 0 && purityPercent > 0 ? (netWt * purityPercent) / 100 : 0;
+  const newPureWeightDisplay = newPureWeight > 0
+    ? `${newPureWeight.toFixed(3).replace(/\.?0+$/, '')} g`
+    : '—';
 
   const computedLaborAmount = useMemo(() => {
     if (method === 'purity') return 0;
@@ -231,9 +241,15 @@ export function LaborSection({
           />
 
           <View className="mt-3 flex-row items-center justify-between">
-            <Text className="text-xs text-text-muted">Current Pure Weight</Text>
+            <Text className="text-xs text-text-muted">New Pure Weight</Text>
             <Text className="text-sm font-semibold text-text-primary">
-              {pureWeightDisplay}
+              {purityPercent > 0 ? newPureWeightDisplay : pureWeightDisplay}
+            </Text>
+          </View>
+          <View className="mt-2 flex-row items-center justify-between">
+            <Text className="text-xs text-text-muted">New Gold Amount</Text>
+            <Text className="text-sm font-semibold text-text-primary">
+              {goldAmountDisplay}
             </Text>
           </View>
         </View>

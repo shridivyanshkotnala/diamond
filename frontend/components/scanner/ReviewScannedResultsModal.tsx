@@ -15,7 +15,7 @@ import { DIAMOND_SHAPE_OPTIONS, type StoneSelectOption } from '@/constants/stone
 import { fetchDiamondRates, fetchGoldRates } from '@/utils/ratesApi';
 import type { GoldRate, TaxSettings } from '@/types/rates';
 import type { FinalTabPricingResult } from '@/utils/scanPriceCalculation';
-import { parseNumericValue } from '@/utils/scanPriceCalculation';
+import { computeOtherChargesTotal, parseNumericValue } from '@/utils/scanPriceCalculation';
 import {
   applyFormula2KaratConstraint,
   computeNetWeightFallback,
@@ -34,7 +34,7 @@ interface ReviewScannedResultsModalProps {
   scanData: ScanItemData;
   structuredData: StructuredScanData;
   jewelleryType: 'Gold' | 'Diamond';
-  onFieldChange: (field: keyof ScanItemData, value: string) => void;
+  onFieldChange: (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => void;
   onStoneEntriesChange: (diamonds: StoneEntry[], colorstones: StoneEntry[]) => void;
   onReScan: () => void;
   onConfirm: () => void;
@@ -156,7 +156,7 @@ export function ReviewScannedResultsModal({
   }, []);
 
   const hasRateError = Object.values(rateErrors).some(Boolean);
-  const otherChargesAmount = parseNumericValue(scanData.otherChargesAmount);
+  const otherChargesAmount = computeOtherChargesTotal(scanData);
   const missingOtherChargesRemarks =
     otherChargesAmount > 0 && !scanData.otherChargesRemarks.trim();
   const canConfirm =

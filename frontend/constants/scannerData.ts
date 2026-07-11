@@ -42,6 +42,7 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   labourWeightBasis: DEFAULT_LABOUR_WEIGHT_BASIS,
   calculationRate: 'rtgs',
   otherChargesAmount: '',
+  otherChargesItems: [],
   otherChargesRemarks: '',
   diamondAmount: '11,400',
 };

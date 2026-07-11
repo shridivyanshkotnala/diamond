@@ -27,7 +27,7 @@ interface RawMaterialSectionProps {
   >;
   editable?: boolean;
   canEditPurityPercent?: boolean;
-  onFieldChange?: (field: keyof ScanItemData, value: string) => void;
+  onFieldChange?: (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => void;
   goldRates?: GoldRate[];
   goldTaxSettings?: TaxSettings;
   mcxLiveRate?: number;

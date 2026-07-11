@@ -5,6 +5,7 @@ import { resolveScannedKarat } from '@/utils/formulaUtils';
 import { buildDisplayStoneBlocks, parseStoneArraysFromStructuredData } from '@/utils/stoneSequenceUtils';
 import {
   computeLabourAmount,
+  computeOtherChargesTotal,
   formatIndianCurrency,
   formatWeightGrams,
   parseNumericValue,
@@ -66,6 +67,7 @@ export function useFinalTabPricing({
     const resolvedKarat = selectedKarat || resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
     const { diamonds, colorstones } = parseStoneArraysFromStructuredData(structuredData ?? {}, scanData);
     
+    const otherChargesTotal = computeOtherChargesTotal(scanData);
     const payload: CalculateMrpPayload = {
       jewelleryType: selectedType,
       netWt: parseNumericValue(scanData.netWt) || 0,
@@ -75,7 +77,7 @@ export function useFinalTabPricing({
       labourChargeAmount: scanData.labourChargeAmount,
       labourChargeUnit: scanData.labourChargeUnit,
       calculationMode: scanData.calculationRate,
-      otherCharges: parseNumericValue(scanData.otherChargesAmount),
+      otherCharges: otherChargesTotal,
       diamonds: diamonds.map(d => ({ weight: parseNumericValue(d.weight) || 0, rate: parseNumericValue(d.rate) || 0 })),
       colorstones: colorstones.map(c => ({ weight: parseNumericValue(c.weight) || 0, rate: parseNumericValue(c.rate) || 0 })),
     };
@@ -105,6 +107,14 @@ export function useFinalTabPricing({
 
         const grossWtGrams = parseWeightValue(scanData.grossWt);
         const netWtGrams = payload.netWt;
+        const labourPurityPercent = parseNumericValue(scanData.labourPurityPercent);
+        const hasLabourPurity = labourPurityPercent > 0 && labourPurityPercent <= 100;
+        const overridePureWt = hasLabourPurity
+          ? (netWtGrams * labourPurityPercent) / 100
+          : res.breakdown.pureWeight;
+        const overrideGoldAmount = hasLabourPurity
+          ? overridePureWt * res.breakdown.goldRateApplied
+          : res.breakdown.goldAmount;
         const labour = computeLabourAmount(
           {
             labourPurityPercent: scanData.labourPurityPercent,
@@ -116,7 +126,11 @@ export function useFinalTabPricing({
           grossWtGrams,
         );
         const adjustedMrp =
-          res.finalMRP - (res.breakdown.labourAmount || 0) + labour.amount;
+          res.finalMRP
+          - (res.breakdown.labourAmount || 0)
+          + labour.amount
+          + (otherChargesTotal - (res.breakdown.otherCharges || 0))
+          + (overrideGoldAmount - res.breakdown.goldAmount);
 
         setPricing({
           grossWtDisplay: scanData.grossWt || '—',
@@ -125,11 +139,11 @@ export function useFinalTabPricing({
           selectedKarat: resolvedKarat,
           effectivePurityPercent: 0,
           puritySource: 'karatMapping',
-          pureWtGrams: res.breakdown.pureWeight,
-          pureWtDisplay: formatWeightGrams(res.breakdown.pureWeight),
+          pureWtGrams: overridePureWt,
+          pureWtDisplay: formatWeightGrams(overridePureWt),
           goldRatePerGram: res.breakdown.goldRateApplied,
-          goldBasePrice: res.breakdown.goldAmount,
-          goldBasePriceDisplay: formatIndianCurrency(res.breakdown.goldAmount),
+          goldBasePrice: overrideGoldAmount,
+          goldBasePriceDisplay: formatIndianCurrency(overrideGoldAmount),
           stoneRows,
           totalStoneAmount: res.breakdown.diamondAmount + res.breakdown.colorstoneAmount,
           labourInputMode: labour.mode,
@@ -137,8 +151,8 @@ export function useFinalTabPricing({
           useFixedAmountMode: labour.mode === 'fixedAmount',
           labourAmount: labour.amount,
           labourDisplay: formatIndianCurrency(labour.amount),
-          otherChargesAmount: res.breakdown.otherCharges ?? 0,
-          otherChargesDisplay: formatIndianCurrency(res.breakdown.otherCharges ?? 0),
+          otherChargesAmount: otherChargesTotal,
+          otherChargesDisplay: formatIndianCurrency(otherChargesTotal),
           ultimateMrp: adjustedMrp,
           ultimateMrpDisplay: formatIndianCurrency(adjustedMrp),
         });

@@ -1,5 +1,5 @@
 import type { GoldRate } from '@/types/rates';
-import type { ScanItemData, StoneEntry } from '@/types/scanner';
+import type { OtherChargeItem, ScanItemData, StoneEntry } from '@/types/scanner';
 import { normalizeKarat, parseWeightValue } from '@/utils/formulaUtils';
 import {
   deriveActiveBaseRate,
@@ -92,6 +92,22 @@ export function buildStoneLineItemRows(stones: StoneEntry[]): InvoiceLineItemRow
       amount: qty * price,
     };
   });
+}
+
+export function buildOtherChargeLineItemRows(
+  items: OtherChargeItem[],
+  remarks?: string,
+): InvoiceLineItemRow[] {
+  const note = remarks?.trim() ? `Other Charges — ${remarks.trim()}` : 'Other Charges';
+  return items.map((item) => ({
+    key: `other-charge-${item.id}`,
+    description: item.name,
+    note,
+    qty: 1,
+    qtyUnit: '',
+    price: item.amount,
+    amount: item.amount,
+  }));
 }
 
 export function computeInvoiceSubtotal(rows: InvoiceLineItemRow[]): number {

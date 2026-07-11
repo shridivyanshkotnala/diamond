@@ -24,6 +24,7 @@ import { resolveScannedKarat } from '@/utils/formulaUtils';
 import {
   GST_RATE_OPTIONS,
   buildGoldLineItemRow,
+  buildOtherChargeLineItemRows,
   buildStoneLineItemRows,
   computeGrandTotal,
   computeGstAmount,
@@ -369,7 +370,11 @@ export function InvoiceGenerationBilling({
       selectedKarat,
     });
     const stoneRows = buildStoneLineItemRows(stoneEntries);
-    return [goldRow, ...stoneRows].filter(row => row.price > 0 && row.qty > 0);
+    const otherChargeRows = buildOtherChargeLineItemRows(
+      scanData.otherChargesItems || [],
+      scanData.otherChargesRemarks,
+    );
+    return [goldRow, ...stoneRows, ...otherChargeRows].filter(row => row.price > 0 && row.qty > 0);
   }, [
     goldRates,
     mcxLiveRate,
@@ -380,6 +385,7 @@ export function InvoiceGenerationBilling({
     scanData,
     selectedKarat,
     stoneEntries,
+    scanData.otherChargesItems,
   ]);
 
   const subtotal = useMemo(() => computeInvoiceSubtotal(lineItemRows), [lineItemRows]);

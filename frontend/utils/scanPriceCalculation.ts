@@ -75,6 +75,15 @@ export function parseNumericValue(raw: string | number | undefined | null): numb
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+export function computeOtherChargesTotal(
+  scanData: Pick<ScanItemData, 'otherChargesAmount' | 'otherChargesItems'>,
+): number {
+  if (scanData.otherChargesItems?.length) {
+    return scanData.otherChargesItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  }
+  return parseNumericValue(scanData.otherChargesAmount);
+}
+
 export function formatIndianCurrency(amount: number): string {
   if (!Number.isFinite(amount)) return '₹0';
   return `₹${Math.round(amount).toLocaleString('en-IN')}`;
@@ -325,7 +334,7 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
   const labour = computeLabourAmount(input.scanData, netWtGrams, grossWtGrams);
   const usePercentageMode = labour.mode === 'percentage';
   const useFixedAmountMode = labour.mode === 'fixedAmount';
-  const otherChargesAmount = parseNumericValue(input.scanData.otherChargesAmount);
+  const otherChargesAmount = computeOtherChargesTotal(input.scanData);
   const otherChargesDisplay =
     otherChargesAmount > 0 ? formatIndianCurrency(otherChargesAmount) : '—';
 

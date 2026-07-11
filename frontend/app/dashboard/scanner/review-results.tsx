@@ -181,6 +181,7 @@ export default function ReviewResultsScreen() {
           labourChargeAmount: MOCK_REVIEW_RESULTS.labourChargeAmount,
           labourChargeUnit: MOCK_REVIEW_RESULTS.labourChargeUnit,
           otherChargesAmount: MOCK_REVIEW_RESULTS.otherChargesAmount,
+          otherChargesItems: [],
           otherChargesRemarks: MOCK_REVIEW_RESULTS.otherChargesRemarks,
         });
         updateScanData(
@@ -207,7 +208,8 @@ export default function ReviewResultsScreen() {
     loadReview();
   }, [loadReview]);
 
-  const handleFieldChange = useCallback((field: keyof ScanItemData, value: string) => {
+  const handleFieldChange = useCallback(
+    (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => {
     const updated = { ...useScannerStore.getState().scanData, [field]: value };
     updateScanData({ [field]: value });
     setStructuredData(
@@ -217,7 +219,9 @@ export default function ReviewResultsScreen() {
       // ensure pricing is refreshed immediately when switching RTGS/Cash
       bumpMrpRefresh();
     }
-  }, [updateScanData, setStructuredData]);
+  },
+    [updateScanData, setStructuredData],
+  );
 
   useEffect(() => {
     if (calculationRateAccess === 'both') return;
