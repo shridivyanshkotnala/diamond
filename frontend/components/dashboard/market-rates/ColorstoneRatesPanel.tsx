@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Pencil, Trash2 } from 'lucide-react-native';
 
 import { DeleteStoneRateModal } from '@/components/dashboard/market-rates/DeleteStoneRateModal';
 import { ColorstoneRateFormModal } from '@/components/dashboard/market-rates/ColorstoneRateFormModal';
@@ -224,13 +223,13 @@ export function ColorstoneRatesPanel({ onToast }: ColorstoneRatesPanelProps) {
                   onPress={() => openEdit(rate)}
                   style={[styles.iconBtn, styles.actionCell]}
                 >
-                  <Pencil size={14} color={Colors.textPrimary} />
+                  <Text style={styles.actionText}>✏</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setDeletingRate(rate)}
                   style={[styles.iconBtn, styles.actionCell]}
                 >
-                  <Trash2 size={14} color={DELETE_RED} />
+                  <Text style={[styles.actionText, styles.deleteText]}>🗑</Text>
                 </Pressable>
               </View>
             );
@@ -317,32 +316,45 @@ const styles = StyleSheet.create({
   },
   row: {
     ...screenStyles.tableDataRow,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    minHeight: 44,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    minHeight: 38,
   },
   headerRow: {
     ...screenStyles.tableHeaderRow,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
   },
   headerCell: {
     ...screenStyles.tableHeaderCell,
     textAlign: 'center',
+    fontSize: 11,
+    lineHeight: 14,
   },
   cell: {
     ...screenStyles.tableCell,
     textAlign: 'center',
+    fontSize: 11,
+    lineHeight: 14,
   },
   rowBorder: {
     ...screenStyles.tableRowBorder,
   },
-  colorCell: { width: 80 },
-  clarityCell: { width: 80 },
-  rateCell: { width: 84 },
-  actionCell: { width: 48, alignItems: 'center', justifyContent: 'center' },
+  colorCell: { flex: 1 },
+  clarityCell: { flex: 1 },
+  rateCell: { flex: 1 },
+  actionCell: { width: 44, alignItems: 'center', justifyContent: 'center' },
   iconBtn: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionText: {
+    fontSize: 14,
+    lineHeight: 16,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  deleteText: {
+    color: DELETE_RED,
   },
 });

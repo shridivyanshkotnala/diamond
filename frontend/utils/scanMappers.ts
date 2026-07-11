@@ -6,7 +6,7 @@ import type {
   ConfirmedMapping,
   StructuredScanData,
 } from '@/types/scanner';
-import { DEFAULT_LABOUR_CHARGE_UNIT } from '@/constants/labour';
+import { DEFAULT_LABOUR_CHARGE_UNIT, DEFAULT_LABOUR_WEIGHT_BASIS } from '@/constants/labour';
 import { buildQuality } from '@/utils/qualityUtils';
 import { getClarificationFieldLabel } from '@/utils/clarificationFields';
 import { parseLabourFromApi, serializeLabourForApi } from '@/utils/labourUtils';
@@ -111,6 +111,7 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   result.labourPurityPercent = '';
   result.labourChargeAmount = '';
   result.labourChargeUnit = DEFAULT_LABOUR_CHARGE_UNIT;
+  result.labourWeightBasis = DEFAULT_LABOUR_WEIGHT_BASIS;
   result.otherChargesAmount = '';
   result.otherChargesRemarks = '';
   result.customPurityPercent = '';

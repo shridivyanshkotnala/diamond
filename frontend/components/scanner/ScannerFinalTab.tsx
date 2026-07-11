@@ -138,7 +138,7 @@ export function ScannerFinalTab({
           ))
         : <StoneTypeSequence rows={pricing.stoneRows} />}
 
-      {editable && pricing.labourInputMode === 'none' ? (
+      {editable ? (
         <LaborSection
           values={getLaborValuesFromScanData(scanData)}
           onChange={(values) => {
@@ -151,9 +151,13 @@ export function ScannerFinalTab({
             if (values.labourChargeUnit !== undefined) {
               onFieldChange?.('labourChargeUnit', values.labourChargeUnit);
             }
+            if (values.labourWeightBasis !== undefined) {
+              onFieldChange?.('labourWeightBasis', values.labourWeightBasis);
+            }
           }}
-          showValidationError={showLabourValidation}
+          grossWeightGrams={scanData.grossWt}
           netWeightGrams={scanData.netWt}
+          pureWeightDisplay={pricing.pureWtDisplay}
         />
       ) : (
         <LabourChargeResultSection pricing={pricing} />

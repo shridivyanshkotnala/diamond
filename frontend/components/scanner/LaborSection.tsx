@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
 import { FormSection } from '@/components/scanner/FormSection';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import {
-  LABOUR_SECTION_HINT,
-  LABOUR_VALIDATION_MESSAGE,
+  LABOUR_WEIGHT_OPTIONS,
   type LabourChargeUnit,
+  type LabourWeightBasis,
 } from '@/constants/labour';
 import type { ScanItemData } from '@/types/scanner';
 import { parseWeightValue } from '@/utils/formulaUtils';
@@ -16,14 +16,15 @@ export interface LaborSectionValues {
   labourPurityPercent: string;
   labourChargeAmount: string;
   labourChargeUnit: LabourChargeUnit;
+  labourWeightBasis: LabourWeightBasis;
 }
 
 interface LaborSectionProps {
   values: LaborSectionValues;
   onChange: (values: Partial<LaborSectionValues>) => void;
-  showValidationError?: boolean;
-  unitOptions?: LabourChargeUnit[];
+  grossWeightGrams?: string;
   netWeightGrams?: string;
+  pureWeightDisplay?: string;
 }
 
 function sanitizePurityInput(text: string): string {
@@ -36,56 +37,46 @@ function sanitizeChargeAmount(text: string): string {
   return text.replace(/[₹,\s]/g, '');
 }
 
-function OrDivider() {
-  return (
-    <View className="my-4 flex-row items-center gap-3">
-      <View className="h-px flex-1 bg-border" />
-      <Text className="text-sm font-bold uppercase tracking-wide text-text-muted">OR</Text>
-      <View className="h-px flex-1 bg-border" />
-    </View>
-  );
-}
-
-function UnitDropdown({
+function WeightDropdown({
   value,
-  options,
   onChange,
   disabled,
 }: {
-  value: LabourChargeUnit;
-  options: LabourChargeUnit[];
-  onChange: (unit: LabourChargeUnit) => void;
+  value: LabourWeightBasis;
+  onChange: (unit: LabourWeightBasis) => void;
   disabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const selectedLabel = LABOUR_WEIGHT_OPTIONS.find((opt) => opt.value === value)?.label ??
+    LABOUR_WEIGHT_OPTIONS[0].label;
 
   return (
-    <View className="min-w-[118px] flex-1">
+    <View className="min-w-[140px] flex-1">
       <Pressable
         onPress={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
         className="h-11 flex-row items-center justify-between rounded-input border border-border bg-surface-input px-3"
       >
         <Text className="flex-1 text-xs text-text-primary" numberOfLines={1}>
-          {value}
+          {selectedLabel}
         </Text>
         <ChevronDown size={16} color="#757575" />
       </Pressable>
       {open && !disabled ? (
         <View className="absolute left-0 right-0 top-[46px] z-20 overflow-hidden rounded-input border border-border bg-white shadow-md">
-          {options.map((option) => (
+          {LABOUR_WEIGHT_OPTIONS.map((option) => (
             <Pressable
-              key={option}
+              key={option.value}
               onPress={() => {
-                onChange(option);
+                onChange(option.value);
                 setOpen(false);
               }}
-              className={`px-3 py-3 ${option === value ? 'bg-primary/10' : 'bg-white'}`}
+              className={`px-3 py-3 ${option.value === value ? 'bg-primary/10' : 'bg-white'}`}
             >
               <Text
-                className={`text-xs ${option === value ? 'font-semibold text-primary' : 'text-text-primary'}`}
+                className={`text-xs ${option.value === value ? 'font-semibold text-primary' : 'text-text-primary'}`}
               >
-                {option}
+                {option.label}
               </Text>
             </Pressable>
           ))}
@@ -102,29 +93,36 @@ function formatInr(amount: number): string {
 export function LaborSection({
   values,
   onChange,
-  showValidationError = false,
-  unitOptions = ['Per Gram', 'Per 10 Gram'],
+  grossWeightGrams = '',
   netWeightGrams = '',
+  pureWeightDisplay = '—',
 }: LaborSectionProps) {
-  const usePercentageMode = Boolean(values.labourPurityPercent.trim());
-  const useFixedAmountMode = Boolean(values.labourChargeAmount.trim());
+  const inferredMethod = values.labourChargeAmount.trim()
+    ? 'rate'
+    : values.labourPurityPercent.trim()
+      ? 'purity'
+      : null;
+  const [method, setMethod] = useState<'rate' | 'purity'>(inferredMethod ?? 'rate');
 
-  const purityDisabled = useFixedAmountMode;
-  const chargeDisabled = usePercentageMode;
+  useEffect(() => {
+    if (inferredMethod && inferredMethod !== method) {
+      setMethod(inferredMethod);
+    }
+  }, [inferredMethod, method]);
 
+  const grossWt = parseWeightValue(grossWeightGrams);
   const netWt = parseWeightValue(netWeightGrams);
+  const selectedWeight = values.labourWeightBasis === 'gross' ? grossWt : netWt;
 
   const computedLaborAmount = useMemo(() => {
-    if (usePercentageMode) return 0;
-    if (useFixedAmountMode) {
-      const rate = Number(values.labourChargeAmount) || 0;
-      if (values.labourChargeUnit === 'Per 10 Gram') {
-        return netWt * (rate / 10);
-      }
-      return netWt * rate;
+    if (method === 'purity') return 0;
+    const rate = Number(values.labourChargeAmount) || 0;
+    if (rate <= 0 || selectedWeight <= 0) return 0;
+    if (values.labourChargeUnit === 'Per 10 Gram') {
+      return selectedWeight * (rate / 10);
     }
-    return 0;
-  }, [usePercentageMode, useFixedAmountMode, netWt, values.labourChargeAmount, values.labourChargeUnit]);
+    return selectedWeight * rate;
+  }, [method, selectedWeight, values.labourChargeAmount, values.labourChargeUnit]);
 
   const handlePurityChange = (text: string) => {
     const next = sanitizePurityInput(text);
@@ -150,104 +148,117 @@ export function LaborSection({
     });
   };
 
-  const handleUnitChange = (labourChargeUnit: LabourChargeUnit) => {
-    if (chargeDisabled) return;
-    onChange({ labourChargeUnit });
+  const handleMethodChange = (next: 'rate' | 'purity') => {
+    setMethod(next);
+    if (next === 'rate') {
+      onChange({ labourPurityPercent: '' });
+      return;
+    }
+    onChange({ labourChargeAmount: '' });
   };
 
   return (
-    <FormSection title="Labour Charges">
-      <Text className="mb-4 text-xs leading-5 text-text-secondary">{LABOUR_SECTION_HINT}</Text>
+    <FormSection title="Labour Charge">
+      <View className="mb-4 rounded-input border border-border bg-white p-3.5">
+        <Text className="mb-3 text-xs font-semibold uppercase text-text-muted">
+          Calculation Method
+        </Text>
+        <View className="flex-row gap-4">
+          <Pressable
+            onPress={() => handleMethodChange('rate')}
+            className="flex-row items-center gap-2"
+          >
+            <View
+              className={`h-4 w-4 items-center justify-center rounded-full border ${
+                method === 'rate' ? 'border-primary bg-primary' : 'border-border bg-white'
+              }`}
+            >
+              {method === 'rate' ? <View className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+            </View>
+            <Text className="text-sm text-text-primary">Labour Rate</Text>
+          </Pressable>
 
-      <View
-        className={`rounded-input border border-border bg-white p-3.5 ${
-          purityDisabled ? 'opacity-45' : ''
-        }`}
-      >
-        <Text className="mb-1 text-sm font-semibold text-text-primary">
-          Case I — % Purity Mode
-        </Text>
-        <Text className="mb-2 text-[10px] leading-4 text-text-muted">
-          Custom % overrides pure wt; labour charge prints as ₹0
-        </Text>
-        <TextInput
-          value={values.labourPurityPercent}
-          onChangeText={handlePurityChange}
-          placeholder="Enter %"
-          editable={!purityDisabled}
-          placeholderTextColor={Colors.placeholder}
-          keyboardType="decimal-pad"
-          className="h-11 rounded-input border border-border bg-surface-input px-3.5 text-sm text-text-primary"
-        />
+          <Pressable
+            onPress={() => handleMethodChange('purity')}
+            className="flex-row items-center gap-2"
+          >
+            <View
+              className={`h-4 w-4 items-center justify-center rounded-full border ${
+                method === 'purity' ? 'border-primary bg-primary' : 'border-border bg-white'
+              }`}
+            >
+              {method === 'purity' ? <View className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+            </View>
+            <Text className="text-sm text-text-primary">Purity Percentage</Text>
+          </Pressable>
+        </View>
       </View>
 
-      <OrDivider />
-
-      <View
-        className={`rounded-input border border-border bg-white p-3.5 ${
-          chargeDisabled ? 'opacity-45' : ''
-        }`}
-      >
-        <Text className="mb-1 text-sm font-semibold text-text-primary">
-          Case II — Fixed Amount Mode
-        </Text>
-        <Text className="mb-2 text-[10px] leading-4 text-text-muted">
-          Enter a fixed rate per unit
-        </Text>
-        <View className="flex-row items-center gap-2">
-          <View className="h-11 min-w-0 flex-1 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
+      {method === 'rate' ? (
+        <View className="rounded-input border border-border bg-white p-3.5">
+          <Text className="mb-1 text-xs font-semibold text-text-muted">Labour Rate (₹)</Text>
+          <View className="h-11 min-w-0 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
             <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
             <TextInput
               value={values.labourChargeAmount}
               onChangeText={handleChargeChange}
-              placeholder="Enter amount"
-              editable={!chargeDisabled}
+              placeholder="Enter rate"
               placeholderTextColor={Colors.placeholder}
               keyboardType="number-pad"
               className="flex-1 text-sm text-text-primary"
             />
           </View>
-          <UnitDropdown
-            value={values.labourChargeUnit}
-            options={unitOptions}
-            onChange={handleUnitChange}
-            disabled={chargeDisabled}
-          />
+
+          <View className="mt-3">
+            <Text className="mb-1 text-xs font-semibold text-text-muted">Weight Used</Text>
+            <WeightDropdown
+              value={values.labourWeightBasis}
+              onChange={(labourWeightBasis) => onChange({ labourWeightBasis })}
+              disabled={false}
+            />
+          </View>
         </View>
-        {useFixedAmountMode && netWt > 0 ? (
-          <Text className="mt-2 text-[10px] text-text-muted">Calculated from net weight</Text>
-        ) : null}
-      </View>
+      ) : (
+        <View className="rounded-input border border-border bg-white p-3.5">
+          <Text className="mb-1 text-xs font-semibold text-text-muted">Purity Percentage</Text>
+          <TextInput
+            value={values.labourPurityPercent}
+            onChangeText={handlePurityChange}
+            placeholder="Enter %"
+            placeholderTextColor={Colors.placeholder}
+            keyboardType="decimal-pad"
+            className="h-11 rounded-input border border-border bg-surface-input px-3.5 text-sm text-text-primary"
+          />
+
+          <View className="mt-3 flex-row items-center justify-between">
+            <Text className="text-xs text-text-muted">Current Pure Weight</Text>
+            <Text className="text-sm font-semibold text-text-primary">
+              {pureWeightDisplay}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View className="mt-4 rounded-input border border-primary/20 bg-primary/5 px-3.5 py-3">
-        <Text className="mb-1 text-xs font-semibold text-text-secondary">
-          Computed Labour Charge
-        </Text>
+        <Text className="mb-1 text-xs font-semibold text-text-secondary">Final Labour Amount</Text>
         <Text className="text-lg font-bold text-text-primary">
           {formatInr(computedLaborAmount)}
         </Text>
-        {usePercentageMode ? (
-          <Text className="mt-1 text-[10px] text-text-muted">
-            Percentage purity mode active — labour forced to ₹0
-          </Text>
-        ) : null}
       </View>
-
-      {showValidationError && (!usePercentageMode && !useFixedAmountMode) ? (
-        <Text className="mt-3 text-xs leading-5 text-danger-text">
-          {LABOUR_VALIDATION_MESSAGE}
-        </Text>
-      ) : null}
     </FormSection>
   );
 }
 
 export function getLaborValuesFromScanData(
-  scanData: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit'>,
+  scanData: Pick<
+    ScanItemData,
+    'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit' | 'labourWeightBasis'
+  >,
 ): LaborSectionValues {
   return {
     labourPurityPercent: scanData.labourPurityPercent || '',
     labourChargeAmount: scanData.labourChargeAmount || '',
     labourChargeUnit: scanData.labourChargeUnit || 'Per Gram',
+    labourWeightBasis: scanData.labourWeightBasis || 'gross',
   };
 }

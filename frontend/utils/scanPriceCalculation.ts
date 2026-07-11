@@ -1,4 +1,9 @@
-import { DEFAULT_LABOUR_CHARGE_UNIT, type LabourChargeUnit } from '@/constants/labour';
+import {
+  DEFAULT_LABOUR_CHARGE_UNIT,
+  DEFAULT_LABOUR_WEIGHT_BASIS,
+  type LabourChargeUnit,
+  type LabourWeightBasis,
+} from '@/constants/labour';
 import type { GoldRate } from '@/types/rates';
 import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { ALL_FORMULA_KARATS, normalizeKarat, parseWeightValue, resolveScannedKarat } from '@/utils/formulaUtils';
@@ -222,8 +227,12 @@ export function resolveLabourInputMode(
 }
 
 export function computeLabourAmount(
-  scanData: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit'>,
+  scanData: Pick<
+    ScanItemData,
+    'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit' | 'labourWeightBasis'
+  >,
   netWtGrams: number,
+  grossWtGrams: number,
 ): { amount: number; display: string; mode: LabourInputMode } {
   const mode = resolveLabourInputMode(scanData);
 
@@ -234,7 +243,11 @@ export function computeLabourAmount(
   if (mode === 'fixedAmount') {
     const rate = parseNumericLabourValue(scanData.labourChargeAmount) ?? 0;
     const unit = scanData.labourChargeUnit || DEFAULT_LABOUR_CHARGE_UNIT;
-    const amount = applyLabourRateToNetWeight(netWtGrams, rate, unit);
+    const basis: LabourWeightBasis =
+      scanData.labourWeightBasis || DEFAULT_LABOUR_WEIGHT_BASIS;
+    const weightGrams =
+      basis === 'gross' ? (grossWtGrams > 0 ? grossWtGrams : netWtGrams) : netWtGrams;
+    const amount = applyLabourRateToNetWeight(weightGrams, rate, unit);
     const unitLabel = unit === 'Per 10 Gram' ? '/10g' : '/g';
     return {
       amount,
@@ -285,6 +298,7 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
     '18K';
 
   const netWtGrams = parseWeightValue(input.scanData.netWt);
+  const grossWtGrams = parseWeightValue(input.scanData.grossWt);
 
   const { percent: effectivePurityPercent, source: puritySource } = resolveEffectivePurityPercent({
     scanData: input.scanData,
@@ -308,7 +322,7 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
   });
   const goldBasePrice = goldMetrics.goldAmount;
 
-  const labour = computeLabourAmount(input.scanData, netWtGrams);
+  const labour = computeLabourAmount(input.scanData, netWtGrams, grossWtGrams);
   const usePercentageMode = labour.mode === 'percentage';
   const useFixedAmountMode = labour.mode === 'fixedAmount';
   const otherChargesAmount = parseNumericValue(input.scanData.otherChargesAmount);

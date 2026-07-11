@@ -3,7 +3,15 @@ import type { GoldRate } from '@/types/rates';
 import type { JewelleryType, ScanItemData, StructuredScanData, CalculateMrpPayload, CalculateMrpResponse } from '@/types/scanner';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
 import { buildDisplayStoneBlocks, parseStoneArraysFromStructuredData } from '@/utils/stoneSequenceUtils';
-import { parseNumericValue, formatIndianCurrency, formatWeightGrams, type FinalTabPricingResult, type StoneAmountRow } from '@/utils/scanPriceCalculation';
+import {
+  computeLabourAmount,
+  formatIndianCurrency,
+  formatWeightGrams,
+  parseNumericValue,
+  type FinalTabPricingResult,
+  type StoneAmountRow,
+} from '@/utils/scanPriceCalculation';
+import { parseWeightValue } from '@/utils/formulaUtils';
 import { calculateScanMrp } from '@/utils/scanApi';
 import { useScannerStore } from '@/store/scannerStore';
 
@@ -95,10 +103,25 @@ export function useFinalTabPricing({
             };
         });
 
+        const grossWtGrams = parseWeightValue(scanData.grossWt);
+        const netWtGrams = payload.netWt;
+        const labour = computeLabourAmount(
+          {
+            labourPurityPercent: scanData.labourPurityPercent,
+            labourChargeAmount: scanData.labourChargeAmount,
+            labourChargeUnit: scanData.labourChargeUnit,
+            labourWeightBasis: scanData.labourWeightBasis,
+          },
+          netWtGrams,
+          grossWtGrams,
+        );
+        const adjustedMrp =
+          res.finalMRP - (res.breakdown.labourAmount || 0) + labour.amount;
+
         setPricing({
           grossWtDisplay: scanData.grossWt || '—',
-          netWtGrams: payload.netWt,
-          netWtDisplay: formatWeightGrams(payload.netWt),
+          netWtGrams,
+          netWtDisplay: formatWeightGrams(netWtGrams),
           selectedKarat: resolvedKarat,
           effectivePurityPercent: 0,
           puritySource: 'karatMapping',
@@ -109,15 +132,15 @@ export function useFinalTabPricing({
           goldBasePriceDisplay: formatIndianCurrency(res.breakdown.goldAmount),
           stoneRows,
           totalStoneAmount: res.breakdown.diamondAmount + res.breakdown.colorstoneAmount,
-          labourInputMode: res.breakdown.labourChargeType === 'PERCENTAGE' ? 'percentage' : res.breakdown.labourChargeType === 'AMOUNT' ? 'fixedAmount' : 'none',
-          usePercentageMode: res.breakdown.labourChargeType === 'PERCENTAGE',
-          useFixedAmountMode: res.breakdown.labourChargeType === 'AMOUNT',
-          labourAmount: res.breakdown.labourAmount,
-          labourDisplay: formatIndianCurrency(res.breakdown.labourAmount),
+          labourInputMode: labour.mode,
+          usePercentageMode: labour.mode === 'percentage',
+          useFixedAmountMode: labour.mode === 'fixedAmount',
+          labourAmount: labour.amount,
+          labourDisplay: formatIndianCurrency(labour.amount),
           otherChargesAmount: res.breakdown.otherCharges ?? 0,
           otherChargesDisplay: formatIndianCurrency(res.breakdown.otherCharges ?? 0),
-          ultimateMrp: res.finalMRP,
-          ultimateMrpDisplay: formatIndianCurrency(res.finalMRP),
+          ultimateMrp: adjustedMrp,
+          ultimateMrpDisplay: formatIndianCurrency(adjustedMrp),
         });
       })
       .catch(err => {

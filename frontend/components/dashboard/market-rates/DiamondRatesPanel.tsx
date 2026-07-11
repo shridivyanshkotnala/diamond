@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Pencil, Trash2 } from 'lucide-react-native';
 
 import { DeleteStoneRateModal } from '@/components/dashboard/market-rates/DeleteStoneRateModal';
 import { DiamondRateFormModal } from '@/components/dashboard/market-rates/DiamondRateFormModal';
@@ -58,13 +57,20 @@ function formatInr(rate: number): string {
 
 function formatTableValue(value: string): string {
   const trimmed = value.trim();
-  if (!trimmed) return 'None';
+  if (!trimmed) return '—';
   return trimmed;
+}
+
+function compactTableValue(value: string): string {
+  const formatted = formatTableValue(value);
+  if (formatted === '—') return formatted;
+  if (formatted.length <= 4) return formatted;
+  return `${formatted.slice(0, 4)}...`;
 }
 
 function shapeLabel(value?: string): string {
   const trimmed = value?.trim() ?? '';
-  if (!trimmed || trimmed === '0') return 'None';
+  if (!trimmed || trimmed === '0') return '';
   const label = SHAPE_LABEL_MAP.get(trimmed.toUpperCase());
   return label ?? trimmed;
 }
@@ -289,19 +295,20 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
       ) : (
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
-            <Text style={[styles.headerCell, styles.packetCell]}>Packet Code</Text>
+            <Text style={[styles.headerCell, styles.packetCell]}>PKT Code</Text>
             <Text style={[styles.headerCell, styles.shapeCell]}>Shape</Text>
             <Text style={[styles.headerCell, styles.colorCell]}>Color</Text>
             <Text style={[styles.headerCell, styles.clarityCell]}>Clarity</Text>
-            <Text style={[styles.headerCell, styles.rateCell]}>Rate (₹)</Text>
+            <Text style={[styles.headerCell, styles.rateCell]}>Rate</Text>
             <Text style={[styles.headerCell, styles.actionCell]}>Edit</Text>
             <Text style={[styles.headerCell, styles.actionCell]}>Delete</Text>
           </View>
 
           {sortedRates.map((rate, index) => {
-            const shapeText = formatTableValue(shapeLabel(rate.shape));
-            const colorText = formatTableValue(rate.color || 'None');
-            const clarityText = formatTableValue(rate.clarity || 'None');
+            const shapeText = compactTableValue(shapeLabel(rate.shape));
+            const colorText = compactTableValue(rate.color ?? '');
+            const clarityText = compactTableValue(rate.clarity ?? '');
+            const packetText = compactTableValue(rate.packetCode ?? '');
             const rowBorder = index < sortedRates.length - 1;
             return (
               <View
@@ -309,7 +316,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
                 style={[styles.row, rowBorder && styles.rowBorder]}
               >
                 <Text style={[styles.cell, styles.packetCell]} numberOfLines={1}>
-                  {rate.packetCode?.trim() ? rate.packetCode.trim() : '—'}
+                  {packetText}
                 </Text>
                 <Text style={[styles.cell, styles.shapeCell]} numberOfLines={1}>
                   {shapeText}
@@ -321,19 +328,19 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
                   {clarityText}
                 </Text>
                 <Text style={[styles.cell, styles.rateCell]} numberOfLines={1}>
-                  {formatInr(rate.rate)}
+                  ₹{formatInr(rate.rate)}
                 </Text>
                 <Pressable
                   onPress={() => openEdit(rate)}
                   style={[styles.iconBtn, styles.actionCell]}
                 >
-                  <Pencil size={14} color={Colors.textPrimary} />
+                  <Text style={styles.actionText}>✏</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setDeletingRate(rate)}
                   style={[styles.iconBtn, styles.actionCell]}
                 >
-                  <Trash2 size={14} color={DELETE_RED} />
+                  <Text style={[styles.actionText, styles.deleteText]}>🗑</Text>
                 </Pressable>
               </View>
             );
@@ -397,8 +404,9 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
           deletingRate
             ? `This will permanently remove ${
                 deletingRate.packetCode?.trim() ? deletingRate.packetCode.trim() : '—'
-              } / ${shapeLabel(deletingRate.shape)} / ${deletingRate.color || 'None'} / ${
-                deletingRate.clarity || 'None'
+              } / ${shapeLabel(deletingRate.shape) || '—'} / ${
+                deletingRate.color?.trim() ? deletingRate.color : '—'
+              } / ${deletingRate.clarity?.trim() ? deletingRate.clarity : '—'
               }.`
             : ''
         }
@@ -431,34 +439,47 @@ const styles = StyleSheet.create({
   },
   row: {
     ...screenStyles.tableDataRow,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    minHeight: 44,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    minHeight: 36,
   },
   headerRow: {
     ...screenStyles.tableHeaderRow,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
   },
   headerCell: {
     ...screenStyles.tableHeaderCell,
     textAlign: 'center',
+    fontSize: 11,
+    lineHeight: 14,
   },
   cell: {
     ...screenStyles.tableCell,
     textAlign: 'center',
+    fontSize: 11,
+    lineHeight: 14,
   },
   rowBorder: {
     ...screenStyles.tableRowBorder,
   },
-  packetCell: { width: 86 },
-  shapeCell: { width: 70 },
-  colorCell: { width: 48 },
-  clarityCell: { width: 52 },
-  rateCell: { width: 74 },
-  actionCell: { width: 48, alignItems: 'center', justifyContent: 'center' },
+  packetCell: { width: 50 },
+  shapeCell: { width: 46 },
+  colorCell: { width: 42 },
+  clarityCell: { width: 46 },
+  rateCell: { width: 52 },
+  actionCell: { width: 44, alignItems: 'center', justifyContent: 'center' },
   iconBtn: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionText: {
+    fontSize: 14,
+    lineHeight: 16,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  deleteText: {
+    color: DELETE_RED,
   },
 });

@@ -1,4 +1,5 @@
 export type LabourChargeUnit = 'Per Gram' | 'Per 10 Gram';
+export type LabourWeightBasis = 'gross' | 'net';
 
 export const DEFAULT_LABOUR_CHARGE_UNITS: LabourChargeUnit[] = [
   'Per Gram',
@@ -6,6 +7,13 @@ export const DEFAULT_LABOUR_CHARGE_UNITS: LabourChargeUnit[] = [
 ];
 
 export const DEFAULT_LABOUR_CHARGE_UNIT: LabourChargeUnit = 'Per Gram';
+
+export const DEFAULT_LABOUR_WEIGHT_BASIS: LabourWeightBasis = 'gross';
+
+export const LABOUR_WEIGHT_OPTIONS: Array<{ value: LabourWeightBasis; label: string }> = [
+  { value: 'gross', label: 'Gross Weight' },
+  { value: 'net', label: 'Net Weight' },
+];
 
 export const LABOUR_VALIDATION_MESSAGE =
   'Please enter % Purity or Labour Amount.';

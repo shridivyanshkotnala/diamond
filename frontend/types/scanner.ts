@@ -1,4 +1,4 @@
-import type { LabourChargeUnit } from '@/constants/labour';
+import type { LabourChargeUnit, LabourWeightBasis } from '@/constants/labour';
 
 export type JewelleryType = 'Diamond' | 'Gold';
 
@@ -129,6 +129,7 @@ export interface ScanItemData {
   labourPurityPercent: string;
   labourChargeAmount: string;
   labourChargeUnit: LabourChargeUnit;
+  labourWeightBasis: LabourWeightBasis;
   calculationRate: 'rtgs' | 'cash';
   otherChargesAmount: string;
   otherChargesRemarks: string;
