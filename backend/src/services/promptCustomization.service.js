@@ -15,13 +15,14 @@ function buildCustomPromptSection(customizations, category = 'diamond') {
   const colors = formatList(customizations.colors);
   const clarities = formatList(customizations.clarities);
   const shapes = formatList(customizations.shapes);
+  const packetCodes = formatList(customizations.packetCodes);
   const title = CUSTOM_SECTION_TITLES[category] ?? CUSTOM_SECTION_TITLES.diamond;
 
   if (category === 'colorstone') {
     return `\n==============================================================\n${title}\n==============================================================\nThese are additional custom colorstone options entered by users. Treat them as valid values when extracting colorstone color and clarity.\n- Custom Colors: ${colors}\n- Custom Clarities: ${clarities}\n`;
   }
 
-  return `\n==============================================================\n${title}\n==============================================================\nThese are additional custom diamond options entered by users. Treat them as valid values when extracting diamond color, clarity, and shape.\n- Custom Colors: ${colors}\n- Custom Clarities: ${clarities}\n- Custom Shapes: ${shapes}\n`;
+  return `\n==============================================================\n${title}\n==============================================================\nThese are additional custom diamond options entered by users. Treat them as valid values when extracting diamond color, clarity, shape, and packet codes.\n- Custom Colors: ${colors}\n- Custom Clarities: ${clarities}\n- Custom Shapes: ${shapes}\n- Custom Packet Codes: ${packetCodes}\n`;
 }
 
 function buildCustomPromptSnippet(customizations, wordLimit = 100, category = 'diamond') {

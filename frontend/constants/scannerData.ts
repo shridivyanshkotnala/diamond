@@ -30,6 +30,7 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   diamondRate: '9500',
   diamondPieces: '4',
   diamondShape: '',
+  packetCode: '',
   colorstoneWeight: '',
   colorstoneColor: '',
   colorstoneClarity: '',

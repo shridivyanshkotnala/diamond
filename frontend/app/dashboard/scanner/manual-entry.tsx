@@ -143,6 +143,7 @@ export default function ManualEntryScreen() {
             clarity: scanData.diamondClarity,
             quality: scanData.diamondQuality,
             rate: scanData.diamondRate,
+            packetCode: scanData.packetCode,
           }}
           onChange={(values) =>
             handleDiamondChange({

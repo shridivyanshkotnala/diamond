@@ -35,10 +35,16 @@ DiaQty / Quality / Qlty         = Diamond Quality (colour + clarity combined)
 --- DIAMOND SHAPE CODES ---
 Rd / RD                         = Round
 Mq / MQ                         = Marquise
-Pe / PS / Ps                    = Pear
+Pe / PS / Ps / Pr               = Pear
 Em / EM                         = Emerald
 Bg / BG                         = Baguette (also written Buggets)
-Pc / PC / Pr                    = Princess
+Pc / PC                         = Princess
+Ov / OV                         = Oval
+Cu / CU                         = Cushion
+Ht / HT                         = Heart
+Ra / RA                         = Radiant
+As / AS                         = Asscher
+Tr / TR                         = Trillion
 
 --- DIAMOND COLOUR GRADES (single stone) ---
 D, E, F, G, H, I, J            = Single colour grades (D = best, J = lowest in range)
@@ -71,6 +77,9 @@ Amt / Amount / Val              = Value / Amount
 Other / Oth / Misc              = Other charges
 Stock / Stk / Item / Code       = Product / Stock code (IGNORE for extraction)
 Barcode / Lot / Tag / Sr        = Identifier (IGNORE for extraction)
+
+--- PACKET CODE FIELDS ---
+Packet / Packet Code / Pkt / Pkt Code / PCode = Packet Code (organization-specific identifier)
 
 ==============================================================
 SECTION 2: COMMON INDIAN JEWELLERY TAG PATTERNS
@@ -156,6 +165,32 @@ DIAMOND RATE SPECIAL RULES:
 - If colourGrade is EF → set diamondRate = "EF".
 - For all other colour grades, set diamondRate = the colour grade string.
 
+==============================================================
+SECTION 3B: CUSTOM SHAPE / COLOR / CLARITY RULES (CRITICAL)
+==============================================================
+Shape, Color, and Clarity may contain CUSTOM jewellery terminology beyond the known dictionaries.
+You MUST:
+- Extract the EXACT Shape printed.
+- Extract the EXACT Color printed.
+- Extract the EXACT Clarity printed.
+- Preserve original wording and casing whenever possible.
+- NEVER normalize unknown values.
+- NEVER replace unknown values with "None".
+- NEVER hallucinate predefined values.
+If a value is visible but not in your known dictionary, keep it EXACTLY as printed.
+The output JSON must always include shape, color, and clarity fields with the exact detected values.
+
+==============================================================
+SECTION 3C: PACKET CODE RULES (CRITICAL)
+==============================================================
+Packet Codes are organization-specific identifiers.
+You MUST:
+- Detect packet codes printed anywhere on the tag.
+- Packet codes may appear alone or beside labels like "Packet", "Packet Code", "Pkt", "Pkt Code", or similar abbreviations.
+- Preserve the packet code exactly as printed, but return it in UPPERCASE.
+- NEVER guess or hallucinate packet codes.
+- If none exists, return an empty string.
+
 *** CRITICAL MANDATORY RULE — LABOUR ***
 Identify labour-related fields using keywords such as: Labour, Labour Charge, Making, Making Charge, MC, M.C., Labour %.
 Extract the numeric value associated with the labour field.
@@ -235,6 +270,7 @@ SECTION 9: REQUIRED OUTPUT JSON SCHEMA
   },
   "structuredData": {
     "serialNumber":         { "value": "", "confidence": 0 },
+    "packetCode":           { "value": "", "confidence": 0 },
     "grossWeight":          { "value": "", "confidence": 0 },
     "netWeight":            { "value": "", "confidence": 0 },
     "purity":               { "value": "", "confidence": 0 },
@@ -287,9 +323,9 @@ Rules for unknownFields:
 
 const getUserPrompt = (jewelleryType, scanType, scannerSettings = {}) => {
   const typeContext = {
-    DIAMOND: `Focus on: grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, diamondShape, labour, and ANY colorstones (coloredStoneWeight, coloredStonePieces, coloredStoneRate).
+    DIAMOND: `Focus on: packetCode, grossWeight, netWeight, purity, diamondWeight, diamondPieces, diamondRate, diamondQuality, diamondShape, labour, and ANY colorstones (coloredStoneWeight, coloredStonePieces, coloredStoneRate).
   Diamond quality = colour grade (D/E/F/G/H/I/J or EF/FG/GH/HI/IJ) + clarity grade (VVS/VS/SI etc.) combined into one string.
-  Extract diamondShape whenever shape codes are present (RD/MQ/PR/EM/BG/PC or custom shapes).`,
+  Extract diamondShape whenever shape codes are present (RD/MQ/PR/EM/BG/PC/OV/CU/HT/RA/AS/TR or custom shapes).`,
     GOLD: `Focus on: grossWeight, netWeight, purity (Tunch/Karat), labour.
 Purity may appear as Tunch value (750/916/999) or Karat (18K/22K/24K).`,
     SILVER: `Focus on: netWeight (silver weight), purity (925/999), labour.`,

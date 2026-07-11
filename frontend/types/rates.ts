@@ -62,6 +62,7 @@ export interface StoneRate {
   color: string;
   clarity: string;
   shape?: string;
+  packetCode?: string;
   rate: number;
   updatedAt?: string;
 }
@@ -70,6 +71,7 @@ export interface UpsertStoneRatePayload {
   color: string;
   clarity: string;
   shape?: string;
+  packetCode?: string;
   rate: number;
 }
 
@@ -80,6 +82,7 @@ export interface StoneRateLookupPayload {
   color: string;
   clarity: string;
   shape?: string;
+  packetCode?: string;
 }
 
 export interface StoneRateLookupResponse {

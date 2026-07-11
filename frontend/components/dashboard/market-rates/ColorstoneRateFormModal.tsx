@@ -73,12 +73,13 @@ export function ColorstoneRateFormModal({
             placeholder="Select color"
             error={errors.color}
             allowCustom
-            customLabel="Add Custom Color"
-            customInputLabel="Add Custom Color"
+            customLabel="Custom Color"
+            customInputLabel="Enter Color"
             customPlaceholder="e.g. AB"
             onAddCustom={onAddCustomColor}
             normalizeCustomValue={(input) => input.trim()}
             validateCustomValue={(value) => validateCustomValue?.(value, 'color') ?? null}
+            customAutoCapitalize="none"
           />
           <StoneOptionSelect
             label="Clarity"
@@ -88,15 +89,16 @@ export function ColorstoneRateFormModal({
             placeholder="Select clarity"
             error={errors.clarity}
             allowCustom
-            customLabel="Add Custom Clarity"
-            customInputLabel="Add Custom Clarity"
+            customLabel="Custom Clarity"
+            customInputLabel="Enter Clarity"
             customPlaceholder="e.g. IF"
             onAddCustom={onAddCustomClarity}
-            normalizeCustomValue={(input) => input.trim().toUpperCase()}
+            normalizeCustomValue={(input) => input.trim()}
             validateCustomValue={(value) => validateCustomValue?.(value, 'clarity') ?? null}
+            customAutoCapitalize="none"
           />
 
-          <Text style={styles.fieldLabel}>Rate / ct (₹)</Text>
+          <Text style={styles.fieldLabel}>Rate (₹)</Text>
           <TextInput
             value={rateValue}
             onChangeText={onRateChange}

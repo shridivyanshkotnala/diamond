@@ -29,6 +29,7 @@ interface StoneOptionSelectProps {
   onAddCustom?: (value: string) => void;
   normalizeCustomValue?: (value: string) => string;
   validateCustomValue?: (value: string) => string | null;
+  customAutoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }
 
 export function StoneOptionSelect({
@@ -46,6 +47,7 @@ export function StoneOptionSelect({
   onAddCustom,
   normalizeCustomValue = (input) => input.trim(),
   validateCustomValue,
+  customAutoCapitalize = 'characters',
 }: StoneOptionSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -196,7 +198,7 @@ export function StoneOptionSelect({
               }}
               placeholder={customPlaceholder}
               placeholderTextColor={Colors.placeholder}
-              autoCapitalize="characters"
+              autoCapitalize={customAutoCapitalize}
               style={[styles.dialogInput, customError ? styles.dialogInputError : null]}
             />
             {customError ? <Text style={styles.error}>{customError}</Text> : null}

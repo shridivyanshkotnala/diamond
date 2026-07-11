@@ -83,6 +83,7 @@ function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
 function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
   const color = readString(raw.color) ?? '';
   const clarity = readString(raw.clarity) ?? '';
+  const packetCode = readString(raw.packetCode ?? raw.packet_code) ?? '';
   const shape = (() => {
     const rawShape = raw.shape;
     if (rawShape == null) return '';
@@ -100,21 +101,22 @@ function normalizeStoneRate(raw: Record<string, unknown>): StoneRate | null {
   })();
   const rate = readNumber(raw.rate);
 
-  if (rate == null || (!color && !clarity && !shape)) {
+  if (rate == null || (!color && !clarity && !shape && !packetCode)) {
     return null;
   }
 
   const id =
     readString(raw.id ?? raw._id) ??
-    `${color.trim().toLowerCase()}|${clarity.trim().toLowerCase()}|${shape
+    `${packetCode.trim().toLowerCase()}|${color.trim().toLowerCase()}|${clarity
       .trim()
-      .toLowerCase()}|${rate}`;
+      .toLowerCase()}|${shape.trim().toLowerCase()}|${rate}`;
 
   return {
     id,
     color,
     clarity,
     shape,
+    packetCode,
     rate,
     updatedAt: readString(raw.updatedAt ?? raw.updated_at),
   };
@@ -317,6 +319,7 @@ export async function lookupStoneRate(
   const trimmedColor = payload.color.trim();
   const trimmedClarity = payload.clarity.trim();
   const trimmedShape = payload.shape?.trim();
+  const trimmedPacketCode = payload.packetCode?.trim() ?? '';
   const quality = `${trimmedColor} ${trimmedClarity}`.trim();
 
   let rates: StoneRate[] = [];
@@ -329,6 +332,17 @@ export async function lookupStoneRate(
   }
 
   if (payload.type === 'diamond') {
+    if (trimmedPacketCode) {
+      const match = rates.find((item) => {
+        const itemCode = (item.packetCode ?? '').trim().toLowerCase();
+        return itemCode && itemCode === trimmedPacketCode.toLowerCase();
+      });
+
+      if (match) {
+        return { rate: match.rate };
+      }
+    }
+
     const normalizedShape = trimmedShape?.toLowerCase() === 'none' ? '' : trimmedShape ?? '';
     const normalizedColor = trimmedColor;
     const normalizedClarity = trimmedClarity;

@@ -152,49 +152,49 @@ function mcxKey() {
 }
 
 // === PROMPT CUSTOMIZATIONS (DIAMOND) ===
-function promptCustomKey(category = 'diamond') {
-  return `prompt_custom:${category}`;
+function promptCustomKey(category = 'diamond', businessId = 'global') {
+  return `prompt_custom:${category}:${businessId || 'global'}`;
 }
 
-const DEFAULT_PROMPT_CUSTOMS = { colors: [], clarities: [], shapes: [] };
+const DEFAULT_PROMPT_CUSTOMS = { colors: [], clarities: [], shapes: [], packetCodes: [] };
 
-const getPromptCustomizations = async (category = 'diamond') => {
+const getPromptCustomizations = async (category = 'diamond', businessId = 'global') => {
   return runStoreOp(async (backend) => {
     if (backend === 'memory') {
-      const data = memoryStore.get(promptCustomKey(category));
+      const data = memoryStore.get(promptCustomKey(category, businessId));
       return data ? JSON.parse(data) : { ...DEFAULT_PROMPT_CUSTOMS };
     }
-    const data = await redis.get(promptCustomKey(category));
+    const data = await redis.get(promptCustomKey(category, businessId));
     return data ? JSON.parse(data) : { ...DEFAULT_PROMPT_CUSTOMS };
   });
 };
 
-const setPromptCustomizations = async (category, customs) => {
+const setPromptCustomizations = async (category, customs, businessId = 'global') => {
   return runStoreOp(async (backend) => {
     const payload = JSON.stringify(customs ?? DEFAULT_PROMPT_CUSTOMS);
     if (backend === 'memory') {
-      memoryStore.set(promptCustomKey(category), payload);
+      memoryStore.set(promptCustomKey(category, businessId), payload);
       return;
     }
-    await redis.set(promptCustomKey(category), payload, 'EX', TTL);
+    await redis.set(promptCustomKey(category, businessId), payload, 'EX', TTL);
   });
 };
 
-const addPromptCustomization = async (category, type, value) => {
+const addPromptCustomization = async (category, type, value, businessId = 'global') => {
   if (!value) {
-    return { customizations: await getPromptCustomizations(category), added: false };
+    return { customizations: await getPromptCustomizations(category, businessId), added: false };
   }
-  const normalized = String(value).trim().toUpperCase();
+  const normalized = String(value).trim();
   if (!normalized) {
-    return { customizations: await getPromptCustomizations(category), added: false };
+    return { customizations: await getPromptCustomizations(category, businessId), added: false };
   }
 
-  const current = await getPromptCustomizations(category);
+  const current = await getPromptCustomizations(category, businessId);
   const key = type === 'color' ? 'colors' : type === 'clarity' ? 'clarities' : 'shapes';
-  const existing = new Set((current[key] ?? []).map((item) => String(item).toUpperCase()));
-  if (!existing.has(normalized)) {
+  const existing = new Set((current[key] ?? []).map((item) => String(item).toLowerCase()));
+  if (!existing.has(normalized.toLowerCase())) {
     current[key] = [...(current[key] ?? []), normalized];
-    await setPromptCustomizations(category, current);
+    await setPromptCustomizations(category, current, businessId);
     return { customizations: current, added: true };
   }
   return { customizations: current, added: false };

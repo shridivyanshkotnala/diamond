@@ -19,6 +19,22 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
+const authenticateJWTOptional = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const payload = authService.verifyAccessToken(token);
+    req.user = payload;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ success: false, error: 'UNAUTHORIZED', message: 'Token is invalid or expired' });
+  }
+};
+
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -41,5 +57,6 @@ const requireRole = (...roles) => {
 
 module.exports = {
   authenticateJWT,
+  authenticateJWTOptional,
   requireRole
 };

@@ -39,7 +39,7 @@ const analyzeScan = async (req, res, next) => {
   try {
     const { scanId } = req.params;
     const scannerSettings = req.body?.scannerSettings || {};
-    const updated = await scanService.analyzeScan(scanId, scannerSettings);
+    const updated = await scanService.analyzeScan(scanId, scannerSettings, req.user?.businessId);
     
     sendSuccess(res, {
         scanId: updated.scanId,

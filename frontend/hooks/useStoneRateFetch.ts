@@ -9,6 +9,7 @@ interface UseStoneRateFetchOptions {
   color: string;
   clarity: string;
   shape?: string;
+  packetCode?: string;
   enabled?: boolean;
   onRateFetched?: (rate: string) => void;
 }
@@ -27,6 +28,7 @@ export function useStoneRateFetch({
   color,
   clarity,
   shape,
+  packetCode,
   enabled = true,
   onRateFetched,
 }: UseStoneRateFetchOptions): UseStoneRateFetchResult {
@@ -47,9 +49,10 @@ export function useStoneRateFetch({
     const trimmedClarity = clarity.trim();
     const trimmedShapeRaw = shape?.trim() ?? '';
     const trimmedShape = trimmedShapeRaw.toLowerCase() === 'none' ? '' : trimmedShapeRaw;
+    const trimmedPacketCode = packetCode?.trim() ?? '';
     const hasLookupCriteria =
       type === 'diamond'
-        ? Boolean(trimmedShape || trimmedColor || trimmedClarity)
+        ? Boolean(trimmedPacketCode || trimmedShape || trimmedColor || trimmedClarity)
         : Boolean(trimmedColor && trimmedClarity);
 
     if (!hasLookupCriteria) {
@@ -68,6 +71,7 @@ export function useStoneRateFetch({
         color: trimmedColor,
         clarity: trimmedClarity,
         shape: trimmedShape,
+        packetCode: trimmedPacketCode,
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -79,6 +83,8 @@ export function useStoneRateFetch({
       if (requestId !== requestIdRef.current) return;
 
       if (error instanceof RateNotFoundError) {
+        setRate('');
+        onRateFetchedRef.current?.('');
         setRateNotFound(false);
         return;
       }
@@ -98,9 +104,10 @@ export function useStoneRateFetch({
     const trimmedClarity = clarity.trim();
     const trimmedShapeRaw = shape?.trim() ?? '';
     const trimmedShape = trimmedShapeRaw.toLowerCase() === 'none' ? '' : trimmedShapeRaw;
+    const trimmedPacketCode = packetCode?.trim() ?? '';
     const hasLookupCriteria =
       type === 'diamond'
-        ? Boolean(trimmedShape || trimmedColor || trimmedClarity)
+        ? Boolean(trimmedPacketCode || trimmedShape || trimmedColor || trimmedClarity)
         : Boolean(trimmedColor && trimmedClarity);
 
     if (!hasLookupCriteria) {
@@ -114,7 +121,7 @@ export function useStoneRateFetch({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [color, clarity, shape, enabled, fetchRate, type]);
+  }, [color, clarity, shape, packetCode, enabled, fetchRate, type]);
 
   return {
     quality,

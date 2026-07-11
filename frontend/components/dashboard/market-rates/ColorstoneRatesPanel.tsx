@@ -18,13 +18,7 @@ import {
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import type { StoneRate, UpsertStoneRatePayload } from '@/types/rates';
-import {
-  displayStoneField,
-  findDuplicateStoneRate,
-  formatStoneRatePerCt,
-  stoneRateSummary,
-  validateStoneRateForm,
-} from '@/utils/stoneRateUtils';
+import { findDuplicateStoneRate, stoneRateSummary, validateStoneRateForm } from '@/utils/stoneRateUtils';
 
 const DELETE_RED = '#EA4335';
 const BUTTON_GREEN = '#1B3022';
@@ -33,67 +27,15 @@ interface ColorstoneRatesPanelProps {
   onToast?: (message: string, type?: ToastType) => void;
 }
 
-interface ColorstoneRatesTableProps {
-  rates: StoneRate[];
-  onEdit: (rate: StoneRate) => void;
-  onDelete: (rate: StoneRate) => void;
-  onAdd: () => void;
+function formatRateValue(rate: number): string {
+  if (!Number.isFinite(rate)) return '0';
+  return Math.round(rate).toLocaleString('en-IN');
 }
 
-function ColorstoneRatesTable({ rates, onEdit, onDelete, onAdd }: ColorstoneRatesTableProps) {
-  return (
-    <View>
-      <Pressable onPress={onAdd} style={styles.addBtn}>
-        <Text style={styles.addBtnText}>+ Add Colorstone Rate</Text>
-      </Pressable>
-
-      {rates.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No colorstone rates yet</Text>
-          <Text style={styles.emptyText}>
-            Tap Add Colorstone Rate to configure color, clarity, or combined rates per carat.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.cardList}>
-          {rates.map((rate) => (
-            <View key={rate.id} style={styles.rateCard}>
-              <View style={styles.cardRow}>
-                <View style={styles.cardField}>
-                  <Text style={styles.cardLabel}>Color</Text>
-                  <Text style={styles.cardValue}>{displayStoneField(rate.color)}</Text>
-                </View>
-                <View style={styles.cardField}>
-                  <Text style={styles.cardLabel}>Clarity</Text>
-                  <Text style={styles.cardValue}>{displayStoneField(rate.clarity)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardRow}>
-                <View style={styles.cardField}>
-                  <Text style={styles.cardLabel}>Rate</Text>
-                  <Text style={styles.cardValue}>{formatStoneRatePerCt(rate.rate)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardDivider} />
-
-              <View style={styles.cardActions}>
-                <Pressable onPress={() => onEdit(rate)} style={styles.editBtn}>
-                  <Pencil size={14} color={Colors.white} />
-                  <Text style={styles.editText}>Edit</Text>
-                </Pressable>
-                <Pressable onPress={() => onDelete(rate)} style={styles.deleteBtn}>
-                  <Trash2 size={14} color={DELETE_RED} />
-                  <Text style={styles.deleteText}>Delete</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
+function formatTableValue(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return 'None';
+  return trimmed;
 }
 
 export function ColorstoneRatesPanel({ onToast }: ColorstoneRatesPanelProps) {
@@ -147,7 +89,7 @@ export function ColorstoneRatesPanel({ onToast }: ColorstoneRatesPanelProps) {
   const clarityOptions = useMemo<StoneSelectOption[]>(() => {
     const fromRates = rates.map((rate) => rate.clarity).filter(Boolean);
     const merged = [...STONE_CLARITY_OPTIONS, ...fromRates, ...customClarities]
-      .map((value) => value.trim().toUpperCase())
+      .map((value) => value.trim())
       .filter(Boolean);
     const unique = Array.from(new Set(merged));
     return unique.map((option) => ({ value: option, label: option }));
@@ -185,7 +127,7 @@ export function ColorstoneRatesPanel({ onToast }: ColorstoneRatesPanelProps) {
     }
 
     const trimmedColor = color.trim();
-    const trimmedClarity = clarity.trim().toUpperCase();
+    const trimmedClarity = clarity.trim();
     const rate = Number(rateValue);
 
     if (
@@ -244,12 +186,57 @@ export function ColorstoneRatesPanel({ onToast }: ColorstoneRatesPanelProps) {
 
   return (
     <>
-      <ColorstoneRatesTable
-        rates={rates}
-        onEdit={openEdit}
-        onDelete={setDeletingRate}
-        onAdd={openAdd}
-      />
+      <Pressable onPress={openAdd} style={styles.addBtn}>
+        <Text style={styles.addBtnText}>+ Add Colorstone Rate</Text>
+      </Pressable>
+
+      {rates.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>No colorstone rates yet</Text>
+          <Text style={styles.emptyText}>
+            Tap Add Colorstone Rate to configure color and clarity rates.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.table}>
+          <View style={[styles.row, styles.headerRow]}>
+            <Text style={[styles.headerCell, styles.colorCell]}>Color</Text>
+            <Text style={[styles.headerCell, styles.clarityCell]}>Clarity</Text>
+            <Text style={[styles.headerCell, styles.rateCell]}>Rate (₹)</Text>
+            <Text style={[styles.headerCell, styles.actionCell]}>Edit</Text>
+            <Text style={[styles.headerCell, styles.actionCell]}>Delete</Text>
+          </View>
+
+          {rates.map((rate, index) => {
+            const rowBorder = index < rates.length - 1;
+            return (
+              <View key={rate.id} style={[styles.row, rowBorder && styles.rowBorder]}>
+                <Text style={[styles.cell, styles.colorCell]} numberOfLines={1}>
+                  {formatTableValue(rate.color || 'None')}
+                </Text>
+                <Text style={[styles.cell, styles.clarityCell]} numberOfLines={1}>
+                  {formatTableValue(rate.clarity || 'None')}
+                </Text>
+                <Text style={[styles.cell, styles.rateCell]} numberOfLines={1}>
+                  {formatRateValue(rate.rate)}
+                </Text>
+                <Pressable
+                  onPress={() => openEdit(rate)}
+                  style={[styles.iconBtn, styles.actionCell]}
+                >
+                  <Pencil size={14} color={Colors.textPrimary} />
+                </Pressable>
+                <Pressable
+                  onPress={() => setDeletingRate(rate)}
+                  style={[styles.iconBtn, styles.actionCell]}
+                >
+                  <Trash2 size={14} color={DELETE_RED} />
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       <ColorstoneRateFormModal
         visible={isNew || editingRate !== null}
@@ -286,7 +273,7 @@ export function ColorstoneRatesPanel({ onToast }: ColorstoneRatesPanelProps) {
           if (!customClarities.includes(value)) setCustomClarities((prev) => [...prev, value]);
         }}
         validateCustomValue={(value, type) => {
-          const normalized = type === 'clarity' ? value.trim().toUpperCase() : value.trim();
+          const normalized = value.trim();
           const existing = type === 'color' ? colorOptions : clarityOptions;
           if (existing.some((option) => option.value.toUpperCase() === normalized.toUpperCase())) {
             return 'Value already exists.';
@@ -325,75 +312,37 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
   emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
-  cardList: {
-    gap: Spacing.md,
+  table: {
+    ...screenStyles.table,
   },
-  rateCard: {
-    borderRadius: 18,
-    padding: Spacing.lg,
-    backgroundColor: Colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+  row: {
+    ...screenStyles.tableDataRow,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    minHeight: 44,
   },
-  cardRow: {
-    flexDirection: 'row',
-    gap: Spacing.lg,
-    marginBottom: Spacing.md,
+  headerRow: {
+    ...screenStyles.tableHeaderRow,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
-  cardField: {
-    flex: 1,
-    minWidth: 0,
+  headerCell: {
+    ...screenStyles.tableHeaderCell,
+    textAlign: 'center',
   },
-  cardLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    fontWeight: '600',
-    color: Colors.textMuted,
+  cell: {
+    ...screenStyles.tableCell,
+    textAlign: 'center',
   },
-  cardValue: {
-    marginTop: 6,
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+  rowBorder: {
+    ...screenStyles.tableRowBorder,
   },
-  cardDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginBottom: Spacing.md,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  editBtn: {
-    flexDirection: 'row',
+  colorCell: { width: 80 },
+  clarityCell: { width: 80 },
+  rateCell: { width: 84 },
+  actionCell: { width: 48, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: BUTTON_GREEN,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flex: 1,
   },
-  editText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  deleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#F5C6C2',
-    backgroundColor: '#FCE8E6',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flex: 1,
-  },
-  deleteText: { color: DELETE_RED, fontSize: 13, fontWeight: '600' },
 });

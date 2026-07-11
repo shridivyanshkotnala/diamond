@@ -4,6 +4,9 @@ const scanController = require('../controllers/scan.controller');
 const upload = require('../middleware/upload.middleware');
 const { validate } = require('../middleware/validation.middleware');
 const joi = require('joi');
+const { authenticateJWTOptional } = require('../middleware/auth.middleware');
+
+router.use(authenticateJWTOptional);
 
 const createScanSchema = joi.object({
   jewelleryType: joi.string().valid('DIAMOND', 'GOLD', 'SILVER', 'COLOUR_STONE').required(),

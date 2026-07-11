@@ -17,11 +17,13 @@ import { Colors, Radius } from '@/constants/theme';
 interface DiamondRateFormModalProps {
   visible: boolean;
   isNew: boolean;
+  packetCode: string;
   shape: string;
   color: string;
   clarity: string;
   rateValue: string;
   errors: {
+    packetCode?: string;
     shape?: string;
     color?: string;
     clarity?: string;
@@ -35,6 +37,7 @@ interface DiamondRateFormModalProps {
   onShapeChange: (value: string) => void;
   onColorChange: (value: string) => void;
   onClarityChange: (value: string) => void;
+  onPacketCodeChange: (value: string) => void;
   onRateChange: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
@@ -43,6 +46,7 @@ interface DiamondRateFormModalProps {
 export function DiamondRateFormModal({
   visible,
   isNew,
+  packetCode,
   shape,
   color,
   clarity,
@@ -55,6 +59,7 @@ export function DiamondRateFormModal({
   onShapeChange,
   onColorChange,
   onClarityChange,
+  onPacketCodeChange,
   onRateChange,
   onClose,
   onSave,
@@ -68,8 +73,19 @@ export function DiamondRateFormModal({
           </Pressable>
           <Text style={styles.title}>{isNew ? 'Add' : 'Edit'} Diamond Rate</Text>
           <Text style={styles.hint}>
-            Select Shape, Color or Clarity. At least one is required.
+            Enter Packet Code or select Shape, Color or Clarity. At least one is required.
           </Text>
+
+          <Text style={styles.fieldLabel}>Packet Code (Optional)</Text>
+          <TextInput
+            value={packetCode}
+            onChangeText={onPacketCodeChange}
+            placeholder="e.g. LM"
+            placeholderTextColor={Colors.placeholder}
+            autoCapitalize="characters"
+            style={[styles.input, errors.packetCode ? styles.inputError : null]}
+          />
+          {errors.packetCode ? <Text style={styles.error}>{errors.packetCode}</Text> : null}
 
           <StoneOptionSelect
             label="Shape"
@@ -79,6 +95,12 @@ export function DiamondRateFormModal({
             placeholder="None"
             allowClear
             error={errors.shape}
+            allowCustom
+            customLabel="Custom Shape"
+            customInputLabel="Enter Shape"
+            customPlaceholder="e.g. Rose Cut"
+            normalizeCustomValue={(input) => input.trim()}
+            customAutoCapitalize="none"
           />
 
           <StoneOptionSelect
@@ -89,6 +111,12 @@ export function DiamondRateFormModal({
             placeholder="Select color"
             allowClear
             error={errors.color}
+            allowCustom
+            customLabel="Custom Color"
+            customInputLabel="Enter Color"
+            customPlaceholder="e.g. Fancy Pink"
+            normalizeCustomValue={(input) => input.trim()}
+            customAutoCapitalize="none"
           />
 
           <StoneOptionSelect
@@ -99,6 +127,12 @@ export function DiamondRateFormModal({
             placeholder="Select clarity"
             allowClear
             error={errors.clarity}
+            allowCustom
+            customLabel="Custom Clarity"
+            customInputLabel="Enter Clarity"
+            customPlaceholder="e.g. VS0"
+            normalizeCustomValue={(input) => input.trim()}
+            customAutoCapitalize="none"
           />
 
           <Text style={styles.fieldLabel}>Rate (₹)</Text>

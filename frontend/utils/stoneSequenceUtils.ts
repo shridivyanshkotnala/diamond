@@ -28,6 +28,7 @@ export function createEmptyStoneEntry(stoneType: StoneKind): StoneEntry {
     quality: '',
     rate: '',
     pieces: '',
+    packetCode: '',
   };
 }
 
@@ -44,6 +45,7 @@ function hasStoneData(entry: StoneEntry): boolean {
   return Boolean(
     entry.weight ||
       entry.shape ||
+      entry.packetCode ||
       entry.color ||
       entry.clarity ||
       entry.quality ||
@@ -68,6 +70,10 @@ function normalizeStoneEntry(raw: unknown, stoneType: StoneKind): StoneEntry {
   const prefix = stoneType === 'diamond' ? 'diamond' : 'colorstone';
   const color = flattenStoneField(record.color ?? record[`${prefix}Color`]);
   const clarity = flattenStoneField(record.clarity ?? record[`${prefix}Clarity`]);
+  const packetCode =
+    stoneType === 'diamond'
+      ? flattenStoneField(record.packetCode ?? record.diamondPacketCode)
+      : '';
   const quality =
     flattenStoneField(record.quality ?? record[`${prefix}Quality`]) ||
     buildQuality(color, clarity);
@@ -76,6 +82,7 @@ function normalizeStoneEntry(raw: unknown, stoneType: StoneKind): StoneEntry {
     stoneType,
     weight: flattenStoneField(record.weight ?? record[`${prefix}Weight`]),
     shape: flattenStoneField(record.shape ?? record.diamondShape),
+    packetCode,
     color,
     clarity,
     quality,
@@ -106,6 +113,7 @@ function stoneEntryFromScanData(scanData: ScanItemData, stoneType: StoneKind): S
       stoneType,
       weight: scanData.diamondWeight,
       shape: scanData.diamondShape,
+      packetCode: scanData.packetCode,
       color: scanData.diamondColor,
       clarity: scanData.diamondClarity,
       quality:
@@ -279,6 +287,7 @@ export function applyStoneEntriesToScanData(
     diamondQuality: primaryDiamond.quality,
     diamondRate: primaryDiamond.rate,
     diamondPieces: primaryDiamond.pieces ?? '',
+    packetCode: primaryDiamond.packetCode ?? '',
     colorstoneWeight: primaryColorstone.weight,
     colorstoneColor: primaryColorstone.color,
     colorstoneClarity: primaryColorstone.clarity,
@@ -319,6 +328,7 @@ export function stoneEntriesToStructuredData(
   if (flatFields.diamondQuality) result.diamondQuality = flatFields.diamondQuality;
   if (flatFields.diamondRate) result.diamondRate = flatFields.diamondRate;
   if (flatFields.diamondPieces) result.diamondPieces = flatFields.diamondPieces;
+  if (flatFields.packetCode) result.packetCode = flatFields.packetCode;
 
   if (flatFields.colorstoneWeight) result.colorstoneWeight = flatFields.colorstoneWeight;
   if (flatFields.colorstoneColor) result.colorstoneColor = flatFields.colorstoneColor;

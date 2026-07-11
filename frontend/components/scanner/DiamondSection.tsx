@@ -17,6 +17,7 @@ export interface DiamondSectionValues {
   clarity: string;
   quality: string;
   rate: string;
+  packetCode?: string;
 }
 
 interface DiamondSectionProps {
@@ -37,7 +38,7 @@ export function DiamondSection({
   shapeOptions,
 }: DiamondSectionProps) {
   const hasLookupCriteria = Boolean(
-    values.shape.trim() || values.color.trim() || values.clarity.trim(),
+    values.packetCode?.trim() || values.shape.trim() || values.color.trim() || values.clarity.trim(),
   );
   const quality = buildQuality(values.color, values.clarity);
 
@@ -53,6 +54,7 @@ export function DiamondSection({
     color: values.color,
     clarity: values.clarity,
     shape: values.shape,
+    packetCode: values.packetCode,
     enabled: hasLookupCriteria && !disabled,
     onRateFetched: handleRateFetched,
   });

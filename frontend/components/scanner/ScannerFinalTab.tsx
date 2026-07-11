@@ -124,6 +124,7 @@ export function ScannerFinalTab({
                 quality: block.entry.quality,
                 rate: block.entry.rate,
                 shape: block.entry.shape,
+                packetCode: block.entry.packetCode,
               }}
               shapeOptions={block.stoneType === 'diamond' ? diamondShapeOptions : undefined}
               editable

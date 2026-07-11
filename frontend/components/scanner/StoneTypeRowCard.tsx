@@ -19,6 +19,7 @@ export interface StoneTypeRowValues {
   quality: string;
   rate: string;
   shape?: string;
+  packetCode?: string;
 }
 
 interface StoneTypeRowCardProps {
@@ -86,7 +87,12 @@ export function StoneTypeRowCard({
   })();
   const hasLookupCriteria =
     stoneType === 'diamond'
-      ? Boolean(resolvedShape.trim() || values.color.trim() || values.clarity.trim())
+      ? Boolean(
+          values.packetCode?.trim() ||
+            resolvedShape.trim() ||
+            values.color.trim() ||
+            values.clarity.trim(),
+        )
       : Boolean(values.color.trim() && values.clarity.trim());
 
   const handleRateFetched = useCallback(
@@ -102,6 +108,7 @@ export function StoneTypeRowCard({
     color: values.color,
     clarity: values.clarity,
     shape: stoneType === 'diamond' ? resolvedShape : undefined,
+    packetCode: stoneType === 'diamond' ? values.packetCode : undefined,
     enabled: editable && hasLookupCriteria,
     onRateFetched: handleRateFetched,
   });

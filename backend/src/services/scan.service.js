@@ -25,7 +25,7 @@ const saveImage = async (scanId, imagePath, type) => {
   });
 };
 
-const analyzeScan = async (scanId, scannerSettings = {}) => {
+const analyzeScan = async (scanId, scannerSettings = {}, businessId) => {
   const scan = await redisService.getScan(scanId);
   if (!scan) throw new Error('Scan not found');
 
@@ -35,7 +35,14 @@ const analyzeScan = async (scanId, scannerSettings = {}) => {
   }
 
   // Call OpenAI to get structured data
-  const result = await openaiService.analyzeImages(frontImagePath, backImagePath, jewelleryType, scanType, scannerSettings);
+  const result = await openaiService.analyzeImages(
+    frontImagePath,
+    backImagePath,
+    jewelleryType,
+    scanType,
+    scannerSettings,
+    businessId,
+  );
   
   return await redisService.updateScanStatus(scanId, 'ANALYSIS_COMPLETED', {
     analysisResult: result

@@ -24,6 +24,12 @@ export const DIAMOND_SHAPE_OPTIONS = [
   { value: 'Em', label: 'Emerald (Em)' },
   { value: 'Bg', label: 'Baguette (Bg)' },
   { value: 'Pc', label: 'Princess (Pc)' },
+  { value: 'Ov', label: 'Oval (Ov)' },
+  { value: 'Cu', label: 'Cushion (Cu)' },
+  { value: 'Ht', label: 'Heart (Ht)' },
+  { value: 'Ra', label: 'Radiant (Ra)' },
+  { value: 'As', label: 'Asscher (As)' },
+  { value: 'Tr', label: 'Trillion (Tr)' },
 ] as const;
 
 export type DiamondColorOption = (typeof DIAMOND_COLOR_OPTIONS)[number];

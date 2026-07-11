@@ -42,7 +42,22 @@ const DEFAULT_DIAMOND_CLARITIES = new Set([
   'I2',
   'I3',
 ]);
-const DEFAULT_DIAMOND_SHAPES = new Set(['RD', 'MQ', 'PR', 'EM', 'BG', 'PC']);
+const DEFAULT_DIAMOND_SHAPES = new Set([
+  'RD',
+  'MQ',
+  'PR',
+  'EM',
+  'BG',
+  'PC',
+  'OV',
+  'CU',
+  'HT',
+  'RA',
+  'AS',
+  'TR',
+]);
+const DEFAULT_COLORSTONE_COLORS = new Set(['RED', 'BLUE', 'GREEN', 'PINK']);
+const DEFAULT_COLORSTONE_CLARITIES = new Set(['SI', 'VS', 'VS1', 'VVS', 'VVS1']);
 
 const CARAT_ALIASES = {
   '22KT': '22Kt',
@@ -228,30 +243,22 @@ const updateGoldTaxSettings = async (req, res) => {
 // === DIAMOND RATES ===
 const addOrUpdateDiamondRate = async (req, res) => {
   try {
-    const { color, clarity, rate, shape } = req.body;
+    const { color, clarity, rate, shape, packetCode } = req.body;
     const businessId = req.user.businessId;
 
-    const trimmedColor = typeof color === 'string' ? color.trim().toUpperCase() : '';
-    const trimmedClarity = typeof clarity === 'string' ? clarity.trim().toUpperCase() : '';
+    const trimmedColor = typeof color === 'string' ? color.trim() : '';
+    const trimmedClarity = typeof clarity === 'string' ? clarity.trim() : '';
     const rawShape = typeof shape === 'string' ? shape.trim() : '';
-    const normalizedShapeInput = rawShape && rawShape.toLowerCase() !== 'none' ? rawShape : '';
+    const normalizedPacketCode = typeof packetCode === 'string' ? packetCode.trim().toUpperCase() : '';
+    const normalizedShapeInput = rawShape && rawShape.toLowerCase() !== 'none' && rawShape !== '0'
+      ? rawShape
+      : '';
+    const normalizedShape = normalizedShapeInput;
 
-    const SHAPE_MAP = {
-      RD: 'Rd',
-      MQ: 'Mq',
-      PR: 'Pr',
-      EM: 'Em',
-      BG: 'Bg',
-      PC: 'Pc',
-    };
-    const normalizedShape = normalizedShapeInput
-      ? SHAPE_MAP[normalizedShapeInput.toUpperCase()] ?? normalizedShapeInput.toUpperCase()
-      : 0;
-
-    if (!trimmedColor && !trimmedClarity && !normalizedShapeInput) {
+    if (!normalizedPacketCode && !trimmedColor && !trimmedClarity && !normalizedShapeInput) {
       return res
         .status(400)
-        .json({ success: false, message: 'At least one of shape, color or clarity is required' });
+        .json({ success: false, message: 'At least one of packet code, shape, color or clarity is required' });
     }
 
     if (rate == null) {
@@ -265,24 +272,25 @@ const addOrUpdateDiamondRate = async (req, res) => {
 
     let promptUpdated = false;
 
-    if (normalizedColor && !DEFAULT_DIAMOND_COLORS.has(normalizedColor)) {
-      const { added } = await addPromptCustomization('diamond', 'color', normalizedColor);
-      promptUpdated = promptUpdated || added;
-    }
-    if (normalizedClarity && !DEFAULT_DIAMOND_CLARITIES.has(normalizedClarity)) {
-      const { added } = await addPromptCustomization('diamond', 'clarity', normalizedClarity);
-      promptUpdated = promptUpdated || added;
-    }
-    const normalizedShapeKey =
-      typeof normalizedShape === 'string' ? normalizedShape.toUpperCase() : '';
+    const colorKey = normalizedColor.toUpperCase();
+    const clarityKey = normalizedClarity.toUpperCase();
+    const shapeKey = normalizedShape.toUpperCase();
 
-    if (normalizedShapeKey && !DEFAULT_DIAMOND_SHAPES.has(normalizedShapeKey)) {
-      const { added } = await addPromptCustomization('diamond', 'shape', normalizedShapeKey);
+    if (normalizedColor && !DEFAULT_DIAMOND_COLORS.has(colorKey)) {
+      const { added } = await addPromptCustomization('diamond', 'color', normalizedColor, businessId);
+      promptUpdated = promptUpdated || added;
+    }
+    if (normalizedClarity && !DEFAULT_DIAMOND_CLARITIES.has(clarityKey)) {
+      const { added } = await addPromptCustomization('diamond', 'clarity', normalizedClarity, businessId);
+      promptUpdated = promptUpdated || added;
+    }
+    if (shapeKey && !DEFAULT_DIAMOND_SHAPES.has(shapeKey)) {
+      const { added } = await addPromptCustomization('diamond', 'shape', normalizedShape, businessId);
       promptUpdated = promptUpdated || added;
     }
 
     if (promptUpdated) {
-      const customizations = await getPromptCustomizations('diamond');
+      const customizations = await getPromptCustomizations('diamond', businessId);
       const snippet = buildCustomPromptSnippet(customizations, 100, 'diamond');
       if (snippet) {
         console.log('[PROMPT] Custom diamond options section (100 words):');
@@ -290,14 +298,17 @@ const addOrUpdateDiamondRate = async (req, res) => {
       }
     }
 
-    const baseQuery = {
-      businessId,
-      color: normalizedColor,
-      clarity: normalizedClarity,
-    };
+    const baseQuery = normalizedPacketCode
+      ? { businessId, packetCode: normalizedPacketCode }
+      : {
+          businessId,
+          color: normalizedColor,
+          clarity: normalizedClarity,
+        };
 
-    const shapeQuery =
-      normalizedShape === 0
+    const shapeQuery = normalizedPacketCode
+      ? {}
+      : !normalizedShape
         ? { $or: [{ shape: 0 }, { shape: { $exists: false } }, { shape: null }, { shape: '' }] }
         : { shape: normalizedShape };
 
@@ -306,9 +317,34 @@ const addOrUpdateDiamondRate = async (req, res) => {
         ...baseQuery,
         ...shapeQuery,
       },
-      { rate, shape: normalizedShape },
+      {
+        rate,
+        shape: normalizedShape,
+        color: normalizedColor,
+        clarity: normalizedClarity,
+        packetCode: normalizedPacketCode,
+      },
       { new: true, upsert: true }
     );
+
+    if (normalizedPacketCode) {
+      const packetCodes = await DiamondRate.find({ businessId, packetCode: { $ne: '' } })
+        .select('packetCode')
+        .lean();
+      const packetCustomization = {
+        colors: [],
+        clarities: [],
+        shapes: [],
+        packetCodes: packetCodes
+          .map((item) => String(item.packetCode || '').trim())
+          .filter(Boolean),
+      };
+      const snippet = buildCustomPromptSnippet(packetCustomization, 100, 'diamond');
+      if (snippet) {
+        console.log('[PROMPT] Custom packet codes section (100 words):');
+        console.log(snippet);
+      }
+    }
 
     res.status(200).json({ success: true, data: diamondRate });
   } catch (error) {
@@ -348,7 +384,7 @@ const addOrUpdateColorstoneRate = async (req, res) => {
     const businessId = req.user.businessId;
 
     const trimmedColor = typeof color === 'string' ? color.trim() : '';
-    const trimmedClarity = typeof clarity === 'string' ? clarity.trim().toUpperCase() : '';
+    const trimmedClarity = typeof clarity === 'string' ? clarity.trim() : '';
 
     if (!trimmedColor && !trimmedClarity) {
       return res
@@ -361,12 +397,15 @@ const addOrUpdateColorstoneRate = async (req, res) => {
     }
 
     let promptUpdated = false;
-    if (trimmedColor) {
-      const { added } = await addPromptCustomization('colorstone', 'color', trimmedColor);
+    const colorKey = trimmedColor.toUpperCase();
+    const clarityKey = trimmedClarity.toUpperCase();
+
+    if (trimmedColor && !DEFAULT_COLORSTONE_COLORS.has(colorKey)) {
+      const { added } = await addPromptCustomization('colorstone', 'color', trimmedColor, businessId);
       promptUpdated = promptUpdated || added;
     }
-    if (trimmedClarity) {
-      const { added } = await addPromptCustomization('colorstone', 'clarity', trimmedClarity);
+    if (trimmedClarity && !DEFAULT_COLORSTONE_CLARITIES.has(clarityKey)) {
+      const { added } = await addPromptCustomization('colorstone', 'clarity', trimmedClarity, businessId);
       promptUpdated = promptUpdated || added;
     }
 
@@ -377,7 +416,7 @@ const addOrUpdateColorstoneRate = async (req, res) => {
     );
 
     if (promptUpdated) {
-      const customizations = await getPromptCustomizations('colorstone');
+      const customizations = await getPromptCustomizations('colorstone', businessId);
       const snippet = buildCustomPromptSnippet(customizations, 100, 'colorstone');
       if (snippet) {
         console.log('[PROMPT] Custom colorstone options section (100 words):');

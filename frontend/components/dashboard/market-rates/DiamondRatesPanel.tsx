@@ -29,6 +29,7 @@ interface DiamondRatesPanelProps {
 }
 
 interface DiamondRateFormErrors {
+  packetCode?: string;
   shape?: string;
   color?: string;
   clarity?: string;
@@ -45,21 +46,19 @@ const SHAPE_VALUE_MAP = new Map(
 
 function normalizeDiamondShape(value: string): string {
   const trimmed = value.trim();
-  if (!trimmed || trimmed.toLowerCase() === 'none') return '';
+  if (!trimmed || trimmed.toLowerCase() === 'none' || trimmed === '0') return '';
   const upper = trimmed.toUpperCase();
-  return SHAPE_VALUE_MAP.get(upper) ?? upper;
+  return SHAPE_VALUE_MAP.get(upper) ?? trimmed;
 }
 
 function formatInr(rate: number): string {
-  if (!Number.isFinite(rate)) return '₹0';
-  return `₹${Math.round(rate).toLocaleString('en-IN')}`;
+  if (!Number.isFinite(rate)) return '0';
+  return Math.round(rate).toLocaleString('en-IN');
 }
 
 function formatTableValue(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return 'None';
-  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
-  if (wordCount > 4) return trimmed.slice(0, 4);
   return trimmed;
 }
 
@@ -88,6 +87,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
   const [rates, setRates] = useState<StoneRate[]>([]);
   const [editingRate, setEditingRate] = useState<StoneRate | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [packetCode, setPacketCode] = useState('');
   const [color, setColor] = useState('');
   const [clarity, setClarity] = useState('');
   const [shape, setShape] = useState('');
@@ -123,7 +123,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
     const defaults = getColorOptionsForStoneType('diamond');
     const fromRates = rates.map((rate) => rate.color).filter(Boolean);
     const merged = [...defaults, ...fromRates]
-      .map((value) => value.trim().toUpperCase())
+      .map((value) => value.trim())
       .filter(Boolean);
     const unique = Array.from(new Set(merged));
     return unique.map((option) => ({ value: option, label: option }));
@@ -132,7 +132,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
   const clarityOptions = useMemo<StoneSelectOption[]>(() => {
     const fromRates = rates.map((rate) => rate.clarity).filter(Boolean);
     const merged = [...STONE_CLARITY_OPTIONS, ...fromRates]
-      .map((value) => value.trim().toUpperCase())
+      .map((value) => value.trim())
       .filter(Boolean);
     const unique = Array.from(new Set(merged));
     return unique.map((option) => ({ value: option, label: option }));
@@ -156,6 +156,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
   }, [rates]);
 
   const resetForm = () => {
+    setPacketCode('');
     setColor('');
     setClarity('');
     setShape('');
@@ -173,6 +174,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
   const openEdit = (rate: StoneRate) => {
     setIsNew(false);
     setEditingRate(rate);
+    setPacketCode(rate.packetCode ?? '');
     setColor(rate.color ?? '');
     setClarity(rate.clarity ?? '');
     const normalized = normalizeDiamondShape(rate.shape ?? '');
@@ -189,15 +191,17 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
   };
 
   const handleSave = async () => {
-    const normalizedColor = color.trim().toUpperCase();
-    const normalizedClarity = clarity.trim().toUpperCase();
+    const normalizedPacketCode = packetCode.trim().toUpperCase();
+    const normalizedColor = color.trim();
+    const normalizedClarity = clarity.trim();
     const normalizedShape = normalizeDiamondShape(shapeRef.current);
     const hasAnyField = Boolean(
-      normalizedShape || normalizedColor || normalizedClarity,
+      normalizedPacketCode || normalizedShape || normalizedColor || normalizedClarity,
     );
 
     const nextErrors: DiamondRateFormErrors = {};
     if (!hasAnyField) {
+      nextErrors.packetCode = 'Enter Packet Code or select Shape, Color or Clarity.';
       nextErrors.shape = 'Select at least Shape, Color or Clarity.';
       nextErrors.color = 'Select at least Shape, Color or Clarity.';
       nextErrors.clarity = 'Select at least Shape, Color or Clarity.';
@@ -214,6 +218,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
         normalizedColor,
         normalizedClarity,
         normalizedShape,
+        normalizedPacketCode,
         editingRate?.id,
       )
     ) {
@@ -233,6 +238,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
         clarity: normalizedClarity,
         rate,
         shape: normalizedShape,
+        packetCode: normalizedPacketCode,
       };
 
       const savedRate = await upsertDiamondRate(payload);
@@ -283,12 +289,13 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
       ) : (
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>
+            <Text style={[styles.headerCell, styles.packetCell]}>Packet Code</Text>
             <Text style={[styles.headerCell, styles.shapeCell]}>Shape</Text>
             <Text style={[styles.headerCell, styles.colorCell]}>Color</Text>
             <Text style={[styles.headerCell, styles.clarityCell]}>Clarity</Text>
-            <Text style={[styles.headerCell, styles.rateCell]}>Rate</Text>
+            <Text style={[styles.headerCell, styles.rateCell]}>Rate (₹)</Text>
             <Text style={[styles.headerCell, styles.actionCell]}>Edit</Text>
-            <Text style={[styles.headerCell, styles.actionCell]}>Del</Text>
+            <Text style={[styles.headerCell, styles.actionCell]}>Delete</Text>
           </View>
 
           {sortedRates.map((rate, index) => {
@@ -301,6 +308,9 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
                 key={rate.id}
                 style={[styles.row, rowBorder && styles.rowBorder]}
               >
+                <Text style={[styles.cell, styles.packetCell]} numberOfLines={1}>
+                  {rate.packetCode?.trim() ? rate.packetCode.trim() : '—'}
+                </Text>
                 <Text style={[styles.cell, styles.shapeCell]} numberOfLines={1}>
                   {shapeText}
                 </Text>
@@ -334,6 +344,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
       <DiamondRateFormModal
         visible={isNew || editingRate !== null}
         isNew={isNew}
+        packetCode={packetCode}
         shape={shape}
         color={color}
         clarity={clarity}
@@ -343,6 +354,13 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
         shapeOptions={shapeOptions}
         colorOptions={colorOptions}
         clarityOptions={clarityOptions}
+        onPacketCodeChange={(value) => {
+          const next = value.toUpperCase();
+          setPacketCode(next);
+          if (formErrors.packetCode || formErrors.duplicate) {
+            setFormErrors((prev) => ({ ...prev, packetCode: undefined, duplicate: undefined }));
+          }
+        }}
         onShapeChange={(value) => {
           setShape(value);
           shapeRef.current = value;
@@ -377,9 +395,11 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
         title="Delete Diamond Rate?"
         subtitle={
           deletingRate
-            ? `This will permanently remove ${shapeLabel(deletingRate.shape)} / ${
-                deletingRate.color || 'None'
-              } / ${deletingRate.clarity || 'None'}.`
+            ? `This will permanently remove ${
+                deletingRate.packetCode?.trim() ? deletingRate.packetCode.trim() : '—'
+              } / ${shapeLabel(deletingRate.shape)} / ${deletingRate.color || 'None'} / ${
+                deletingRate.clarity || 'None'
+              }.`
             : ''
         }
         onClose={() => setDeletingRate(null)}
@@ -431,11 +451,12 @@ const styles = StyleSheet.create({
   rowBorder: {
     ...screenStyles.tableRowBorder,
   },
+  packetCell: { width: 86 },
   shapeCell: { width: 70 },
   colorCell: { width: 48 },
   clarityCell: { width: 52 },
   rateCell: { width: 74 },
-  actionCell: { width: 32, alignItems: 'center', justifyContent: 'center' },
+  actionCell: { width: 48, alignItems: 'center', justifyContent: 'center' },
   iconBtn: {
     alignItems: 'center',
     justifyContent: 'center',

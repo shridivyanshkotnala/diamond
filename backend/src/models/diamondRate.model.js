@@ -17,6 +17,11 @@ const diamondRateSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  packetCode: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   shape: {
     type: mongoose.Schema.Types.Mixed,
     default: 0
@@ -32,5 +37,10 @@ const diamondRateSchema = new mongoose.Schema({
 
 // Ensure uniqueness for a business based on color, clarity, and shape
 diamondRateSchema.index({ businessId: 1, color: 1, clarity: 1, shape: 1 }, { unique: true });
+// Ensure uniqueness for packet codes within a business (non-empty only)
+diamondRateSchema.index(
+  { businessId: 1, packetCode: 1 },
+  { unique: true, partialFilterExpression: { packetCode: { $type: 'string', $ne: '' } } }
+);
 
 module.exports = mongoose.model('DiamondRate', diamondRateSchema);
