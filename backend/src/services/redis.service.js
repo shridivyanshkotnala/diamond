@@ -35,7 +35,13 @@ async function runStoreOp(operation) {
 }
 
 const setScan = async (scanId, data) => {
-  await redis.set(`scan:${scanId}`, JSON.stringify(data), "EX", TTL);
+  return runStoreOp(async (backend) => {
+    if (backend === 'memory') {
+      memoryStore.set(scanKey(scanId), JSON.stringify(data));
+      return;
+    }
+    await redis.set(`scan:${scanId}`, JSON.stringify(data), "EX", TTL);
+  });
 };
 
 const getScan = async (scanId) => {
