@@ -181,3 +181,4 @@ For questions or support, contact:
 - **Divyansh Kotnala** - Product Owner
 - Create an issue in this repository
 # jewellery-tag-intelligence-platform
+# diamond
