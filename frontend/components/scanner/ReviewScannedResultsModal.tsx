@@ -4,7 +4,6 @@ import { Check } from 'lucide-react-native';
 
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
 import { PriceCard } from '@/components/scanner/PriceCard';
-import { CalculationRateSection } from '@/components/scanner/CalculationRateSection';
 import { useScannerStore } from '@/store/scannerStore';
 import { RefreshCw } from 'lucide-react-native';
 import { OutlineButton } from '@/components/scanner/OutlineButton';
@@ -105,6 +104,100 @@ export function ReviewScannedResultsModal({
     setColorstoneEntries(resolved.colorstones);
     setRateErrors({});
   }, [stoneDataKey, jewelleryType, structuredData, scanData]);
+
+  const buildClubbedEntry = useCallback(
+    (stoneType: 'diamond' | 'colorstone', entries: StoneEntry[]): StoneEntry => {
+      const totalWeight = entries.reduce((sum, entry) => {
+        const parsed = Number.parseFloat(entry.weight.replace(/[^\d.]/g, ''));
+        return sum + (Number.isFinite(parsed) ? parsed : 0);
+      }, 0);
+      const formattedWeight = totalWeight > 0
+        ? String(totalWeight.toFixed(3)).replace(/\.?0+$/, '')
+        : '';
+
+      if (stoneType === 'diamond') {
+        return {
+          stoneType,
+          weight: formattedWeight,
+          shape: '',
+          packetCode: '',
+          color: '',
+          clarity: '',
+          quality: '',
+          rate: '',
+          discountPercent: '0',
+          pieces: '',
+        };
+      }
+
+      return {
+        stoneType,
+        weight: formattedWeight,
+        color: '',
+        clarity: '',
+        quality: '',
+        rate: '',
+      };
+    },
+  );
+
+  const toggleDiamondClubbing = useCallback(
+    (enabled: boolean) => {
+      if (diamondEntries.length < 2 && enabled) return;
+
+      if (enabled) {
+        onFieldChange('clubbedDiamondsBackup', JSON.stringify(diamondEntries));
+        onFieldChange('clubDiamonds', true);
+        const clubbed = buildClubbedEntry('diamond', diamondEntries);
+        setDiamondEntries([clubbed]);
+        onStoneEntriesChange([clubbed], colorstoneEntries);
+        return;
+      }
+
+      const backup = scanData.clubbedDiamondsBackup;
+      const restored = backup ? (JSON.parse(backup) as StoneEntry[]) : diamondEntries;
+      onFieldChange('clubDiamonds', false);
+      setDiamondEntries(restored);
+      onStoneEntriesChange(restored, colorstoneEntries);
+    },
+    [
+      diamondEntries,
+      colorstoneEntries,
+      onFieldChange,
+      onStoneEntriesChange,
+      buildClubbedEntry,
+      scanData.clubbedDiamondsBackup,
+    ],
+  );
+
+  const toggleColorstoneClubbing = useCallback(
+    (enabled: boolean) => {
+      if (colorstoneEntries.length < 2 && enabled) return;
+
+      if (enabled) {
+        onFieldChange('clubbedColorstonesBackup', JSON.stringify(colorstoneEntries));
+        onFieldChange('clubColorstones', true);
+        const clubbed = buildClubbedEntry('colorstone', colorstoneEntries);
+        setColorstoneEntries([clubbed]);
+        onStoneEntriesChange(diamondEntries, [clubbed]);
+        return;
+      }
+
+      const backup = scanData.clubbedColorstonesBackup;
+      const restored = backup ? (JSON.parse(backup) as StoneEntry[]) : colorstoneEntries;
+      onFieldChange('clubColorstones', false);
+      setColorstoneEntries(restored);
+      onStoneEntriesChange(diamondEntries, restored);
+    },
+    [
+      diamondEntries,
+      colorstoneEntries,
+      onFieldChange,
+      onStoneEntriesChange,
+      buildClubbedEntry,
+      scanData.clubbedColorstonesBackup,
+    ],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -260,12 +353,6 @@ export function ReviewScannedResultsModal({
         </Pressable>
       ) : null}
 
-      {requiresKaratSelection && !scanData.karat ? (
-        <Text className="mb-3 text-xs text-danger-text">
-          Select a karat from Tunch Purity before confirming.
-        </Text>
-      ) : null}
-
       <ScannerFinalTab
         scanData={scanData}
         structuredData={structuredData}
@@ -279,16 +366,15 @@ export function ReviewScannedResultsModal({
         diamondShapeOptions={diamondShapeOptions}
         editable
         canEditPurityPercent={canEditPurityPercent}
+          calculationRateAccess={calculationRateAccess}
+          clubDiamonds={scanData.clubDiamonds}
+          clubColorstones={scanData.clubColorstones}
+          onToggleClubDiamonds={toggleDiamondClubbing}
+          onToggleClubColorstones={toggleColorstoneClubbing}
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}
         onRateErrorChange={handleStoneRateErrorChange}
         showOtherChargesRemarksError={missingOtherChargesRemarks}
-      />
-
-      <CalculationRateSection
-        value={scanData.calculationRate}
-        onChange={(value) => onFieldChange('calculationRate', value)}
-        access={calculationRateAccess}
       />
 
       {confirmed ? (

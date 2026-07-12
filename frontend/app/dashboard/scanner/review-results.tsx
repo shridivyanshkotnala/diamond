@@ -29,6 +29,7 @@ import {
   resolveScannedKarat,
 } from '@/utils/formulaUtils';
 import { getReview, submitReview } from '@/utils/scanApi';
+import { fetchLabourRate } from '@/utils/ratesApi';
 import { scanItemToStructuredData, structuredDataToScanItem } from '@/utils/scanMappers';
 import { resolveCurrentEmployee } from '@/utils/settingsAccess';
 import {
@@ -135,13 +136,42 @@ export default function ReviewResultsScreen() {
 
       const data = await getReview(scanId);
       const baseScanData = applyClientFormulaRules(structuredDataToScanItem(data.structuredData));
-      const adjustedScanData =
+      let adjustedScanData =
         calculationRateAccess === 'both'
           ? baseScanData
           : {
               ...baseScanData,
               calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
             };
+
+      const hasLabourValues =
+        Boolean(adjustedScanData.labourChargeAmount?.trim()) ||
+        Boolean(adjustedScanData.labourPurityPercent?.trim());
+
+      if (!hasLabourValues) {
+        try {
+          const labourRate = await fetchLabourRate();
+          if (labourRate) {
+            if (labourRate.chargeType === 'AMOUNT') {
+              adjustedScanData = {
+                ...adjustedScanData,
+                labourChargeAmount: String(labourRate.value ?? ''),
+                labourChargeUnit:
+                  labourRate.rupeesUnit ?? adjustedScanData.labourChargeUnit,
+                labourPurityPercent: '',
+              };
+            } else if (labourRate.chargeType === 'PERCENTAGE') {
+              adjustedScanData = {
+                ...adjustedScanData,
+                labourPurityPercent: `${labourRate.value ?? ''}%`,
+                labourChargeAmount: '',
+              };
+            }
+          }
+        } catch {
+          // Ignore labour settings fetch errors and keep scan values.
+        }
+      }
       setStructuredData(data.structuredData);
       updateScanData(adjustedScanData);
     } catch (error) {

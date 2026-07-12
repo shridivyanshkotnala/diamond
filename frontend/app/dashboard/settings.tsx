@@ -5,18 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
+import { BusinessProfileBanner } from '@/components/settings/BusinessProfileBanner';
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useSettingsAccess } from '@/hooks/useSettingsAccess';
 import { useAuthStore } from '@/store/authStore';
-
-const PROFILE_GREEN = '#1B3022';
-const ACCENT_GOLD = '#D4C19C';
+import { getBusinessProfile, formatProfileValue } from '@/utils/businessProfile';
 const LOGOUT_RED = '#EA4335';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const registration = useAuthStore((s) => s.registration);
   const logout = useAuthStore((s) => s.logout);
+  const profile = getBusinessProfile(registration);
   const { visibleMenuItems } = useSettingsAccess();
 
   const handleLogout = () => {
@@ -39,15 +40,19 @@ export default function SettingsScreen() {
           </Pressable>
           <Text style={screenStyles.pageTitle}>Settings</Text>
         </View>
-
-        <Pressable
-          onPress={() => router.push('/dashboard/business-profile' as Href)}
-          style={styles.profileCard}
-        >
-          <View style={styles.avatar} />
-          <Text style={styles.profileName}>
-            Pratham{'\n'}International
-          </Text>
+        <Pressable onPress={() => router.push('/dashboard/business-profile' as Href)}>
+          <BusinessProfileBanner
+            businessName={formatProfileValue(profile.businessName, 'Your Business')}
+            secondaryText={
+              profile.gstNumber
+                ? `GSTIN: ${profile.gstNumber}`
+                : profile.businessType
+                  ? profile.businessType
+                  : registration.businessId
+                    ? `Business ID: ${registration.businessId}`
+                    : 'Registered Organization'
+            }
+          />
         </Pressable>
 
         <View style={styles.menuList}>
@@ -110,29 +115,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-  },
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: PROFILE_GREEN,
-    borderRadius: Radius.input,
-    marginHorizontal: Spacing.screenHorizontal,
-    marginTop: Spacing.lg,
-    padding: Spacing.lg,
-    gap: Spacing.lg,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.white,
-  },
-  profileName: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 24,
-    color: ACCENT_GOLD,
   },
   menuList: {
     paddingHorizontal: Spacing.screenHorizontal,

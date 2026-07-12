@@ -14,7 +14,7 @@ import { BottomNav } from '@/components/dashboard/BottomNav';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Colors, Spacing } from '@/constants/theme';
 import { useMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
-import type { GoldRate } from '@/types/rates';
+import type { GoldRate, TaxSettings } from '@/types/rates';
 import { ApiError } from '@/utils/apiClient';
 import { formatKaratLabel } from '@/utils/goldRateUtils';
 import { fetchGoldRates } from '@/utils/ratesApi';
@@ -43,6 +43,7 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [mcxLiveRate, setMcxLiveRate] = useState<number | null>(null);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
+  const [goldTaxSettings, setGoldTaxSettings] = useState<TaxSettings | undefined>();
   const { employee, userRole } = useSettingsAccess();
   const globalMatrixValues = useMatricesStore((s) => s.values);
   
@@ -52,6 +53,29 @@ export default function DashboardScreen() {
     : globalMatrixValues;
   
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
+  const twentyFourKRate = useMemo(() => {
+    const matched = sortedGoldRates.find((rate) => {
+      const carat = rate.carat.toLowerCase();
+      return carat.includes('24') || Math.abs(rate.purity - 99.9) < 0.2;
+    });
+
+    if (matched) return matched;
+    if (mcxLiveRate == null && !goldTaxSettings) return null;
+
+    const cashRate = goldTaxSettings?.cashFinalRate ?? mcxLiveRate ?? 0;
+    const rtgsRate = goldTaxSettings?.rtgsFinalRate ?? mcxLiveRate ?? 0;
+
+    return {
+      id: '24k-synthetic',
+      carat: '24Kt',
+      purity: 99.9,
+      finalRate: rtgsRate,
+      cashRate,
+      rtgsRate,
+      baseRate: mcxLiveRate ?? rtgsRate,
+      mcxRate: mcxLiveRate ?? undefined,
+    } satisfies GoldRate;
+  }, [goldTaxSettings, mcxLiveRate, sortedGoldRates]);
   const today = new Date();
   const dayLabel = today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const dateNum = today.getDate();
@@ -62,6 +86,7 @@ export default function DashboardScreen() {
       const gold = await fetchGoldRates();
       setMcxLiveRate(gold.mcxLiveRate);
       setGoldRates(gold.rates);
+      setGoldTaxSettings(gold.taxSettings);
     } catch (error) {
       if (showLoader) {
         const message =
@@ -124,8 +149,36 @@ export default function DashboardScreen() {
                 </View>
               ) : null}
 
+              {twentyFourKRate ? (
+                <View style={styles.rateCard}>
+                  <View style={styles.rateCardHeader}>
+                    <Text style={styles.cardKaratLabel}>Gold (24K) 99.9%</Text>
+                  </View>
+
+                  <View style={styles.rateCardBody}>
+                    <View style={styles.rateBadge}>
+                      <Text style={styles.rateBadgeValue}>
+                        ₹ {(twentyFourKRate.cashRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
+                    </View>
+                    <View style={styles.rateBadge}>
+                      <Text style={styles.rateBadgeValue}>
+                        ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+
               {sortedGoldRates.length > 0 ? (
-                sortedGoldRates.map((rate) => {
+                sortedGoldRates
+                  .filter((rate) => {
+                    const carat = rate.carat.toLowerCase();
+                    return !(carat.includes('24') || Math.abs(rate.purity - 99.9) < 0.2);
+                  })
+                  .map((rate) => {
                   const karatPrefix = rate.carat.replace('Kt', 'k').toLowerCase();
                   const showCash = matrixValues[`${karatPrefix}_cash` as MatrixKey];
                   const showRtgs = matrixValues[`${karatPrefix}_rtgs` as MatrixKey];
@@ -289,7 +342,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: Spacing.lg,
+    padding: Spacing.md,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -300,8 +353,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    paddingBottom: Spacing.md,
-    marginBottom: Spacing.md,
+    paddingBottom: Spacing.sm,
+    marginBottom: Spacing.sm,
     alignItems: 'center',
   },
   cardKaratLabel: {
@@ -317,8 +370,8 @@ const styles = StyleSheet.create({
   rateBadge: {
     backgroundColor: '#1B3022',
     borderRadius: 8,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 120,

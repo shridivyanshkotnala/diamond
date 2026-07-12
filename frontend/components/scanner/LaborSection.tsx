@@ -206,26 +206,29 @@ export function LaborSection({
 
       {method === 'rate' ? (
         <View className="rounded-input border border-border bg-white p-3.5">
-          <Text className="mb-1 text-xs font-semibold text-text-muted">Labour Rate (₹)</Text>
-          <View className="h-11 min-w-0 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
-            <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
-            <TextInput
-              value={values.labourChargeAmount}
-              onChangeText={handleChargeChange}
-              placeholder="Enter rate"
-              placeholderTextColor={Colors.placeholder}
-              keyboardType="number-pad"
-              className="flex-1 text-sm text-text-primary"
-            />
-          </View>
-
-          <View className="mt-3">
-            <Text className="mb-1 text-xs font-semibold text-text-muted">Weight Used</Text>
-            <WeightDropdown
-              value={values.labourWeightBasis}
-              onChange={(labourWeightBasis) => onChange({ labourWeightBasis })}
-              disabled={false}
-            />
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Text className="mb-1 text-xs font-semibold text-text-muted">Labour Rate (₹)</Text>
+              <View className="h-11 min-w-0 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
+                <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
+                <TextInput
+                  value={values.labourChargeAmount}
+                  onChangeText={handleChargeChange}
+                  placeholder="Enter rate"
+                  placeholderTextColor={Colors.placeholder}
+                  keyboardType="number-pad"
+                  className="flex-1 text-sm text-text-primary"
+                />
+              </View>
+            </View>
+            <View className="flex-1">
+              <Text className="mb-1 text-xs font-semibold text-text-muted">Weight Used</Text>
+              <WeightDropdown
+                value={values.labourWeightBasis}
+                onChange={(labourWeightBasis) => onChange({ labourWeightBasis })}
+                disabled={false}
+              />
+            </View>
           </View>
         </View>
       ) : (

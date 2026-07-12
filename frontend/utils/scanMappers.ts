@@ -116,6 +116,10 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   result.otherChargesAmount = '';
   result.otherChargesItems = [];
   result.otherChargesRemarks = '';
+  result.clubDiamonds = false;
+  result.clubColorstones = false;
+  result.clubbedDiamondsBackup = '';
+  result.clubbedColorstonesBackup = '';
   result.customPurityPercent = '';
   result.goldRate = '';
 

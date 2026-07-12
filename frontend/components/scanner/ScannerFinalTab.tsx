@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { Check } from 'lucide-react-native';
 
 import { getLaborValuesFromScanData, LaborSection } from '@/components/scanner/LaborSection';
 import { LabourChargeResultSection } from '@/components/scanner/LabourChargeResultSection';
@@ -14,7 +15,6 @@ import type { GoldRate, TaxSettings } from '@/types/rates';
 import type { JewelleryType, ScanItemData, StoneEntry, StructuredScanData } from '@/types/scanner';
 import { resolveScannedKarat } from '@/utils/formulaUtils';
 import { formatIndianCurrency } from '@/utils/scanPriceCalculation';
-import { buildSequentialStoneBlocks } from '@/utils/stoneSequenceUtils';
 import { OtherChargesSection } from '@/components/scanner/OtherChargesSection';
 
 interface ScannerFinalTabProps {
@@ -40,6 +40,11 @@ interface ScannerFinalTabProps {
   showLabourValidation?: boolean;
   showOtherChargesRemarksError?: boolean;
   gstNote?: string;
+  calculationRateAccess?: 'rtgs' | 'cash' | 'both';
+  clubDiamonds?: boolean;
+  clubColorstones?: boolean;
+  onToggleClubDiamonds?: (enabled: boolean) => void;
+  onToggleClubColorstones?: (enabled: boolean) => void;
 }
 
 export function ScannerFinalTab({
@@ -61,14 +66,25 @@ export function ScannerFinalTab({
   showLabourValidation = false,
   showOtherChargesRemarksError = false,
   gstNote = 'MRP = Gold + Stones + Labour + Other Charges (client-side)',
+  calculationRateAccess = 'both',
+  clubDiamonds = false,
+  clubColorstones = false,
+  onToggleClubDiamonds,
+  onToggleClubColorstones,
 }: ScannerFinalTabProps) {
   const [selectedKarat, setSelectedKarat] = useState(
     () => resolveScannedKarat(scanData.karat, scanData.tunch) || '18K',
   );
 
-  const editableStoneBlocks = useMemo(
-    () => buildSequentialStoneBlocks(diamonds, colorstones, jewelleryType),
-    [diamonds, colorstones, jewelleryType],
+  // Intentionally left without combined blocks; render by type for clubbing.
+
+  const diamondBlocks = useMemo(
+    () => diamonds.map((entry, index) => ({ entry, index })),
+    [diamonds],
+  );
+  const colorstoneBlocks = useMemo(
+    () => colorstones.map((entry, index) => ({ entry, index })),
+    [colorstones],
   );
 
   const handleKaratChange = (karat: string) => {
@@ -94,6 +110,7 @@ export function ScannerFinalTab({
           goldTaxSettings={goldTaxSettings}
           mcxLiveRate={mcxLiveRate}
           calculationMode={scanData.calculationRate}
+          calculationRateAccess={calculationRateAccess}
           editable
           canEditPurityPercent={canEditPurityPercent}
           onFieldChange={(field, value) => {
@@ -111,32 +128,91 @@ export function ScannerFinalTab({
         />
       )}
 
-      {editable
-        ? editableStoneBlocks.map((block) => (
+      {editable ? (
+        <>
+          {diamonds.length > 1 || clubDiamonds ? (
+            <View className="mb-3 rounded-input border border-border bg-white px-3.5 py-3">
+              <Pressable
+                onPress={() => onToggleClubDiamonds?.(!clubDiamonds)}
+                className="flex-row items-center gap-2"
+              >
+                <View
+                  className={`h-4 w-4 items-center justify-center rounded border ${
+                    clubDiamonds ? 'border-primary bg-primary' : 'border-border bg-white'
+                  }`}
+                >
+                  {clubDiamonds ? <Check size={12} color="#FFFFFF" /> : null}
+                </View>
+                <Text className="text-sm text-text-primary">Club Diamonds</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {diamondBlocks.map((block, idx) => (
             <StoneTypeRowCard
-              key={`stone-${block.sequenceIndex}-${block.stoneType}-${block.sourceIndex}`}
-              title={block.displayTitle}
-              stoneType={block.stoneType}
+              key={`diamond-${block.index}`}
+              title={clubDiamonds ? 'Diamond' : `Diamond ${idx + 1}`}
+              stoneType="diamond"
               values={{
                 weight: block.entry.weight,
                 color: block.entry.color,
                 clarity: block.entry.clarity,
                 quality: block.entry.quality,
                 rate: block.entry.rate,
+                discountPercent: block.entry.discountPercent,
                 shape: block.entry.shape,
                 packetCode: block.entry.packetCode,
               }}
-              shapeOptions={block.stoneType === 'diamond' ? diamondShapeOptions : undefined}
+              shapeOptions={diamondShapeOptions}
               editable
-              onChange={(values) =>
-                onStoneEntryChange?.(block.stoneType, block.sourceIndex, values)
-              }
+              onChange={(values) => onStoneEntryChange?.('diamond', block.index, values)}
               onRateErrorChange={(hasError) =>
-                onRateErrorChange?.(block.sequenceIndex, hasError)
+                onRateErrorChange?.(idx, hasError)
               }
             />
-          ))
-        : <StoneTypeSequence rows={pricing.stoneRows} />}
+          ))}
+
+          {colorstones.length > 1 || clubColorstones ? (
+            <View className="mb-3 rounded-input border border-border bg-white px-3.5 py-3">
+              <Pressable
+                onPress={() => onToggleClubColorstones?.(!clubColorstones)}
+                className="flex-row items-center gap-2"
+              >
+                <View
+                  className={`h-4 w-4 items-center justify-center rounded border ${
+                    clubColorstones ? 'border-primary bg-primary' : 'border-border bg-white'
+                  }`}
+                >
+                  {clubColorstones ? <Check size={12} color="#FFFFFF" /> : null}
+                </View>
+                <Text className="text-sm text-text-primary">Club Colorstones</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {colorstoneBlocks.map((block, idx) => (
+            <StoneTypeRowCard
+              key={`colorstone-${block.index}`}
+              title={clubColorstones ? 'Colorstone' : `Colorstone ${idx + 1}`}
+              stoneType="colorstone"
+              values={{
+                weight: block.entry.weight,
+                color: block.entry.color,
+                clarity: block.entry.clarity,
+                quality: block.entry.quality,
+                rate: block.entry.rate,
+              }}
+              editable
+              onChange={(values) => onStoneEntryChange?.('colorstone', block.index, values)}
+              onRateErrorChange={(hasError) =>
+                onRateErrorChange?.(diamondBlocks.length + idx, hasError)
+              }
+            />
+          ))}
+        </>
+      ) : (
+        <StoneTypeSequence rows={pricing.stoneRows} />
+      )}
 
       {editable ? (
         <LaborSection

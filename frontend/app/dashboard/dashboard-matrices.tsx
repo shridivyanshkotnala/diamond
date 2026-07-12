@@ -1,58 +1,149 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { MatrixCheckboxRow } from '@/components/settings/MatrixCheckboxRow';
-import {
-  GOLD_MATRIX_SECTIONS,
-  type MatrixKey,
-} from '@/constants/dashboardMatrices';
+import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { useMatricesStore } from '@/store/matricesStore';
 import { useRequireSettingsAccess } from '@/hooks/useSettingsAccess';
+import { useMatricesStore } from '@/store/matricesStore';
+import { updateDashboardMatrices } from '@/utils/matricesApi';
 
-const ACCENT_GOLD = '#C5A059';
-const BUTTON_GREEN = '#1B2E26';
+type DashboardMatrixKey =
+  | '24k_mcx'
+  | '24k_rtgs'
+  | '24k_cash'
+  | '22k_rtgs'
+  | '22k_cash'
+  | '20k_rtgs'
+  | '20k_cash'
+  | '18k_rtgs'
+  | '18k_cash'
+  | '14k_rtgs'
+  | '14k_cash'
+  | '9k_rtgs'
+  | '9k_cash';
+
+type DashboardMatrixValues = Record<DashboardMatrixKey, boolean>;
+
+type DashboardMatrixSection = {
+  sectionLabel: string;
+  rows: Array<{ key: DashboardMatrixKey; label: string }>;
+};
+
+const DASHBOARD_MATRIX_SECTIONS: DashboardMatrixSection[] = [
+  {
+    sectionLabel: '24K GOLD',
+    rows: [
+      { key: '24k_mcx', label: ' MCX Rate ' },
+      { key: '24k_rtgs', label: ' RTGS Rate ' },
+      { key: '24k_cash', label: ' Cash Rate ' },
+    ],
+  },
+  {
+    sectionLabel: '22K GOLD',
+    rows: [
+      { key: '22k_rtgs', label: ' RTGS Rate ' },
+      { key: '22k_cash', label: ' Cash Rate ' },
+    ],
+  },
+  {
+    sectionLabel: '20K GOLD',
+    rows: [
+      { key: '20k_rtgs', label: ' RTGS Rate ' },
+      { key: '20k_cash', label: ' Cash Rate ' },
+    ],
+  },
+  {
+    sectionLabel: '18K GOLD',
+    rows: [
+      { key: '18k_rtgs', label: ' RTGS Rate ' },
+      { key: '18k_cash', label: ' Cash Rate ' },
+    ],
+  },
+  {
+    sectionLabel: '14K GOLD',
+    rows: [
+      { key: '14k_rtgs', label: ' RTGS Rate ' },
+      { key: '14k_cash', label: ' Cash Rate ' },
+    ],
+  },
+  {
+    sectionLabel: '9K GOLD',
+    rows: [
+      { key: '9k_rtgs', label: ' RTGS Rate ' },
+      { key: '9k_cash', label: ' Cash Rate ' },
+    ],
+  },
+];
+
+const DEFAULT_DASHBOARD_MATRIX_VALUES: DashboardMatrixValues = {
+  '24k_mcx': true,
+  '24k_rtgs': true,
+  '24k_cash': true,
+  '22k_rtgs': true,
+  '22k_cash': true,
+  '20k_rtgs': true,
+  '20k_cash': true,
+  '18k_rtgs': true,
+  '18k_cash': true,
+  '14k_rtgs': true,
+  '14k_cash': true,
+  '9k_rtgs': true,
+  '9k_cash': true,
+};
+
+function normalizeMatrixValues(values: Record<string, boolean> | null | undefined): DashboardMatrixValues {
+  return {
+    ...DEFAULT_DASHBOARD_MATRIX_VALUES,
+    ...(values ?? {}),
+  };
+}
 
 export default function DashboardMatricesScreen() {
   const allowed = useRequireSettingsAccess('matrices');
   const router = useRouter();
   const storedValues = useMatricesStore((s) => s.values);
-  const applyValues = useMatricesStore((s) => s.applyValues);
+  const [draft, setDraft] = useState<DashboardMatrixValues>(() => normalizeMatrixValues(storedValues));
 
-  const [draft, setDraft] = useState(storedValues);
-  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    setDraft(normalizeMatrixValues(storedValues));
+  }, [storedValues]);
 
   if (!allowed) return null;
 
-  const toggle = (key: MatrixKey) => {
-    setDraft((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const persistToggle = async (
+    key: DashboardMatrixKey,
+    nextValue: boolean,
+    previousValue: boolean,
+  ) => {
+    const nextDraft = { ...draft, [key]: nextValue };
 
-  const handleSave = async () => {
-    setSaving(true);
     try {
-      await applyValues(draft);
-      router.back();
-    } finally {
-      setSaving(false);
+      const updated = await updateDashboardMatrices(nextDraft as Record<string, boolean>);
+      const normalized = normalizeMatrixValues(updated ?? nextDraft);
+      setDraft(normalized);
+      useMatricesStore.setState((state) => ({
+        values: {
+          ...state.values,
+          ...normalized,
+        },
+      }));
+    } catch (error) {
+      setDraft((current) => ({ ...current, [key]: previousValue }));
+      Alert.alert('Unable to save dashboard settings', 'The change could not be saved. Please try again.');
+      console.error('Failed to update dashboard matrices', error);
     }
   };
 
-  const handleRestore = () => {
-    setDraft(storedValues);
+  const toggle = (key: DashboardMatrixKey) => {
+    const previousValue = draft[key];
+    const nextValue = !previousValue;
+    setDraft((current) => ({ ...current, [key]: nextValue }));
+    void persistToggle(key, nextValue, previousValue);
   };
 
   return (
@@ -64,9 +155,7 @@ export default function DashboardMatricesScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
             <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2} />
           </Pressable>
-          <Text style={styles.headerTitle}>
-            Home Dashboard{'\n'}Matrices Control
-          </Text>
+          <Text style={styles.headerTitle}>Dashboard Settings</Text>
         </View>
 
         <View style={styles.card}>
@@ -75,15 +164,7 @@ export default function DashboardMatricesScreen() {
             contentContainerStyle={styles.cardScroll}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.cardTitle}>Dashboard Matrices</Text>
-            <Text style={styles.cardSubtitle}>Price visibility on home screen</Text>
-
-            <View style={styles.goldHeader}>
-              <View style={styles.goldDot} />
-              <Text style={styles.goldHeaderText}>GOLD BREAKDOWNS</Text>
-            </View>
-
-            {GOLD_MATRIX_SECTIONS.map((section) => (
+            {DASHBOARD_MATRIX_SECTIONS.map((section) => (
               <View key={section.sectionLabel} style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionHeaderText}>{section.sectionLabel}</Text>
@@ -99,40 +180,6 @@ export default function DashboardMatricesScreen() {
                 ))}
               </View>
             ))}
-
-
-
-            <View style={styles.permissionSection}>
-              <MatrixCheckboxRow
-                label="Permission to Edit Market Prices"
-                checked={draft.edit_market_prices}
-                onToggle={() => toggle('edit_market_prices')}
-                showDivider={false}
-              />
-            </View>
-
-            <View style={styles.actionButtons}>
-              <Pressable
-                onPress={handleRestore}
-                disabled={saving}
-                style={[styles.restoreBtn, saving && styles.btnDisabled]}
-              >
-                <Text style={styles.restoreBtnText}>Restore</Text>
-              </Pressable>
-              
-              <TouchableOpacity
-                onPress={handleSave}
-                disabled={saving}
-                activeOpacity={0.9}
-                style={[styles.saveBtn, saving && styles.btnDisabled]}
-              >
-                {saving ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.saveBtnText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
           </ScrollView>
         </View>
       </View>
@@ -183,42 +230,11 @@ const styles = StyleSheet.create({
   },
   cardScroll: {
     paddingHorizontal: Spacing.cardPadding,
-    paddingTop: 28,
+    paddingTop: 20,
     paddingBottom: 120,
   },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    lineHeight: 28,
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: Colors.textSecondary,
-    marginTop: 8,
-  },
-  goldHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 8,
-    gap: 8,
-  },
-  goldDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: ACCENT_GOLD,
-  },
-  goldHeaderText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: ACCENT_GOLD,
-    letterSpacing: 0.6,
-  },
   section: {
-    marginTop: 8,
+    marginTop: 12,
   },
   sectionHeader: {
     backgroundColor: '#F0F0F0',
@@ -232,44 +248,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textSecondary,
     letterSpacing: 0.4,
-  },
-  permissionSection: {
-    marginTop: 16,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: 24,
-  },
-  restoreBtn: {
-    flex: 1,
-    height: Spacing.buttonHeight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-  },
-  restoreBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  saveBtn: {
-    flex: 1,
-    height: Spacing.buttonHeight,
-    backgroundColor: BUTTON_GREEN,
-    borderRadius: Radius.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnDisabled: {
-    opacity: 0.7,
-  },
-  saveBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
   },
 });

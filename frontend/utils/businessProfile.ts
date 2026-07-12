@@ -35,10 +35,6 @@ export function getBusinessProfile(registration: Partial<RegistrationData>): Bus
   return hasData ? profile : EMPTY_PROFILE;
 }
 
-export function getEditableBusinessProfile(registration: Partial<RegistrationData>): BusinessProfile {
-  return buildProfile(registration);
-}
-
 export function formatProfileValue(value: string, fallback = 'Not set'): string {
   return value.trim() || fallback;
 }

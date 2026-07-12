@@ -7,7 +7,7 @@ import {
 } from '@/utils/goldRateUtils';
 import { hasActiveLabourPurity, parseNumericLabourValue } from '@/utils/labourUtils';
 import { buildQuality } from '@/utils/qualityUtils';
-import { parseNumericValue } from '@/utils/scanPriceCalculation';
+import { computeStoneAmountWithDiscount, parseNumericValue } from '@/utils/scanPriceCalculation';
 
 export const GST_RATE_OPTIONS = [0, 3, 5, 9, 18, 28] as const;
 export type GstRateOption = (typeof GST_RATE_OPTIONS)[number];
@@ -76,6 +76,10 @@ export function buildStoneLineItemRows(stones: StoneEntry[]): InvoiceLineItemRow
   return stones.map((entry, index) => {
     const qty = parseWeightValue(entry.weight);
     const price = parseNumericValue(entry.rate);
+    const amount =
+      entry.stoneType === 'diamond'
+        ? computeStoneAmountWithDiscount(entry.weight, entry.rate, entry.discountPercent)
+        : qty * price;
     const note =
       [entry.color, entry.clarity].filter(Boolean).join(' / ') ||
       entry.quality ||
@@ -89,7 +93,7 @@ export function buildStoneLineItemRows(stones: StoneEntry[]): InvoiceLineItemRow
       qty,
       qtyUnit: 'Ct',
       price,
-      amount: qty * price,
+      amount,
     };
   });
 }

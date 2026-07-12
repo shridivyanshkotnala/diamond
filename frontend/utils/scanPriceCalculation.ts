@@ -116,6 +116,18 @@ export function computeStoneAmount(weight: string, rate: string): number {
   return carat * rateValue;
 }
 
+export function computeStoneAmountWithDiscount(
+  weight: string,
+  rate: string,
+  discountPercent?: string,
+): number {
+  const baseAmount = computeStoneAmount(weight, rate);
+  if (baseAmount <= 0) return 0;
+  const percent = parseNumericValue(discountPercent ?? '0');
+  const clamped = Math.min(100, Math.max(0, percent));
+  return baseAmount - baseAmount * (clamped / 100);
+}
+
 export function resolveGoldRatePerGram(
   structuredData?: Record<string, string>,
   goldRates?: GoldRate[],
@@ -286,7 +298,10 @@ export function buildStoneAmountRow(
 ): StoneAmountRow {
   const quality =
     entry.quality.trim() || buildQuality(entry.color, entry.clarity);
-  const amount = computeStoneAmount(entry.weight, entry.rate);
+  const amount =
+    stoneType === 'diamond'
+      ? computeStoneAmountWithDiscount(entry.weight, entry.rate, entry.discountPercent)
+      : computeStoneAmount(entry.weight, entry.rate);
 
   return {
     sequenceIndex,

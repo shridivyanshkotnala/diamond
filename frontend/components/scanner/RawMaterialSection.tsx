@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { ChevronDown } from 'lucide-react-native';
 
 import { useFormulaStore } from '@/store/formulaStore';
 
@@ -9,6 +10,7 @@ import { FormInput } from '@/components/scanner/FormInput';
 import { FormSection } from '@/components/scanner/FormSection';
 import { SearchableSelectDropdown } from '@/components/scanner/SearchableSelectDropdown';
 import type { SearchableSelectOption } from '@/components/scanner/SearchableSelectDropdown';
+import { Colors } from '@/constants/theme';
 import {
   KARAT_DROPDOWN_OPTIONS,
   computePureWeightGrams,
@@ -32,6 +34,7 @@ interface RawMaterialSectionProps {
   goldTaxSettings?: TaxSettings;
   mcxLiveRate?: number;
   calculationMode?: 'rtgs' | 'cash';
+  calculationRateAccess?: 'rtgs' | 'cash' | 'both';
 }
 
 function normalizeRateKarat(carat: string): string {
@@ -68,8 +71,17 @@ export function RawMaterialSection({
   goldRates,
   goldTaxSettings,
   mcxLiveRate = 0,
-  calculationMode,
+  calculationMode = 'rtgs',
+  calculationRateAccess = 'both',
 }: RawMaterialSectionProps) {
+  const [rateOpen, setRateOpen] = useState(false);
+  const rateOptions: Array<{ value: 'rtgs' | 'cash'; label: string }> = [
+    { value: 'rtgs', label: 'RTGS' },
+    { value: 'cash', label: 'Cash' },
+  ];
+  const selectedRateLabel =
+    rateOptions.find((option) => option.value === calculationMode)?.label ?? 'RTGS';
+  const fixedRateLabel = calculationRateAccess === 'cash' ? 'Cash' : 'RTGS';
   const activeFormula = useFormulaStore((s) => s.activeFormula);
   const formula2Rules = useFormulaStore((s) => s.formula2Rules);
 
@@ -173,16 +185,16 @@ export function RawMaterialSection({
         <FormFieldGridItem>
           {editable ? (
             <SearchableSelectDropdown
-              label="Tunch Purity"
-              value={resolvedKarat}
-              options={displayedKaratOptions}
+              label="Karat"
+              value={resolvedKarat ?? ''}
+              options={displayedKaratOptions ?? []}
               onChange={handleKaratSelect}
               placeholder="Select karat"
               containerClassName="mb-2.5"
             />
           ) : (
             <View className="mb-2.5">
-              <FieldLabel label="Tunch Purity" />
+              <FieldLabel label="Karat" />
               <View className="min-h-11 justify-center rounded-input border border-border bg-surface-input px-3.5">
                 <Text className="text-sm text-text-primary">{resolvedKarat || '—'}</Text>
               </View>
@@ -191,7 +203,7 @@ export function RawMaterialSection({
         </FormFieldGridItem>
         <FormFieldGridItem>
           <FormInput
-            label="Purity"
+            label="Purity (%)"
             value={purityInputValue}
             onChangeText={handlePurityEdit}
             editable={editable && canEditPurityPercent}
@@ -218,6 +230,52 @@ export function RawMaterialSection({
             placeholder="Calculated"
             containerClassName="mb-2.5"
           />
+        </FormFieldGridItem>
+        <FormFieldGridItem>
+          <View className="mb-2.5">
+            <FieldLabel label="Calculation Rate" />
+            {calculationRateAccess === 'both' ? (
+              <>
+                <Pressable
+                  onPress={() => setRateOpen((prev) => !prev)}
+                  className="min-h-11 flex-row items-center justify-between rounded-input border border-border bg-surface-input px-3.5"
+                >
+                  <Text className="text-sm text-text-primary">{selectedRateLabel}</Text>
+                  <ChevronDown size={16} color={Colors.textMuted} />
+                </Pressable>
+                {rateOpen ? (
+                  <View className="mt-2 overflow-hidden rounded-input border border-border bg-white">
+                    {rateOptions.map((option) => (
+                      <Pressable
+                        key={option.value}
+                        onPress={() => {
+                          onFieldChange?.('calculationRate', option.value);
+                          setRateOpen(false);
+                        }}
+                        className={`px-3.5 py-3 ${
+                          calculationMode === option.value ? 'bg-primary/10' : 'bg-white'
+                        }`}
+                      >
+                        <Text
+                          className={`text-sm ${
+                            calculationMode === option.value
+                              ? 'font-semibold text-primary'
+                              : 'text-text-primary'
+                          }`}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <View className="min-h-11 justify-center rounded-input border border-border bg-surface-input px-3.5">
+                <Text className="text-sm text-text-primary">{fixedRateLabel}</Text>
+              </View>
+            )}
+          </View>
         </FormFieldGridItem>
       </FormFieldGrid>
     </FormSection>

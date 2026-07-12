@@ -135,6 +135,10 @@ export interface ScanItemData {
   otherChargesItems: OtherChargeItem[];
   otherChargesRemarks: string;
   diamondAmount: string;
+  clubDiamonds: boolean;
+  clubColorstones: boolean;
+  clubbedDiamondsBackup: string;
+  clubbedColorstonesBackup: string;
 }
 
 export interface OtherChargeItem {
@@ -154,6 +158,7 @@ export interface StoneEntry {
   clarity: string;
   quality: string;
   rate: string;
+  discountPercent?: string;
   pieces?: string;
 }
 

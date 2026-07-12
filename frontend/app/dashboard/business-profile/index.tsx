@@ -1,6 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
-import { SquarePen } from 'lucide-react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
@@ -11,8 +9,6 @@ import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { getBusinessProfile, formatProfileValue } from '@/utils/businessProfile';
-
-const BUTTON_GREEN = '#1E2F28';
 
 interface DetailRowProps {
   label: string;
@@ -35,7 +31,6 @@ function DetailRow({ label, value, multiline }: DetailRowProps) {
 }
 
 export default function BusinessProfileScreen() {
-  const router = useRouter();
   const registration = useAuthStore((s) => s.registration);
   const profile = getBusinessProfile(registration);
 
@@ -50,7 +45,18 @@ export default function BusinessProfileScreen() {
       >
         <PageHeader title="Profile" />
 
-        <BusinessProfileBanner businessName={formatProfileValue(profile.businessName, 'Your Business')} />
+        <BusinessProfileBanner
+          businessName={formatProfileValue(profile.businessName, 'Your Business')}
+          secondaryText={
+            profile.gstNumber
+              ? `GSTIN: ${profile.gstNumber}`
+              : profile.businessType
+                ? profile.businessType
+                : registration.businessId
+                  ? `Business ID: ${registration.businessId}`
+                  : 'Registered Organization'
+          }
+        />
 
         <View style={styles.detailsCard}>
           <View style={styles.detailsHeader}>
@@ -69,15 +75,6 @@ export default function BusinessProfileScreen() {
             <DetailRow label="Address" value={formatProfileValue(profile.address)} multiline />
           </View>
         </View>
-
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.editBtn}
-          onPress={() => router.push('/dashboard/business-profile/edit' as Href)}
-        >
-          <SquarePen size={18} color={Colors.white} strokeWidth={2} />
-          <Text style={styles.editBtnText}>Edit Buisness Profile</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <BottomNav activeRoute="home" />
@@ -141,21 +138,5 @@ const styles = StyleSheet.create({
   },
   detailValueMultiline: {
     lineHeight: 20,
-  },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    marginHorizontal: Spacing.screenHorizontal,
-    marginTop: Spacing.xxl,
-    height: Spacing.buttonHeight,
-    backgroundColor: BUTTON_GREEN,
-    borderRadius: Radius.button,
-  },
-  editBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
   },
 });

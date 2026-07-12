@@ -1,5 +1,6 @@
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { useMemo, useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react-native';
 
 import { FieldLabel } from '@/components/scanner/FieldLabel';
 import { FormSection } from '@/components/scanner/FormSection';
@@ -125,11 +126,17 @@ export function OtherChargesSection({
                 {formatInr(item.amount)}
               </Text>
               <View className="ml-3 flex-row items-center gap-2">
-                <Pressable onPress={() => openEdit(index)}>
-                  <Text className="text-sm text-text-primary">✏</Text>
+                <Pressable
+                  onPress={() => openEdit(index)}
+                  className="h-8 w-8 items-center justify-center rounded-full border border-border bg-white"
+                >
+                  <Pencil size={14} color={Colors.textPrimary} />
                 </Pressable>
-                <Pressable onPress={() => handleDelete(index)}>
-                  <Text className="text-sm text-danger-text">🗑</Text>
+                <Pressable
+                  onPress={() => handleDelete(index)}
+                  className="h-8 w-8 items-center justify-center rounded-full border border-danger-text/30 bg-danger-bg"
+                >
+                  <Trash2 size={14} color={Colors.dangerText} />
                 </Pressable>
               </View>
             </View>

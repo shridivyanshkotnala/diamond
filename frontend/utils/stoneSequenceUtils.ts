@@ -27,6 +27,7 @@ export function createEmptyStoneEntry(stoneType: StoneKind): StoneEntry {
     clarity: '',
     quality: '',
     rate: '',
+    discountPercent: '0',
     pieces: '',
     packetCode: '',
   };
@@ -87,6 +88,7 @@ function normalizeStoneEntry(raw: unknown, stoneType: StoneKind): StoneEntry {
     clarity,
     quality,
     rate: flattenStoneField(record.rate ?? record[`${prefix}Rate`]),
+    discountPercent: flattenStoneField(record.discountPercent ?? record.diamondDiscountPercent) || '0',
     pieces: flattenStoneField(record.pieces ?? record.diamondPieces),
   };
 }
@@ -120,6 +122,7 @@ function stoneEntryFromScanData(scanData: ScanItemData, stoneType: StoneKind): S
         scanData.diamondQuality ||
         buildQuality(scanData.diamondColor, scanData.diamondClarity),
       rate: scanData.diamondRate,
+      discountPercent: '0',
       pieces: scanData.diamondPieces,
     };
     return hasStoneData(entry) ? entry : null;

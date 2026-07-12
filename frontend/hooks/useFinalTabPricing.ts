@@ -6,6 +6,7 @@ import { buildDisplayStoneBlocks, parseStoneArraysFromStructuredData } from '@/u
 import {
   computeLabourAmount,
   computeOtherChargesTotal,
+  computeStoneAmountWithDiscount,
   formatIndianCurrency,
   formatWeightGrams,
   parseNumericValue,
@@ -92,7 +93,14 @@ export function useFinalTabPricing({
         const stoneRows: StoneAmountRow[] = stoneBlocks.map(block => {
             const wt = parseNumericValue(block.entry.weight) || 0;
             const rt = parseNumericValue(block.entry.rate) || 0;
-            const rowAmt = wt * rt;
+            const rowAmt =
+              block.stoneType === 'diamond'
+                ? computeStoneAmountWithDiscount(
+                    block.entry.weight,
+                    block.entry.rate,
+                    block.entry.discountPercent,
+                  )
+                : wt * rt;
             return {
               sequenceIndex: block.sequenceIndex,
               displayTitle: block.displayTitle,
@@ -100,10 +108,12 @@ export function useFinalTabPricing({
               rate: `₹${block.entry.rate}/ct`,
               quality: block.entry.quality || '—',
               weight: `${block.entry.weight} ct`,
-              amount: rowAmt,
-              amountDisplay: formatIndianCurrency(rowAmt),
+                amount: rowAmt,
+                amountDisplay: formatIndianCurrency(rowAmt),
             };
         });
+              const discountedStoneTotal = stoneRows.reduce((sum, row) => sum + row.amount, 0);
+              const backendStoneTotal = res.breakdown.diamondAmount + res.breakdown.colorstoneAmount;
 
         const grossWtGrams = parseWeightValue(scanData.grossWt);
         const netWtGrams = payload.netWt;
@@ -130,7 +140,8 @@ export function useFinalTabPricing({
           - (res.breakdown.labourAmount || 0)
           + labour.amount
           + (otherChargesTotal - (res.breakdown.otherCharges || 0))
-          + (overrideGoldAmount - res.breakdown.goldAmount);
+          + (overrideGoldAmount - res.breakdown.goldAmount)
+          + (discountedStoneTotal - backendStoneTotal);
 
         setPricing({
           grossWtDisplay: scanData.grossWt || '—',
@@ -145,7 +156,7 @@ export function useFinalTabPricing({
           goldBasePrice: overrideGoldAmount,
           goldBasePriceDisplay: formatIndianCurrency(overrideGoldAmount),
           stoneRows,
-          totalStoneAmount: res.breakdown.diamondAmount + res.breakdown.colorstoneAmount,
+          totalStoneAmount: discountedStoneTotal,
           labourInputMode: labour.mode,
           usePercentageMode: labour.mode === 'percentage',
           useFixedAmountMode: labour.mode === 'fixedAmount',

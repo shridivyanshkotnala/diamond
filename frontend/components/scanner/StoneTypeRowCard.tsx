@@ -9,7 +9,7 @@ import { useStoneRateFetch } from '@/hooks/useStoneRateFetch';
 import { DIAMOND_SHAPE_OPTIONS } from '@/constants/stoneRateOptions';
 import type { StoneKind } from '@/types/scanner';
 import { buildQuality } from '@/utils/qualityUtils';
-import { computeStoneAmount } from '@/utils/scanPriceCalculation';
+import { computeStoneAmountWithDiscount, computeStoneAmount } from '@/utils/scanPriceCalculation';
 import { parseNumericLabourValue } from '@/utils/labourUtils';
 
 export interface StoneTypeRowValues {
@@ -18,6 +18,7 @@ export interface StoneTypeRowValues {
   clarity: string;
   quality: string;
   rate: string;
+  discountPercent?: string;
   shape?: string;
   packetCode?: string;
 }
@@ -32,11 +33,12 @@ interface StoneTypeRowCardProps {
   shapeOptions?: { value: string; label?: string }[];
 }
 
-const STONE_LABELS: Record<StoneKind, { rate: string; weight: string; amount: string }> = {
+const STONE_LABELS: Record<StoneKind, { rate: string; weight: string; amount: string; discount?: string }> = {
   diamond: {
     rate: 'Diamond Rate (₹/ct)',
     weight: 'Weight (CT)',
     amount: 'Diamond Amount',
+    discount: 'Discount (%)',
   },
   colorstone: {
     rate: 'CS Rate (₹/ct)',
@@ -60,7 +62,10 @@ export function StoneTypeRowCard({
   shapeOptions,
 }: StoneTypeRowCardProps) {
   const labels = STONE_LABELS[stoneType];
-  const amount = computeStoneAmount(values.weight, values.rate);
+  const amount =
+    stoneType === 'diamond'
+      ? computeStoneAmountWithDiscount(values.weight, values.rate, values.discountPercent)
+      : computeStoneAmount(values.weight, values.rate);
   const resolvedShape = (() => {
     const raw = values.shape?.trim() ?? '';
     if (!raw) return '';
@@ -127,6 +132,18 @@ export function StoneTypeRowCard({
     onChange?.({ clarity, quality: buildQuality(values.color, clarity) });
   };
 
+  const handleDiscountChange = (text: string) => {
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    if (!cleaned) {
+      onChange?.({ discountPercent: '0' });
+      return;
+    }
+    const parsed = Number.parseFloat(cleaned);
+    if (!Number.isFinite(parsed)) return;
+    const clamped = Math.min(100, Math.max(0, parsed));
+    onChange?.({ discountPercent: String(clamped) });
+  };
+
   return (
     <>
       <FormSection title={title} variant="card">
@@ -184,6 +201,19 @@ export function StoneTypeRowCard({
               containerClassName="mb-2.5"
             />
           </FormFieldGridItem>
+          {stoneType === 'diamond' ? (
+            <FormFieldGridItem>
+              <FormInput
+                label={labels.discount}
+                value={values.discountPercent ?? '0'}
+                onChangeText={handleDiscountChange}
+                editable={editable && !isFetching}
+                placeholder="0"
+                keyboardType="decimal-pad"
+                containerClassName="mb-2.5"
+              />
+            </FormFieldGridItem>
+          ) : null}
           <FormFieldGridItem>
             <View className="mb-2.5">
               <Text className="mb-1.5 text-xs font-medium text-text-secondary">

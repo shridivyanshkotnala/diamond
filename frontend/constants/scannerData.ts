@@ -45,6 +45,10 @@ export const DEFAULT_SCAN_ITEM: ScanItemData = {
   otherChargesItems: [],
   otherChargesRemarks: '',
   diamondAmount: '11,400',
+  clubDiamonds: false,
+  clubColorstones: false,
+  clubbedDiamondsBackup: '',
+  clubbedColorstonesBackup: '',
 };
 
 export const MOCK_SCAN_RESULT: ScanResultData = {

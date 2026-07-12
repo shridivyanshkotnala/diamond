@@ -1,6 +1,29 @@
 const FormulaConfig = require('../models/formulaConfig.model');
 const DashboardMetrics = require('../models/dashboardMetrics.model');
 
+const DEFAULT_DASHBOARD_MATRIX_VALUES = {
+  '24k_mcx': true,
+  '24k_rtgs': true,
+  '24k_cash': true,
+  '22k_rtgs': true,
+  '22k_cash': true,
+  '20k_rtgs': true,
+  '20k_cash': true,
+  '18k_rtgs': true,
+  '18k_cash': true,
+  '14k_rtgs': true,
+  '14k_cash': true,
+  '9k_rtgs': true,
+  '9k_cash': true,
+};
+
+const normalizeDashboardMatrices = (values = {}) => ({
+  ...DEFAULT_DASHBOARD_MATRIX_VALUES,
+  ...Object.fromEntries(
+    Object.entries(values).filter(([key]) => Object.prototype.hasOwnProperty.call(DEFAULT_DASHBOARD_MATRIX_VALUES, key))
+  ),
+});
+
 const getFormulaConfig = async (req, res) => {
   try {
     const businessId = req.user.businessId;
@@ -57,24 +80,10 @@ const getDashboardMatrices = async (req, res) => {
     let metrics = await DashboardMetrics.findOne({ businessId });
 
     if (!metrics) {
-      metrics = {
-        metricsData: {
-          '22k_rtgs': true,
-          '22k_cash': true,
-          '20k_rtgs': true,
-          '20k_cash': true,
-          '18k_rtgs': true,
-          '18k_cash': true,
-          '14k_rtgs': true,
-          '14k_cash': true,
-          '9k_rtgs': true,
-          '9k_cash': true,
-          'edit_market_prices': true
-        }
-      };
+      metrics = { metricsData: DEFAULT_DASHBOARD_MATRIX_VALUES };
     }
 
-    res.status(200).json({ success: true, data: metrics.metricsData || {} });
+    res.status(200).json({ success: true, data: normalizeDashboardMatrices(metrics.metricsData || {}) });
   } catch (error) {
     console.error('Get Dashboard Matrices Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
@@ -85,14 +94,15 @@ const updateDashboardMatrices = async (req, res) => {
   try {
     const businessId = req.user.businessId;
     const { values } = req.body;
+    const normalizedValues = normalizeDashboardMatrices(values || {});
 
     const metrics = await DashboardMetrics.findOneAndUpdate(
       { businessId },
-      { $set: { metricsData: values } },
+      { $set: { metricsData: normalizedValues } },
       { new: true, upsert: true }
     );
 
-    res.status(200).json({ success: true, data: metrics.metricsData });
+    res.status(200).json({ success: true, data: normalizeDashboardMatrices(metrics.metricsData || {}) });
   } catch (error) {
     console.error('Update Dashboard Matrices Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
