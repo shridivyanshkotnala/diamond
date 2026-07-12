@@ -1,4 +1,7 @@
 export type MatrixKey =
+  | '24k_mcx'
+  | '24k_rtgs'
+  | '24k_cash'
   | '22k_rtgs'
   | '22k_cash'
   | '20k_rtgs'
@@ -21,6 +24,13 @@ export interface MatrixSection {
 }
 
 export const GOLD_MATRIX_SECTIONS: MatrixSection[] = [
+  {
+    sectionLabel: '24K GOLD',
+    rows: [
+      { key: '24k_rtgs', label: ' RTGS Rate ' },
+      { key: '24k_cash', label: ' Cash Rate ' },
+    ],
+  },
   {
     sectionLabel: '22K GOLD',
     rows: [
@@ -59,6 +69,9 @@ export const GOLD_MATRIX_SECTIONS: MatrixSection[] = [
 ];
 
 export const DEFAULT_MATRIX_VALUES: Record<MatrixKey, boolean> = {
+  '24k_mcx': true,
+  '24k_rtgs': true,
+  '24k_cash': true,
   '22k_rtgs': true,
   '22k_cash': true,
   '20k_rtgs': true,

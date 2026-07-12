@@ -76,6 +76,10 @@ export default function DashboardScreen() {
       mcxRate: mcxLiveRate ?? undefined,
     } satisfies GoldRate;
   }, [goldTaxSettings, mcxLiveRate, sortedGoldRates]);
+  const show24kMcx = matrixValues['24k_mcx' as MatrixKey] !== false;
+  const show24kRtgs = matrixValues['24k_rtgs' as MatrixKey] !== false;
+  const show24kCash = matrixValues['24k_cash' as MatrixKey] !== false;
+  const show24kRateCard = show24kRtgs || show24kCash;
   const today = new Date();
   const dayLabel = today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   const dateNum = today.getDate();
@@ -142,33 +146,50 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <>
-              {mcxLiveRate != null ? (
+              {mcxLiveRate != null && show24kMcx ? (
                 <View style={styles.mcxTopCard}>
                   <Text style={styles.mcxTopLabel}>MCX Gold Rate (24 Kt)</Text>
                   <Text style={styles.mcxTopValue}>₹ {mcxLiveRate.toLocaleString('en-IN')}</Text>
                 </View>
               ) : null}
 
-              {twentyFourKRate ? (
+              {twentyFourKRate && show24kRateCard ? (
                 <View style={styles.rateCard}>
                   <View style={styles.rateCardHeader}>
                     <Text style={styles.cardKaratLabel}>Gold (24K) 99.9%</Text>
                   </View>
 
-                  <View style={styles.rateCardBody}>
-                    <View style={styles.rateBadge}>
-                      <Text style={styles.rateBadgeValue}>
-                        ₹ {(twentyFourKRate.cashRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
-                      </Text>
-                      <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
+                  {show24kCash && show24kRtgs ? (
+                    <View style={styles.rateCardBody}>
+                      <View style={styles.rateBadge}>
+                        <Text style={styles.rateBadgeValue}>
+                          ₹ {(twentyFourKRate.cashRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
+                      </View>
+                      <View style={styles.rateBadge}>
+                        <Text style={styles.rateBadgeValue}>
+                          ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
+                      </View>
                     </View>
-                    <View style={styles.rateBadge}>
-                      <Text style={styles.rateBadgeValue}>
-                        ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
-                      </Text>
-                      <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
+                  ) : show24kCash || show24kRtgs ? (
+                    <View style={styles.rateCardBody}>
+                      <View style={styles.rateBadge}>
+                        <Text style={styles.rateBadgeValue}>
+                          ₹ {(
+                            show24kCash
+                              ? (twentyFourKRate.cashRate ?? twentyFourKRate.finalRate)
+                              : (twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate)
+                          ).toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.rateBadgeLabel}>
+                          ({show24kCash ? 'Cash Rate' : 'RTGS Rate'})
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                  ) : null}
                 </View>
               ) : null}
 
