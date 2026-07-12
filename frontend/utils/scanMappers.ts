@@ -11,6 +11,7 @@ import { buildQuality } from '@/utils/qualityUtils';
 import { getClarificationFieldLabel } from '@/utils/clarificationFields';
 import { parseLabourFromApi, serializeLabourForApi } from '@/utils/labourUtils';
 import { parseNumericValue } from '@/utils/scanPriceCalculation';
+import { normalizeKarat } from '@/utils/formulaUtils';
 
 const JEWELLERY_TYPE_TO_API: Record<JewelleryType, ApiJewelleryType> = {
   Diamond: 'DIAMOND',
@@ -50,6 +51,7 @@ const SCAN_ITEM_TO_API: Partial<Record<keyof ScanItemData, string>> = {
   netWt: 'netWeight',
   pureWt: 'pureWeight',
   tunch: 'purity',
+  karat: 'karat',
   goldRate: 'goldRate',
   diamondWeight: 'diamondWeight',
   diamondColor: 'diamondColor',
@@ -71,6 +73,7 @@ const API_TO_SCAN_ITEM: Record<string, keyof ScanItemData> = {
   netWeight: 'netWt',
   pureWeight: 'pureWt',
   purity: 'tunch',
+  karat: 'karat',
   goldRate: 'goldRate',
   diamondWeight: 'diamondWeight',
   diamondColor: 'diamondColor',
@@ -128,6 +131,15 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
     const scanKey = API_TO_SCAN_ITEM[apiKey];
     if (scanKey && value != null && String(value).trim() !== '') {
       result[scanKey] = String(value);
+    }
+  }
+
+  if (!result.karat) {
+    const karatFromApi = normalizeKarat(String(data.karat ?? ''));
+    const karatFromPurity = normalizeKarat(String(data.purity ?? ''));
+    const resolved = karatFromApi || karatFromPurity;
+    if (resolved) {
+      result.karat = resolved;
     }
   }
 

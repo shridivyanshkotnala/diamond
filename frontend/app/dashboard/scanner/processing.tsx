@@ -11,6 +11,7 @@ import { ApiError } from '@/utils/apiClient';
 import { getDemoClarificationFields } from '@/utils/mockScanApi';
 import { analyzeScan } from '@/utils/scanApi';
 import { structuredDataToScanItem } from '@/utils/scanMappers';
+import { resolveScannedKarat } from '@/utils/formulaUtils';
 
 const SCANNER_BG =
   'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80';
@@ -40,8 +41,14 @@ export default function ProcessingScreen() {
 
       const flatData = result.structuredData ?? {};
       if (Object.keys(flatData).length > 0) {
-        setStructuredData(flatData);
-        updateScanData(structuredDataToScanItem(flatData));
+        const mapped = structuredDataToScanItem(flatData);
+        const resolvedKarat = resolveScannedKarat(mapped.karat ?? '', mapped.tunch ?? '') || '18K';
+        if (!resolveScannedKarat(mapped.karat ?? '', mapped.tunch ?? '')) {
+          console.debug('Karat not detected from OCR/OpenAI response. Defaulted to 18K.');
+        }
+        const nextStructured = { ...flatData, karat: resolvedKarat };
+        setStructuredData(nextStructured);
+        updateScanData({ ...mapped, karat: resolvedKarat });
       }
 
       if (result.unknownFields?.length > 0) {

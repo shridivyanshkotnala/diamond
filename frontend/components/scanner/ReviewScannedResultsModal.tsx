@@ -256,13 +256,13 @@ export function ReviewScannedResultsModal({
     Boolean(scanData.grossWt.trim()) && !hasRateError && !missingOtherChargesRemarks;
 
   useEffect(() => {
-    const scannedKarat = resolveScannedKarat(scanData.karat, scanData.tunch);
+    const scannedKarat = resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
     
     if (activeFormula === 'F2') {
       const { karat, requiresDropdown } = applyFormula2KaratConstraint(scannedKarat, formula2Rules);
       setKaratDropdownMode(requiresDropdown || !scannedKarat);
       if (requiresDropdown) {
-        if (scanData.karat) onFieldChange('karat', '');
+        if (!scanData.karat) onFieldChange('karat', scannedKarat);
         return;
       }
       if (karat && karat !== scanData.karat) {
@@ -270,6 +270,9 @@ export function ReviewScannedResultsModal({
       }
     } else {
       setKaratDropdownMode(!scannedKarat);
+      if (!scanData.karat) {
+        onFieldChange('karat', scannedKarat);
+      }
     }
   }, [activeFormula, formula2Rules, scanData.karat, scanData.tunch, onFieldChange]);
 
@@ -327,7 +330,8 @@ export function ReviewScannedResultsModal({
     onConfirm();
   };
 
-  const requiresKaratSelection = !scanData.karat;
+  const resolvedKarat = resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
+  const requiresKaratSelection = !resolvedKarat;
 
   return (
     <View className="rounded-[20px] bg-white px-screen py-5 shadow-lg">
@@ -405,7 +409,7 @@ export function ReviewScannedResultsModal({
           </Pressable>
           <Pressable
             onPress={handleConfirm}
-            disabled={confirming || !canConfirm || (requiresKaratSelection && !scanData.karat)}
+            disabled={confirming || !canConfirm || requiresKaratSelection}
             className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
           >
             {confirming ? (

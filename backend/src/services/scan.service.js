@@ -227,6 +227,23 @@ const getReviewData = async (scanId) => {
      }
    }
 
+    const normalizeKarat = (value) => {
+      if (!value) return '';
+      const match = String(value).trim().match(/(\d+)\s*k(?:t)?/i);
+      if (!match) return '';
+      return `${match[1]}K`.toUpperCase();
+    };
+
+    let resolvedKarat = normalizeKarat(structuredData.karat);
+    if (!resolvedKarat) {
+      resolvedKarat = normalizeKarat(structuredData.purity);
+    }
+    if (!resolvedKarat) {
+      console.debug('Karat not detected from OCR/OpenAI response. Defaulted to 18K.');
+      resolvedKarat = '18K';
+    }
+    structuredData.karat = resolvedKarat;
+
    const updated = await redisService.updateScanStatus(scanId, 'READY_FOR_REVIEW', {
        finalData: structuredData
    });

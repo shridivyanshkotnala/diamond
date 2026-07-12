@@ -137,6 +137,11 @@ export default function ReviewResultsScreen() {
 
       const data = await getReview(scanId);
       const baseScanData = applyClientFormulaRules(structuredDataToScanItem(data.structuredData));
+      const extractedKarat = resolveScannedKarat(baseScanData.karat, baseScanData.tunch);
+      const fallbackKarat = extractedKarat || '18K';
+      if (!extractedKarat) {
+        console.debug('Karat not detected from OCR/OpenAI response. Defaulted to 18K.');
+      }
       let adjustedScanData =
         calculationRateAccess === 'both'
           ? baseScanData
@@ -144,6 +149,7 @@ export default function ReviewResultsScreen() {
               ...baseScanData,
               calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
             };
+      adjustedScanData = { ...adjustedScanData, karat: fallbackKarat };
 
       const hasLabourValues =
         Boolean(adjustedScanData.labourChargeAmount?.trim()) ||
@@ -173,7 +179,7 @@ export default function ReviewResultsScreen() {
           // Ignore labour settings fetch errors and keep scan values.
         }
       }
-      setStructuredData(data.structuredData);
+      setStructuredData({ ...data.structuredData, karat: fallbackKarat });
       updateScanData(adjustedScanData);
     } catch (error) {
       const existing = useScannerStore.getState().structuredData;
