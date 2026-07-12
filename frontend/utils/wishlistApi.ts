@@ -7,6 +7,7 @@ interface ApiWishlistItem {
   tagCode: string;
   totalMrp: number;
   priceBadge: string;
+  calculationRate?: 'rtgs' | 'cash';
   scanTimestamp: string;
   snapshot: WishlistItem['snapshot'];
   createdAt: string;
@@ -18,6 +19,7 @@ interface AddWishlistPayload {
   tagCode: string;
   totalMrp: number;
   priceBadge: string;
+  calculationRate?: 'rtgs' | 'cash';
   scanTimestamp: string;
   snapshot: WishlistItem['snapshot'];
 }
@@ -28,6 +30,7 @@ function mapApiItemToWishlistItem(raw: ApiWishlistItem): WishlistItem {
     title: raw.title,
     tagCode: raw.tagCode,
     priceBadge: raw.priceBadge,
+    calculationRate: raw.calculationRate,
     totalMrp: raw.totalMrp,
     addedAt: raw.createdAt,
     scanTimestamp: raw.scanTimestamp,

@@ -32,6 +32,10 @@ export function FormInput({
         onChangeText={onChangeText}
         placeholder={placeholder}
         editable={editable}
+        showSoftInputOnFocus={editable}
+        selectTextOnFocus={editable}
+        caretHidden={!editable}
+        contextMenuHidden={!editable}
         placeholderTextColor={Colors.placeholder}
         keyboardType={keyboardType}
         className="h-11 rounded-input border border-border bg-surface-input px-3.5 text-sm text-text-primary"

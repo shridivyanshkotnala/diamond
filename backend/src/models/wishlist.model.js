@@ -40,10 +40,14 @@ const wishlistSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
-    // Formatted price badge string, e.g. "₹ 1,84,500 (Including Tax)"
+    // Formatted price badge string, e.g. "₹ 1,84,500"
     priceBadge: {
       type: String,
       default: '',
+    },
+    calculationRate: {
+      type: String,
+      enum: ['rtgs', 'cash'],
     },
     // ISO string – time the scan session was created
     scanTimestamp: {

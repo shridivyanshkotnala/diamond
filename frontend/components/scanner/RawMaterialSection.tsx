@@ -81,7 +81,7 @@ export function RawMaterialSection({
   ];
   const selectedRateLabel =
     rateOptions.find((option) => option.value === calculationMode)?.label ?? 'RTGS';
-  const fixedRateLabel = calculationRateAccess === 'cash' ? 'Cash' : 'RTGS';
+  const fixedRateLabel = calculationRateAccess === 'cash' ? 'Cash Rate' : 'RTGS Rate';
   const activeFormula = useFormulaStore((s) => s.activeFormula);
   const formula2Rules = useFormulaStore((s) => s.formula2Rules);
 

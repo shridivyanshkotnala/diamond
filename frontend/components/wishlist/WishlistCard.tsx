@@ -5,6 +5,16 @@ import { Colors, Radius, Spacing } from '@/constants/theme';
 import type { WishlistItem } from '@/types/wishlist';
 import { formatWishlistTimestamp } from '@/utils/wishlistUtils';
 
+function formatWishlistAmount(amount: number) {
+  return `₹ ${Math.round(amount).toLocaleString('en-IN')}`;
+}
+
+function formatRateLabel(rate?: 'rtgs' | 'cash') {
+  if (rate === 'rtgs') return 'RTGS Rate';
+  if (rate === 'cash') return 'Cash Rate';
+  return '';
+}
+
 interface WishlistCardProps {
   item: WishlistItem;
   onPress: () => void;
@@ -12,6 +22,8 @@ interface WishlistCardProps {
 }
 
 export function WishlistCard({ item, onPress, onDelete }: WishlistCardProps) {
+  const rateSource = item.calculationRate ?? item.snapshot?.scanData?.calculationRate;
+  const rateLabel = formatRateLabel(rateSource);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.cardPressed]}>
       <View style={styles.card}>
@@ -29,7 +41,8 @@ export function WishlistCard({ item, onPress, onDelete }: WishlistCardProps) {
         {/* ─── Footer: Price & Actions ─── */}
         <View style={styles.bottomRow}>
           <View style={styles.priceBadge}>
-            <Text style={styles.priceText}>{item.priceBadge}</Text>
+            <Text style={styles.priceText}>{formatWishlistAmount(item.totalMrp)}</Text>
+            {rateLabel ? <Text style={styles.rateText}>{rateLabel}</Text> : null}
           </View>
 
           <Pressable
@@ -103,6 +116,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.white,
+  },
+  rateText: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
   },
   deleteBtn: {
     padding: 8,

@@ -98,6 +98,30 @@ const loginEmployee = async (req, res, next) => {
   }
 };
 
+const getEmployeePermissions = async (req, res, next) => {
+  try {
+    const { role, userId } = req.user || {};
+    if (String(role || '').toUpperCase() !== 'EMP') {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    const Employee = require('../models/employee.model');
+    const employee = await Employee.findById(userId).select('permissions isActive');
+    if (!employee || employee.isActive === false) {
+      return res.status(401).json({ success: false, message: 'Employee not found or inactive' });
+    }
+
+    const rawPermissions = employee.permissions;
+    const permissions = rawPermissions && typeof rawPermissions.get === 'function'
+      ? Object.fromEntries(rawPermissions.entries())
+      : rawPermissions || {};
+
+    return res.status(200).json({ success: true, data: { permissions } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const changePassword = async (req, res, next) => {
   try {
     const { userId, role } = req.user;
@@ -133,6 +157,7 @@ module.exports = {
   createPassword,
   login,
   loginEmployee,
+  getEmployeePermissions,
   changePassword,
   refreshToken,
 };

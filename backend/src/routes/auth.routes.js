@@ -25,6 +25,7 @@ router.post('/business/verify-email-otp', validate(verifyOtpSchema), authControl
 router.post('/business/create-password', validate(createPasswordSchema), authController.createPassword);
 router.post('/business/login', validate(loginSchema), authController.login);
 router.post('/employee/login', validate(employeeLoginSchema), authController.loginEmployee);
+router.get('/employee/permissions', authenticateJWT, authController.getEmployeePermissions);
 router.post('/change-password', authenticateJWT, validate(changePasswordSchema), authController.changePassword);
 router.post('/refresh', authController.refreshToken);
 

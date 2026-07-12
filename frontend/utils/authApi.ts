@@ -379,6 +379,40 @@ export async function loginEmployeeByPhone(phone: string, password: string): Pro
   }
 }
 
+export async function fetchEmployeePermissions(): Promise<{
+  success: boolean;
+  data?: { permissions: Record<string, boolean> };
+  error?: string;
+}> {
+  try {
+    const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>(
+      '/auth/employee/permissions',
+      {
+        method: 'GET',
+      },
+    );
+    const unwrapped = unwrapEnvelope(response);
+    if (!isSuccessfulResponse(response, unwrapped)) {
+      return {
+        success: false,
+        error: resolveApiMessage(response, unwrapped, 'Failed to load permissions.'),
+      };
+    }
+    const permissions = (unwrapped.permissions ?? (unwrapped.data as any)?.permissions) as
+      | Record<string, boolean>
+      | undefined;
+    if (!permissions) {
+      return { success: false, error: 'Permissions missing in response.' };
+    }
+    return { success: true, data: { permissions } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof ApiError ? error.message : 'Failed to load permissions.',
+    };
+  }
+}
+
 export async function changeUserPassword(currentPassword: string, newPassword: string): Promise<{
   success: boolean;
   error?: string;

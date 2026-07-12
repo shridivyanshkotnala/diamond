@@ -40,6 +40,8 @@ const defaultPricing: FinalTabPricingResult = {
   goldBasePriceDisplay: '₹0',
   stoneRows: [],
   totalStoneAmount: 0,
+  diamondAmount: 0,
+  colorstoneAmount: 0,
   labourInputMode: 'none',
   usePercentageMode: false,
   useFixedAmountMode: false,
@@ -113,6 +115,12 @@ export function useFinalTabPricing({
             };
         });
               const discountedStoneTotal = stoneRows.reduce((sum, row) => sum + row.amount, 0);
+              const diamondAmount = stoneRows
+                .filter((row) => row.stoneType === 'diamond')
+                .reduce((sum, row) => sum + row.amount, 0);
+              const colorstoneAmount = stoneRows
+                .filter((row) => row.stoneType === 'colorstone')
+                .reduce((sum, row) => sum + row.amount, 0);
               const backendStoneTotal = res.breakdown.diamondAmount + res.breakdown.colorstoneAmount;
 
         const grossWtGrams = parseWeightValue(scanData.grossWt);
@@ -157,6 +165,8 @@ export function useFinalTabPricing({
           goldBasePriceDisplay: formatIndianCurrency(overrideGoldAmount),
           stoneRows,
           totalStoneAmount: discountedStoneTotal,
+          diamondAmount,
+          colorstoneAmount,
           labourInputMode: labour.mode,
           usePercentageMode: labour.mode === 'percentage',
           useFixedAmountMode: labour.mode === 'fixedAmount',

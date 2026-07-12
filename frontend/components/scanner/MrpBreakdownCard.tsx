@@ -24,27 +24,35 @@ function BreakdownRow({ label, value, bold = false }: BreakdownRowProps) {
 }
 
 interface MrpBreakdownCardProps {
-  goldBase: string;
-  stoneTotal: string;
-  labour: string;
-  otherCharges: string;
+  goldAmount: string;
+  diamondAmount?: string;
+  colorstoneAmount?: string;
+  labourAmount: string;
+  otherChargesTotal?: string;
   ultimateMrp: string;
 }
 
 export function MrpBreakdownCard({
-  goldBase,
-  stoneTotal,
-  labour,
-  otherCharges,
+  goldAmount,
+  diamondAmount,
+  colorstoneAmount,
+  labourAmount,
+  otherChargesTotal,
   ultimateMrp,
 }: MrpBreakdownCardProps) {
   return (
     <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-white">
-      <BreakdownRow label="Gold Base Price" value={goldBase} />
-      <BreakdownRow label="Stone Total" value={stoneTotal} />
-      <BreakdownRow label="Labour" value={labour} />
-      <BreakdownRow label="Other Charges" value={otherCharges} />
-      <BreakdownRow label="Total MRP" value={ultimateMrp} bold />
+      <BreakdownRow label="Gold Amount" value={goldAmount} />
+      {diamondAmount ? <BreakdownRow label="Diamond Amount" value={diamondAmount} /> : null}
+      {colorstoneAmount ? (
+        <BreakdownRow label="Colorstone Amount" value={colorstoneAmount} />
+      ) : null}
+      <BreakdownRow label="Labour Amount" value={labourAmount} />
+      {otherChargesTotal ? (
+        <BreakdownRow label="Other Charges Total" value={otherChargesTotal} />
+      ) : null}
+      <View className="border-t border-border" />
+      <BreakdownRow label="Final MRP" value={ultimateMrp} bold />
     </View>
   );
 }

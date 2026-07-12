@@ -257,12 +257,55 @@ export function ScannerFinalTab({
         />
       ) : null}
 
+      {!editable && scanData.otherChargesItems?.length ? (
+        <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-white">
+          <View className="border-b border-border px-4 py-3">
+            <Text className="text-sm font-bold uppercase text-text-primary">Other Charges</Text>
+          </View>
+          {scanData.otherChargesItems.map((charge) => (
+            <View
+              key={charge.id}
+              className="flex-row items-center justify-between px-4 py-3.5"
+            >
+              <Text className="text-sm text-text-secondary">{charge.name}</Text>
+              <Text className="text-sm font-semibold text-text-primary">
+                {formatIndianCurrency(charge.amount || 0)}
+              </Text>
+            </View>
+          ))}
+          <View className="border-t border-border" />
+          <View className="flex-row items-center justify-between px-4 py-3.5">
+            <Text className="text-sm font-semibold text-text-primary">Other Charges Total</Text>
+            <Text className="text-sm font-semibold text-text-primary">
+              {pricing.otherChargesDisplay}
+            </Text>
+          </View>
+          {scanData.otherChargesRemarks?.trim() ? (
+            <View className="border-t border-border px-4 py-3.5">
+              <Text className="text-xs font-semibold uppercase text-text-muted">Remarks</Text>
+              <Text className="mt-2 text-sm text-text-secondary">
+                {scanData.otherChargesRemarks.trim()}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
       {!editable ? (
         <MrpBreakdownCard
-          goldBase={pricing.goldBasePriceDisplay}
-          stoneTotal={formatIndianCurrency(pricing.totalStoneAmount)}
-          labour={pricing.labourDisplay}
-          otherCharges={pricing.otherChargesDisplay}
+          goldAmount={pricing.goldBasePriceDisplay}
+          diamondAmount={
+            pricing.diamondAmount > 0 ? formatIndianCurrency(pricing.diamondAmount) : undefined
+          }
+          colorstoneAmount={
+            pricing.colorstoneAmount > 0
+              ? formatIndianCurrency(pricing.colorstoneAmount)
+              : undefined
+          }
+          labourAmount={pricing.labourDisplay}
+          otherChargesTotal={
+            pricing.otherChargesAmount > 0 ? pricing.otherChargesDisplay : undefined
+          }
           ultimateMrp={pricing.ultimateMrpDisplay}
         />
       ) : null}

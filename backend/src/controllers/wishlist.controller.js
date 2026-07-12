@@ -4,7 +4,7 @@ const { sendSuccess } = require('../utils/apiResponse');
 /**
  * POST /api/v1/wishlist
  * Saves a new wishlist item to MongoDB.
- * Body: { itemId, title, tagCode, totalMrp, priceBadge, scanTimestamp, snapshot }
+ * Body: { itemId, title, tagCode, totalMrp, priceBadge, calculationRate, scanTimestamp, snapshot }
  */
 const addToWishlist = async (req, res, next) => {
   try {
@@ -14,7 +14,7 @@ const addToWishlist = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Unauthorized – missing business or user context' });
     }
 
-    const { itemId, title, tagCode, totalMrp, priceBadge, scanTimestamp, snapshot } = req.body;
+    const { itemId, title, tagCode, totalMrp, priceBadge, calculationRate, scanTimestamp, snapshot } = req.body;
 
     if (!itemId || !title || !tagCode || !scanTimestamp || !snapshot) {
       return res.status(400).json({
@@ -37,6 +37,9 @@ const addToWishlist = async (req, res, next) => {
           priceBadge: priceBadge ?? '',
           scanTimestamp,
           snapshot,
+          ...(calculationRate === 'rtgs' || calculationRate === 'cash'
+            ? { calculationRate }
+            : {}),
         },
       },
       { upsert: true, new: true, runValidators: true }

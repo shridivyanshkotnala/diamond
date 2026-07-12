@@ -61,6 +61,9 @@ export default function ScanResultsScreen() {
     selectedType,
     selectedKarat,
   });
+  const activePricing = isFromWishlist
+    ? wishlistItem?.snapshot.pricing ?? livePricing
+    : livePricing;
 
   const handleAddToWishlist = async () => {
     if (addingToWishlist) return;
@@ -126,7 +129,7 @@ export default function ScanResultsScreen() {
         diamonds={diamonds}
         colorstones={colorstones}
         jewelleryType={activeSelectedType}
-        pricing={livePricing}
+        pricing={activePricing}
         editable={false}
         gstNote={demoResult?.gstNote ?? 'MRP = Gold + Stones + Labour + Other Charges'}
       />

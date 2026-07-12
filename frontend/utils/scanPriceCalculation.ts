@@ -58,6 +58,8 @@ export interface FinalTabPricingResult {
   goldBasePriceDisplay: string;
   stoneRows: StoneAmountRow[];
   totalStoneAmount: number;
+  diamondAmount: number;
+  colorstoneAmount: number;
   labourInputMode: LabourInputMode;
   usePercentageMode: boolean;
   useFixedAmountMode: boolean;
@@ -367,6 +369,8 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
     goldBasePriceDisplay: formatIndianCurrency(goldBasePrice),
     stoneRows: [],
     totalStoneAmount: 0,
+    diamondAmount: 0,
+    colorstoneAmount: 0,
     labourInputMode: labour.mode,
     usePercentageMode,
     useFixedAmountMode,
@@ -384,6 +388,12 @@ export function withStoneRows(
   stoneRows: StoneAmountRow[],
 ): FinalTabPricingResult {
   const totalStoneAmount = stoneRows.reduce((sum, row) => sum + row.amount, 0);
+  const diamondAmount = stoneRows
+    .filter((row) => row.stoneType === 'diamond')
+    .reduce((sum, row) => sum + row.amount, 0);
+  const colorstoneAmount = stoneRows
+    .filter((row) => row.stoneType === 'colorstone')
+    .reduce((sum, row) => sum + row.amount, 0);
   const ultimateMrp =
     pricing.goldBasePrice + totalStoneAmount + pricing.labourAmount + pricing.otherChargesAmount;
 
@@ -391,6 +401,8 @@ export function withStoneRows(
     ...pricing,
     stoneRows,
     totalStoneAmount,
+    diamondAmount,
+    colorstoneAmount,
     ultimateMrp,
     ultimateMrpDisplay: formatIndianCurrency(ultimateMrp),
   };

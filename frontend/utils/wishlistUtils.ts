@@ -45,7 +45,7 @@ export function formatWishlistPriceBadge(
 ): string {
   // Always show the total MRP regardless of jewellery type
   const amount = Math.round(pricing.ultimateMrp).toLocaleString('en-IN');
-  return `₹ ${amount} (Including Tax)`;
+  return `₹ ${amount}`;
 }
 
 export function formatWishlistTimestamp(iso: string): string {
@@ -112,6 +112,7 @@ export function buildWishlistSnapshot(input: {
     selectedType: input.selectedType,
     diamonds: input.diamonds.map((entry) => ({ ...entry })),
     colorstones: input.colorstones.map((entry) => ({ ...entry })),
+    pricing: { ...input.pricing },
     ultimateMrp: input.pricing.ultimateMrp,
     goldBasePrice: goldMetrics.goldAmount,
     goldRatePerGram: input.pricing.goldRatePerGram,
@@ -144,6 +145,7 @@ export function buildWishlistItem(input: {
     title: buildWishlistTitle(input.selectedType),
     tagCode,
     priceBadge: formatWishlistPriceBadge(input.selectedType, pricing),
+    calculationRate: input.scanData.calculationRate,
     totalMrp: Math.round(pricing.ultimateMrp),
     addedAt: now,
     scanTimestamp: input.scanTimestamp ?? now,

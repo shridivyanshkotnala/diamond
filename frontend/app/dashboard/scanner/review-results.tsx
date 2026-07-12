@@ -20,7 +20,9 @@ import { useFormulaStore } from '@/store/formulaStore';
 import { useScannerStore } from '@/store/scannerStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuthStore } from '@/store/authStore';
-import { useEmployeeStore } from '@/store/employeeStore';
+import { fetchEmployeePermissions } from '@/utils/authApi';
+import { mapApiPermissionsToEmployee } from '@/utils/employeeApi';
+import type { EmployeePermissions } from '@/types/employee';
 import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { ApiError } from '@/utils/apiClient';
 import { syncFormulaStoreFromApi } from '@/utils/formulaSettingsApi';
@@ -31,7 +33,6 @@ import {
 import { getReview, submitReview } from '@/utils/scanApi';
 import { fetchLabourRate } from '@/utils/ratesApi';
 import { scanItemToStructuredData, structuredDataToScanItem } from '@/utils/scanMappers';
-import { resolveCurrentEmployee } from '@/utils/settingsAccess';
 import {
   applyStoneEntriesToScanData,
   parseStoneArraysFromStructuredData,
@@ -78,32 +79,59 @@ export default function ReviewResultsScreen() {
   const addWishlistItem = useWishlistStore((s) => s.addItem);
   const userRole = useAuthStore((s) => s.userRole);
   const isSuper = useAuthStore((s) => s.isSuper);
-  const loggedInEmployeeId = useAuthStore((s) => s.loggedInEmployeeId);
-  const savedPhone = useAuthStore((s) => s.savedPhone);
-  const savedEmployeeEmail = useAuthStore((s) => s.savedEmployeeEmail);
-  const employees = useEmployeeStore((s) => s.employees);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
   const [hasAddedToWishlist, setHasAddedToWishlist] = useState(false);
+  const [employeePermissions, setEmployeePermissions] = useState<EmployeePermissions | null>(null);
 
-  const employee = useMemo(
-    () => resolveCurrentEmployee(employees, loggedInEmployeeId, savedPhone, savedEmployeeEmail),
-    [employees, loggedInEmployeeId, savedPhone, savedEmployeeEmail],
-  );
+  useEffect(() => {
+    let active = true;
+    if (userRole !== 'employee' || isSuper) {
+      setEmployeePermissions(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    const loadPermissions = async () => {
+      const result = await fetchEmployeePermissions();
+      if (!active) return;
+      if (result.success && result.data?.permissions) {
+        const mappedPermissions = mapApiPermissionsToEmployee(result.data.permissions);
+        setEmployeePermissions(mappedPermissions);
+
+        const allowRtgs = mappedPermissions.scan_rate_rtgs === true;
+        const allowCash = mappedPermissions.scan_rate_cash === true;
+        if (allowRtgs !== allowCash) {
+          const forcedRate = allowCash ? 'cash' : 'rtgs';
+          updateScanData({ calculationRate: forcedRate });
+        }
+        return;
+      }
+      setEmployeePermissions(null);
+    };
+
+    void loadPermissions();
+    return () => {
+      active = false;
+    };
+  }, [userRole, isSuper, updateScanData]);
+
   const isEmployeeRestricted = userRole === 'employee' && !isSuper;
   const canEditPurityPercent =
-    !isEmployeeRestricted || employee?.permissions.scan_edit_purity_percent === true;
+    !isEmployeeRestricted || employeePermissions?.scan_edit_purity_percent === true;
   const calculationRateAccess = useMemo(() => {
     if (!isEmployeeRestricted) return 'both' as const;
-    const allowRtgs = employee?.permissions.scan_rate_rtgs === true;
-    const allowCash = employee?.permissions.scan_rate_cash === true;
+    if (!employeePermissions) return 'rtgs' as const;
+    const allowRtgs = employeePermissions?.scan_rate_rtgs === true;
+    const allowCash = employeePermissions?.scan_rate_cash === true;
     if (allowRtgs && allowCash) return 'both' as const;
     if (allowRtgs) return 'rtgs' as const;
     if (allowCash) return 'cash' as const;
     return 'both' as const;
-  }, [employee?.permissions, isEmployeeRestricted]);
+  }, [employeePermissions, isEmployeeRestricted]);
 
   const livePricing = useFinalTabPricing({
     scanData,

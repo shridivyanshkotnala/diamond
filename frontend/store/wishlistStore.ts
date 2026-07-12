@@ -39,6 +39,7 @@ export const useWishlistStore = create<WishlistState>()(
             tagCode: item.tagCode,
             totalMrp: item.totalMrp,
             priceBadge: item.priceBadge,
+            calculationRate: item.calculationRate,
             scanTimestamp: item.scanTimestamp,
             snapshot: item.snapshot,
           });
