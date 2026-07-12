@@ -2,6 +2,22 @@ const { sendSuccess } = require('../utils/apiResponse');
 const rateCalculationService = require('../services/rateCalculation.service');
 const redisService = require('../services/redis.service');
 const LabourRate = require('../models/labourRate.model');
+const Employee = require('../models/employee.model');
+
+const normalizeBool = (value) => {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return false;
+};
+
+const getPermissionValue = (permissions, key) => {
+  if (!permissions) return false;
+  if (typeof permissions.get === 'function') {
+    return normalizeBool(permissions.get(key));
+  }
+  return normalizeBool(permissions[key]);
+};
 
 const calculateMRP = async (req, res, next) => {
   try {
@@ -104,8 +120,29 @@ const calculateMRP = async (req, res, next) => {
     }
 
     const scan = scanId ? await redisService.getScan(scanId) : null;
-    const resolvedMode =
-      calculationMode || scan?.calculationMode || 'rtgs';
+    let resolvedMode = calculationMode || scan?.calculationMode || 'rtgs';
+
+    if (req.user?.role === 'EMP') {
+      const employee = await Employee.findById(req.user.userId).select('permissions');
+      if (!employee) {
+        return res.status(403).json({ success: false, message: 'Unauthorized' });
+      }
+
+      const allowRtgs = getPermissionValue(employee.permissions, 'scan_rate_rtgs');
+      const allowCash = getPermissionValue(employee.permissions, 'scan_rate_cash');
+
+      if (allowRtgs && !allowCash) {
+        resolvedMode = 'rtgs';
+      } else if (allowCash && !allowRtgs) {
+        resolvedMode = 'cash';
+      } else if (allowRtgs && allowCash) {
+        resolvedMode = resolvedMode === 'cash' ? 'cash' : 'rtgs';
+      } else {
+        resolvedMode = 'rtgs';
+      }
+    } else {
+      resolvedMode = resolvedMode === 'cash' ? 'cash' : 'rtgs';
+    }
 
     // 5. Calculate Gold Amount
     let baseGoldRatePer10g = resolvedMode === 'cash'

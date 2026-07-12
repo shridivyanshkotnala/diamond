@@ -241,6 +241,9 @@ export default function ReviewResultsScreen() {
 
   const handleFieldChange = useCallback(
     (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => {
+      if (field === 'customPurityPercent' && !canEditPurityPercent) {
+        return;
+      }
     const updated = { ...useScannerStore.getState().scanData, [field]: value };
     updateScanData({ [field]: value });
     setStructuredData(
@@ -251,8 +254,14 @@ export default function ReviewResultsScreen() {
       bumpMrpRefresh();
     }
   },
-    [updateScanData, setStructuredData],
+    [updateScanData, setStructuredData, bumpMrpRefresh, canEditPurityPercent],
   );
+
+  useEffect(() => {
+    if (!canEditPurityPercent && scanData.customPurityPercent.trim()) {
+      handleFieldChange('customPurityPercent', '');
+    }
+  }, [canEditPurityPercent, scanData.customPurityPercent, handleFieldChange]);
 
   useEffect(() => {
     if (calculationRateAccess === 'both') return;
