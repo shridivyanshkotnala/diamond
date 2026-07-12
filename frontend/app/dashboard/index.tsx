@@ -157,6 +157,21 @@ export default function DashboardScreen() {
                 <View style={styles.rateCard}>
                   <View style={styles.rateCardHeader}>
                     <Text style={styles.cardKaratLabel}>Gold (24K) 99.9%</Text>
+                    {show24kCash && !show24kRtgs ? (
+                      <View style={styles.rateBadge}>
+                        <Text style={styles.rateBadgeValue}>
+                          ₹ {(twentyFourKRate.cashRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
+                      </View>
+                    ) : show24kRtgs && !show24kCash ? (
+                      <View style={styles.rateBadge}>
+                        <Text style={styles.rateBadgeValue}>
+                          ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
+                      </View>
+                    ) : null}
                   </View>
 
                   {show24kCash && show24kRtgs ? (
@@ -172,21 +187,6 @@ export default function DashboardScreen() {
                           ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
                         </Text>
                         <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
-                      </View>
-                    </View>
-                  ) : show24kCash || show24kRtgs ? (
-                    <View style={styles.rateCardBody}>
-                      <View style={styles.rateBadge}>
-                        <Text style={styles.rateBadgeValue}>
-                          ₹ {(
-                            show24kCash
-                              ? (twentyFourKRate.cashRate ?? twentyFourKRate.finalRate)
-                              : (twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate)
-                          ).toLocaleString('en-IN')}
-                        </Text>
-                        <Text style={styles.rateBadgeLabel}>
-                          ({show24kCash ? 'Cash Rate' : 'RTGS Rate'})
-                        </Text>
                       </View>
                     </View>
                   ) : null}

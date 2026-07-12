@@ -308,15 +308,15 @@ export async function loginBusiness(email: string, password: string): Promise<{
   }
 }
 
-export async function loginEmployeeById(employeeId: string, password: string): Promise<{
+export async function loginEmployeeByEmail(email: string, password: string): Promise<{
   success: boolean;
-  data?: BusinessLoginResponse & { role?: string; employeeId?: string };
+  data?: BusinessLoginResponse & { role?: string };
   error?: string;
 }> {
   try {
     const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/auth/employee/login', {
       method: 'POST',
-      body: { employeeId: employeeId.trim(), password },
+      body: { email: email.trim().toLowerCase(), password },
     });
     const unwrapped = unwrapEnvelope(response);
     if (!isSuccessfulResponse(response, unwrapped)) {
@@ -328,7 +328,6 @@ export async function loginEmployeeById(employeeId: string, password: string): P
     const accessToken = readString(unwrapped, ['accessToken', 'token']);
     const refreshToken = readString(unwrapped, ['refreshToken']);
     const role = readString(unwrapped, ['role']);
-    const resolvedEmployeeId = readString(unwrapped, ['employeeId']);
 
     if (!accessToken) {
       return { success: false, error: 'Login response missing access token.' };
@@ -336,7 +335,7 @@ export async function loginEmployeeById(employeeId: string, password: string): P
 
     return {
       success: true,
-      data: { accessToken, refreshToken, role, employeeId: resolvedEmployeeId ?? employeeId.trim() },
+      data: { accessToken, refreshToken, role },
     };
   } catch (error) {
     return {

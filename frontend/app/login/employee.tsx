@@ -19,14 +19,14 @@ import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useEmployeeStore } from '@/store/employeeStore';
-import { loginEmployeeById, loginEmployeeByPhone } from '@/utils/authApi';
-import { validatePassword, validatePhone } from '@/utils/validation';
+import { loginEmployeeByEmail, loginEmployeeByPhone } from '@/utils/authApi';
+import { validateEmail, validatePassword, validatePhone } from '@/utils/validation';
 
 const ACCENT_TAN = '#D4C19C';
 const BUTTON_GREEN = '#1E2F28';
 const TAB_BG = '#F2F2F7';
 
-type EmployeeLoginMethod = 'employeeId' | 'contact';
+type EmployeeLoginMethod = 'email' | 'phone';
 
 export default function EmployeeLoginScreen() {
   const router = useRouter();
@@ -35,21 +35,21 @@ export default function EmployeeLoginScreen() {
     rememberMe,
     setRememberMe,
     savedPhone,
-    savedEmployeeId,
+    savedEmployeeEmail,
     setAuthenticated,
     setAuthToken,
     setRefreshToken,
-    setSavedEmployeeContact,
+    setSavedEmployeeCredentials,
     setUserRole,
     setLoggedInEmployee,
   } = useAuthStore();
 
-  const [method, setMethod] = useState<EmployeeLoginMethod>('employeeId');
-  const [employeeId, setEmployeeId] = useState(savedEmployeeId || '');
+  const [method, setMethod] = useState<EmployeeLoginMethod>('email');
+  const [email, setEmail] = useState(savedEmployeeEmail || '');
   const [contact, setContact] = useState(savedPhone || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [employeeIdError, setEmployeeIdError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -60,21 +60,21 @@ export default function EmployeeLoginScreen() {
     const pErr = validatePassword(password);
     setPasswordError(pErr);
 
-    if (method === 'employeeId') {
-      const idErr = employeeId.trim().length < 4 ? 'Enter a valid Employee ID' : null;
-      setEmployeeIdError(idErr);
+    if (method === 'email') {
+      const eErr = validateEmail(email);
+      setEmailError(eErr);
       setContactError(null);
-      if (idErr || pErr) return;
+      if (eErr || pErr) return;
     } else {
       const phErr = validatePhone(contact);
       setContactError(phErr);
-      setEmployeeIdError(null);
+      setEmailError(null);
       if (phErr || pErr) return;
     }
 
     setLoading(true);
     try {
-      if (method === 'contact') {
+      if (method === 'phone') {
         const apiResult = await loginEmployeeByPhone(contact, password);
         if (apiResult.success && apiResult.data) {
           const normalizedContact = contact.replace(/\D/g, '').slice(-10);
@@ -90,7 +90,7 @@ export default function EmployeeLoginScreen() {
           setLoggedInEmployee(matchedEmployee?.id ?? null);
           setAuthenticated(true);
           if (rememberMe) {
-            setSavedEmployeeContact('', contact.replace(/\D/g, '').slice(-10));
+            setSavedEmployeeCredentials('', contact.replace(/\D/g, '').slice(-10));
           }
           router.replace('/dashboard');
           return;
@@ -100,11 +100,10 @@ export default function EmployeeLoginScreen() {
         return;
       }
 
-      const apiResult = await loginEmployeeById(employeeId, password);
+      const apiResult = await loginEmployeeByEmail(email, password);
       if (apiResult.success && apiResult.data) {
-        const normalizedId = employeeId.trim().toUpperCase();
         const matchedEmployee = employees.find(
-          (employee) => employee.employeeId.toUpperCase() === normalizedId,
+          (employee) => employee.email.trim().toLowerCase() === email.trim().toLowerCase(),
         );
 
         setAuthToken(apiResult.data.accessToken);
@@ -115,10 +114,7 @@ export default function EmployeeLoginScreen() {
         setLoggedInEmployee(matchedEmployee?.id ?? null);
         setAuthenticated(true);
         if (rememberMe) {
-          setSavedEmployeeContact(
-            apiResult.data.employeeId ?? employeeId.trim(),
-            matchedEmployee?.phone ?? '',
-          );
+          setSavedEmployeeCredentials(email.trim().toLowerCase(), matchedEmployee?.phone ?? '');
         }
         router.replace('/dashboard');
         return;
@@ -162,44 +158,46 @@ export default function EmployeeLoginScreen() {
             >
               <View style={styles.tabRow}>
                 <Pressable
-                  onPress={() => setMethod('employeeId')}
-                  style={[styles.tab, method === 'employeeId' && styles.tabActive]}
+                  onPress={() => setMethod('email')}
+                  style={[styles.tab, method === 'email' && styles.tabActive]}
                 >
-                  <Text style={[styles.tabText, method === 'employeeId' && styles.tabTextActive]}>
-                    Use Employee ID
+                  <Text style={[styles.tabText, method === 'email' && styles.tabTextActive]}>
+                    Use Email Address
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setMethod('contact')}
-                  style={[styles.tab, method === 'contact' && styles.tabActive]}
+                  onPress={() => setMethod('phone')}
+                  style={[styles.tab, method === 'phone' && styles.tabActive]}
                 >
-                  <Text style={[styles.tabText, method === 'contact' && styles.tabTextActive]}>
-                    Use Contact Details
+                  <Text style={[styles.tabText, method === 'phone' && styles.tabTextActive]}>
+                    Use Phone Number
                   </Text>
                 </Pressable>
               </View>
 
-              {method === 'employeeId' ? (
+              {method === 'email' ? (
                 <>
-                  <Text style={styles.inputLabel}>Employee ID</Text>
-                  <View style={[styles.inputRow, employeeIdError ? styles.inputError : null]}>
+                  <Text style={styles.inputLabel}>Email Address</Text>
+                  <View style={[styles.inputRow, emailError ? styles.inputError : null]}>
                     <TextInput
-                      value={employeeId}
+                      value={email}
                       onChangeText={(text) => {
-                        setEmployeeId(text.toUpperCase());
-                        setEmployeeIdError(null);
+                        setEmail(text);
+                        setEmailError(null);
                       }}
-                      placeholder="EMP-INT-001"
+                      placeholder="employee@company.com"
                       placeholderTextColor={Colors.placeholder}
-                      autoCapitalize="characters"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="email-address"
                       style={styles.textInput}
                     />
                   </View>
-                  {employeeIdError ? <Text style={styles.errorText}>{employeeIdError}</Text> : null}
+                  {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </>
               ) : (
                 <>
-                  <Text style={styles.inputLabel}>Contact Number</Text>
+                  <Text style={styles.inputLabel}>Phone Number</Text>
                   <View style={[styles.phoneRow, contactError ? styles.inputError : null]}>
                     <View style={styles.countryCode}>
                       <Text style={styles.countryCodeText}>+91</Text>

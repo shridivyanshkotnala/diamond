@@ -1,12 +1,6 @@
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
 const redisClient = require('../redis/redisClient');
 const Employee = require('../models/employee.model');
-
-// Generate unique Employee ID
-const generateEmployeeId = () => {
-  return 'EMP' + Math.floor(1000 + Math.random() * 9000).toString();
-};
 
 const createEmployee = async (req, res) => {
   try {
@@ -22,21 +16,22 @@ const createEmployee = async (req, res) => {
           draftDataStr = await redisClient.get(redisKey);
       }
 
-      if (!draftDataStr) {
-        return res.status(400).json({ success: false, message: 'Draft expired or not found' });
+      let draftData = null;
+      if (draftDataStr) {
+        draftData = JSON.parse(draftDataStr);
       }
 
-      const draftData = JSON.parse(draftDataStr);
-
-      let employeeId = generateEmployeeId();
-      let isUnique = false;
-      while (!isUnique) {
-        const existing = await Employee.findOne({ employeeId });
-        if (!existing) {
-          isUnique = true;
-        } else {
-          employeeId = generateEmployeeId();
+      if (!draftData) {
+        if (!name) {
+          return res.status(400).json({ success: false, message: 'Draft expired or not found' });
         }
+        draftData = {
+          businessId: businessId.toString(),
+          name,
+          phone,
+          email,
+          permissions: permissions || {},
+        };
       }
 
       const salt = await bcrypt.genSalt(10);
@@ -44,7 +39,6 @@ const createEmployee = async (req, res) => {
 
       const newEmployee = new Employee({
         businessId,
-        employeeId,
         name: draftData.name,
         phone: draftData.phone,
         email: draftData.email,
@@ -62,7 +56,6 @@ const createEmployee = async (req, res) => {
         success: true,
         message: 'Employee created successfully',
         data: {
-          employeeId: newEmployee.employeeId,
           name: newEmployee.name
         }
       });
@@ -114,7 +107,7 @@ const getEmployees = async (req, res) => {
 
 const updateEmployee = async (req, res) => {
   try {
-    const { id } = req.params; // This is the employeeId
+    const { id } = req.params;
     const { name, phone, email, permissions, isActive } = req.body;
     const businessId = req.user.businessId;
 

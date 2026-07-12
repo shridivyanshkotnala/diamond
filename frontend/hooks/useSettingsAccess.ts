@@ -10,11 +10,12 @@ export function useSettingsAccess() {
   const isSuper = useAuthStore((state) => state.isSuper);
   const loggedInEmployeeId = useAuthStore((state) => state.loggedInEmployeeId);
   const savedPhone = useAuthStore((state) => state.savedPhone);
+  const savedEmployeeEmail = useAuthStore((state) => state.savedEmployeeEmail);
   const employees = useEmployeeStore((state) => state.employees);
 
   const employee = useMemo(
-    () => resolveCurrentEmployee(employees, loggedInEmployeeId, savedPhone),
-    [employees, loggedInEmployeeId, savedPhone],
+    () => resolveCurrentEmployee(employees, loggedInEmployeeId, savedPhone, savedEmployeeEmail),
+    [employees, loggedInEmployeeId, savedPhone, savedEmployeeEmail],
   );
 
   const visibleMenuItems = useMemo(

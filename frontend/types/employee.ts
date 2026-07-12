@@ -11,7 +11,6 @@ export type SettingsPermissionKey =
 export type ExtraPermissionKey =
   | 'upload_new_items'
   | 'delete_stock_items'
-  | 'edit_formulae'
   | 'revoke_access';
 
 export type RateEditPermissionKey =
@@ -36,7 +35,6 @@ export type EmployeePermissions = Record<EmployeePermissionKey, boolean>;
 
 export interface Employee {
   id: string;
-  employeeId: string;
   fullName: string;
   designation: string;
   phone: string;

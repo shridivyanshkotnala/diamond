@@ -14,7 +14,7 @@ export default function MastersScreen() {
   const { hasAnyAccess } = useMarketRatesAccess();
   const { employee, userRole } = useSettingsAccess();
   
-  const canEditFormulae = userRole === 'business' || employee?.permissions.edit_formulae === true;
+  const canEditFormulae = userRole === 'business' || employee?.permissions.settings_formulae === true;
 
   const visibleItems = MASTER_SECTION_ITEMS.filter(item => {
     if (item.id === 'section-rates') return hasAnyAccess;

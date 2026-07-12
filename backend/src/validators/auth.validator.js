@@ -38,9 +38,10 @@ const loginSchema = Joi.object({
 });
 
 const employeeLoginSchema = Joi.object({
-  employeeId: Joi.string().required(),
+  email: Joi.string().trim().email({ tlds: { allow: false }, minDomainSegments: 1 }),
+  phone: Joi.string().trim(),
   password: Joi.string().required(),
-});
+}).xor('email', 'phone');
 const changePasswordSchema = Joi.object({
   currentPassword: Joi.string().required(),
   newPassword: Joi.string().min(8).required(),

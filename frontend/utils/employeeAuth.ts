@@ -2,24 +2,24 @@ import type { Employee } from '@/types/employee';
 
 export function authenticateEmployee(
   employees: Employee[],
-  method: 'employeeId' | 'contact',
+  method: 'email' | 'phone',
   identifier: string,
   password: string,
 ): { success: true; employee: Employee } | { success: false; error: string } {
-  const normalizedId = identifier.trim().toUpperCase();
+  const normalizedEmail = identifier.trim().toLowerCase();
   const normalizedPhone = identifier.replace(/\D/g, '');
 
   const employee =
-    method === 'employeeId'
-      ? employees.find((entry) => entry.employeeId.toUpperCase() === normalizedId)
+    method === 'email'
+      ? employees.find((entry) => entry.email.trim().toLowerCase() === normalizedEmail)
       : employees.find((entry) => entry.phone.replace(/\D/g, '').slice(-10) === normalizedPhone);
 
   if (!employee) {
     return {
       success: false,
       error:
-        method === 'employeeId'
-          ? 'Employee ID not found. Check with your admin.'
+        method === 'email'
+          ? 'Email not registered. Check with your admin.'
           : 'Phone number not registered. Check with your admin.',
     };
   }

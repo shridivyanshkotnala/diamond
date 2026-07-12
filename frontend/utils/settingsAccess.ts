@@ -11,14 +11,20 @@ export function resolveCurrentEmployee(
   employees: Employee[],
   loggedInEmployeeId: string | null,
   savedPhone: string,
+  savedEmployeeEmail: string,
 ): Employee | null {
   if (loggedInEmployeeId) {
     return employees.find((employee) => employee.id === loggedInEmployeeId) ?? null;
   }
 
   const normalizedPhone = savedPhone.replace(/\D/g, '').slice(-10);
+  const normalizedEmail = savedEmployeeEmail.trim().toLowerCase();
   if (!normalizedPhone) {
-    return null;
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    return employees.find((employee) => employee.email.toLowerCase() === normalizedEmail) ?? null;
   }
 
   return (
@@ -34,6 +40,9 @@ export function canAccessSettingsItem(
   permissions?: EmployeePermissions | null,
   isSuper: boolean = false,
 ): boolean {
+  if (itemId === 'subscription') {
+    return false;
+  }
   if (userRole !== 'employee') {
     // Non-employee: allowed by default, except for some SUPREME-only items
     if (itemId === 'rate-control') {
@@ -48,7 +57,7 @@ export function canAccessSettingsItem(
       permissions?.edit_rate_diamond === true ||
       permissions?.edit_rate_colorstone === true ||
       permissions?.edit_rate_labour === true ||
-      permissions?.edit_formulae === true
+      permissions?.settings_formulae === true
     );
   }
 

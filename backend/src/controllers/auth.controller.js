@@ -90,8 +90,8 @@ const login = async (req, res, next) => {
 
 const loginEmployee = async (req, res, next) => {
   try {
-    const { employeeId, password } = req.body;
-    const data = await registrationService.loginEmployee(employeeId, password);
+    const { email, phone, password } = req.body;
+    const data = await registrationService.loginEmployee({ email, phone }, password);
     sendSuccess(res, data);
   } catch (err) {
     next(err);

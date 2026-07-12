@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
 
 import { DeleteStoneRateModal } from '@/components/dashboard/market-rates/DeleteStoneRateModal';
 import { DiamondRateFormModal } from '@/components/dashboard/market-rates/DiamondRateFormModal';
@@ -301,7 +302,9 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
             <Text style={[styles.headerCell, styles.clarityCell]}>Clarity</Text>
             <Text style={[styles.headerCell, styles.rateCell]}>Rate</Text>
             <Text style={[styles.headerCell, styles.actionCell]}>Edit</Text>
-            <Text style={[styles.headerCell, styles.actionCell]}>Delete</Text>
+            <Text style={[styles.headerCell, styles.actionCell, styles.deleteHeaderCell]}>
+              Delete
+            </Text>
           </View>
 
           {sortedRates.map((rate, index) => {
@@ -330,18 +333,34 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
                 <Text style={[styles.cell, styles.rateCell]} numberOfLines={1}>
                   ₹{formatInr(rate.rate)}
                 </Text>
-                <Pressable
-                  onPress={() => openEdit(rate)}
-                  style={[styles.iconBtn, styles.actionCell]}
-                >
-                  <Text style={styles.actionText}>✏</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setDeletingRate(rate)}
-                  style={[styles.iconBtn, styles.actionCell]}
-                >
-                  <Text style={[styles.actionText, styles.deleteText]}>🗑</Text>
-                </Pressable>
+                <View style={styles.actionCell}>
+                  <Pressable
+                    onPress={() => openEdit(rate)}
+                    style={({ pressed }) => [
+                      styles.iconBtn,
+                      styles.editBtn,
+                      pressed && styles.iconBtnPressed,
+                    ]}
+                    hitSlop={8}
+                    accessibilityLabel="Edit diamond rate"
+                  >
+                    <Pencil size={13} color={Colors.textPrimary} strokeWidth={2.25} />
+                  </Pressable>
+                </View>
+                <View style={[styles.actionCell, styles.deleteActionCell]}>
+                  <Pressable
+                    onPress={() => setDeletingRate(rate)}
+                    style={({ pressed }) => [
+                      styles.iconBtn,
+                      styles.deleteBtn,
+                      pressed && styles.iconBtnPressed,
+                    ]}
+                    hitSlop={8}
+                    accessibilityLabel="Delete diamond rate"
+                  >
+                    <Trash2 size={13} color={DELETE_RED} strokeWidth={2.25} />
+                  </Pressable>
+                </View>
               </View>
             );
           })}
@@ -439,47 +458,58 @@ const styles = StyleSheet.create({
   },
   row: {
     ...screenStyles.tableDataRow,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
     minHeight: 36,
   },
   headerRow: {
     ...screenStyles.tableHeaderRow,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
   },
   headerCell: {
     ...screenStyles.tableHeaderCell,
     textAlign: 'center',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 10,
+    lineHeight: 12,
   },
   cell: {
     ...screenStyles.tableCell,
     textAlign: 'center',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 10,
+    lineHeight: 12,
   },
   rowBorder: {
     ...screenStyles.tableRowBorder,
   },
-  packetCell: { width: 50 },
-  shapeCell: { width: 46 },
-  colorCell: { width: 42 },
-  clarityCell: { width: 46 },
-  rateCell: { width: 52 },
-  actionCell: { width: 44, alignItems: 'center', justifyContent: 'center' },
+  packetCell: { flex: 1.2, minWidth: 0 },
+  shapeCell: { flex: 1, minWidth: 0 },
+  colorCell: { flex: 0.9, minWidth: 0 },
+  clarityCell: { flex: 1, minWidth: 0 },
+  rateCell: { width: 68, flexShrink: 0 },
+  actionCell: { width: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  deleteHeaderCell: { paddingRight: 6 },
+  deleteActionCell: { paddingRight: 6 },
   iconBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#F7F7F7',
   },
-  actionText: {
-    fontSize: 14,
-    lineHeight: 16,
-    color: Colors.textPrimary,
-    textAlign: 'center',
+  editBtn: {
+    backgroundColor: '#F4F7F5',
+    borderColor: '#DCE7DE',
   },
-  deleteText: {
-    color: DELETE_RED,
+  deleteBtn: {
+    backgroundColor: '#FFF4F3',
+    borderColor: '#F4C9C6',
+  },
+  iconBtnPressed: {
+    transform: [{ scale: 0.96 }],
+    opacity: 0.9,
   },
 });

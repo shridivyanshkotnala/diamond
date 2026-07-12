@@ -94,7 +94,6 @@ export default function EmployeeDetailScreen() {
           title="EMPLOYEE DETAILS"
           rows={[
             { label: 'Name', value: employee.fullName },
-            { label: 'Employee ID', value: employee.employeeId },
             { label: 'Designation', value: employee.designation },
             { label: 'Phone No.', value: `+91 ${employee.phone}` },
             { label: 'Email', value: employee.email },

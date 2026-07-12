@@ -69,7 +69,7 @@ export default function CreateEmployeePasswordScreen() {
         return;
       }
 
-      const result = await finalizeEmployeeCreation(draft.password);
+      const result = await finalizeEmployeeCreation(draft.password, draft);
       if (!result.success) {
         setFormError(result.error ?? 'Failed to create employee.');
         return;
@@ -111,7 +111,8 @@ export default function CreateEmployeePasswordScreen() {
                 placeholder="PASSWORD"
                 placeholderTextColor={Colors.placeholder}
                 secureTextEntry={!showPassword}
-                autoCapitalize="characters"
+                autoCapitalize="none"
+                autoCorrect={false}
                 style={styles.input}
               />
               <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
@@ -133,6 +134,7 @@ export default function CreateEmployeePasswordScreen() {
                 placeholderTextColor={Colors.placeholder}
                 secureTextEntry={!showConfirm}
                 autoCapitalize="none"
+                autoCorrect={false}
                 style={styles.input}
               />
               <Pressable onPress={() => setShowConfirm((v) => !v)} hitSlop={8}>

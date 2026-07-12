@@ -27,6 +27,7 @@ export const GOLD_MATRIX_SECTIONS: MatrixSection[] = [
   {
     sectionLabel: '24K GOLD',
     rows: [
+      { key: '24k_mcx', label: ' MCX Rate ' },
       { key: '24k_rtgs', label: ' RTGS Rate ' },
       { key: '24k_cash', label: ' Cash Rate ' },
     ],

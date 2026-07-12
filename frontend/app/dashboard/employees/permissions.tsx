@@ -164,17 +164,6 @@ export default function EmployeePermissionsScreen() {
         </View>
 
         <View style={styles.permissionCard}>
-          <Text style={styles.cardTitle}>Formula Edit Access</Text>
-          <Text style={styles.cardSubtitle}>Allow employee to edit calculation formulas</Text>
-          <MatrixCheckboxRow
-            label="Edit Formula"
-            checked={permissions.edit_formulae}
-            onToggle={() => toggle('edit_formulae')}
-            showDivider={false}
-          />
-        </View>
-
-        <View style={styles.permissionCard}>
           <Text style={styles.cardTitle}>Edit Purity Percentage During Calculation</Text>
           <Text style={styles.cardSubtitle}>
             Allow employee to modify the purity percentage while calculating jewellery price.

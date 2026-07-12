@@ -27,7 +27,7 @@ export type ApiEmployeePermissions = {
   scanEditPurityPercent?: boolean;
   scanRateRtgs?: boolean;
   scanRateCash?: boolean;
-};
+} & Partial<Record<MatrixKey, boolean>>;
 
 const MATRIX_KEYS = Object.keys(DEFAULT_MATRIX_VALUES) as MatrixKey[];
 
@@ -71,8 +71,9 @@ export function mapDraftPermissionsToApi(permissions: EmployeePermissions): ApiE
   const hasMatrixAccess = MATRIX_KEYS.some((key) => permissions[key]);
 
   return {
+    ...MATRIX_KEYS.reduce((acc, key) => ({ ...acc, [key]: permissions[key] }), {} as Record<MatrixKey, boolean>),
     businessDetails: false,
-    manageFormulae: permissions.settings_formulae || permissions.edit_formulae,
+    manageFormulae: permissions.settings_formulae,
     homeDashboardMetricsControls: hasMatrixAccess,
     inventoryManager: permissions.settings_inventory,
     employeeManager: false,
@@ -91,7 +92,13 @@ export function mapDraftPermissionsToApi(permissions: EmployeePermissions): ApiE
 export function mapApiPermissionsToEmployee(apiPermissions: Partial<ApiEmployeePermissions>): EmployeePermissions {
   const permissions: EmployeePermissions = { ...DEFAULT_EMPLOYEE_PERMISSIONS };
 
-  if (apiPermissions.homeDashboardMetricsControls) {
+  const hasAnyMatrixKey = MATRIX_KEYS.some((key) => typeof apiPermissions[key] === 'boolean');
+  if (hasAnyMatrixKey) {
+    MATRIX_KEYS.forEach((key) => {
+      const value = apiPermissions[key];
+      permissions[key] = typeof value === 'boolean' ? value : DEFAULT_MATRIX_VALUES[key];
+    });
+  } else if (apiPermissions.homeDashboardMetricsControls) {
     MATRIX_KEYS.forEach((key) => {
       permissions[key] = DEFAULT_MATRIX_VALUES[key];
     });
@@ -102,7 +109,6 @@ export function mapApiPermissionsToEmployee(apiPermissions: Partial<ApiEmployeeP
   }
 
   permissions.settings_formulae = Boolean(apiPermissions.manageFormulae);
-  permissions.edit_formulae = Boolean(apiPermissions.manageFormulae);
   permissions.settings_inventory = Boolean(apiPermissions.inventoryManager);
   permissions.settings_purity = Boolean(apiPermissions.tunchPurity);
   permissions.settings_invoice = Boolean(apiPermissions.invoiceFormat);
@@ -128,13 +134,11 @@ export function mapApiEmployeeToEmployee(raw: Record<string, unknown>): Employee
       : {};
 
   const id =
-    readString(raw, ['id', '_id', 'employeeId']) ??
+    readString(raw, ['id', '_id']) ??
     `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  const employeeId = readString(raw, ['employeeId', 'employeeCode', 'code']) ?? id;
 
   return {
     id,
-    employeeId,
     fullName: readString(raw, ['name', 'fullName']) ?? 'Employee',
     designation: readString(raw, ['designation', 'role']) ?? 'Employee',
     phone: readString(raw, ['phone'])?.replace(/\D/g, '').slice(-10) ?? '',
@@ -234,15 +238,28 @@ export async function updateEmployeeApi(
   }
 }
 
-export async function finalizeEmployeeCreation(password: string): Promise<{
+export async function finalizeEmployeeCreation(
+  password: string,
+  draft?: EmployeeDraft,
+): Promise<{
   success: boolean;
-  employeeId?: string;
   error?: string;
 }> {
   try {
+    const draftPayload = draft ? buildEmployeeDraftPayload(draft) : null;
     const response = await apiRequest<ApiEnvelope<Record<string, unknown>>>('/employees', {
       method: 'POST',
-      body: { password },
+      body: {
+        password,
+        ...(draftPayload
+          ? {
+              name: draftPayload.name,
+              phone: draftPayload.phone,
+              email: draftPayload.email,
+              permissions: mapDraftPermissionsToApi(draftPayload.permissions),
+            }
+          : null),
+      },
     });
     const unwrapped = unwrapEnvelope(response);
     if (!isSuccessfulResponse(response, unwrapped)) {
@@ -251,11 +268,7 @@ export async function finalizeEmployeeCreation(password: string): Promise<{
         error: resolveApiMessage(response, unwrapped, 'Failed to finalize employee creation.'),
       };
     }
-    const employeeId = readString(unwrapped, ['employeeId', 'employeeCode', 'code']);
-    if (!employeeId) {
-      return { success: false, error: 'Employee ID missing in server response.' };
-    }
-    return { success: true, employeeId };
+    return { success: true };
   } catch (error) {
     return {
       success: false,

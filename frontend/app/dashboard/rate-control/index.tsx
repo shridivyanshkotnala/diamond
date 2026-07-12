@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.screenBottom + 96,
+    paddingBottom: Spacing.screenBottom + 24,
   },
   loaderWrap: {
     flex: 1,
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   headerWrap: {
     paddingHorizontal: Spacing.screenHorizontal,
     paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
   backRow: {
     flexDirection: 'row',
@@ -494,12 +494,12 @@ const styles = StyleSheet.create({
   },
   sectionWrap: {
     marginHorizontal: Spacing.screenHorizontal,
-    gap: Spacing.lg,
+    gap: Spacing.sm,
   },
   mcxCard: {
     borderRadius: Radius.card,
     backgroundColor: Colors.primary,
-    padding: Spacing.cardPadding,
+    padding: Spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.14,
@@ -519,28 +519,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   mcxSubTitle: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 13,
     color: 'rgba(255,255,255,0.82)',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   mcxIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(212, 193, 156, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mcxValue: {
-    marginTop: Spacing.lg,
-    fontSize: 34,
-    lineHeight: 40,
+    marginTop: Spacing.sm,
+    fontSize: 32,
+    lineHeight: 36,
     fontWeight: '700',
     color: Colors.white,
   },
   updatedAtText: {
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
     fontSize: 12,
     color: 'rgba(255,255,255,0.72)',
   },
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
-    padding: Spacing.cardPadding,
+    padding: Spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -559,12 +559,12 @@ const styles = StyleSheet.create({
   rateCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   rateCardIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -579,12 +579,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   rateCardSubtitle: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 13,
     color: Colors.textSecondary,
   },
   changeSection: {
-    marginTop: Spacing.xl,
+    marginTop: Spacing.md,
   },
   fieldLabel: {
     fontSize: 12,
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '600',
     color: Colors.textMuted,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   controlsRow: {
     flexDirection: 'row',
@@ -601,10 +601,10 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   signDropdownWrap: {
-    width: 96,
+    width: 88,
   },
   signToggle: {
-    minHeight: 48,
+    minHeight: 44,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 44,
   },
   signToggleBtnActive: {
     backgroundColor: '#E8F0EC',
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   amountInputWrap: {
-    minHeight: 48,
+    minHeight: 44,
     flex: 1,
     minWidth: 140,
     borderWidth: 1,
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
   },
   amountPrefix: {
     marginRight: 8,
@@ -655,8 +655,8 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   cardDivider: {
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
     height: 1,
     backgroundColor: Colors.border,
   },
@@ -672,8 +672,8 @@ const styles = StyleSheet.create({
   },
   finalValue: {
     marginTop: 2,
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 32,
     fontWeight: '700',
     color: Colors.primary,
   },

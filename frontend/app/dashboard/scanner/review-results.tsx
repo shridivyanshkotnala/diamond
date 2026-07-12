@@ -80,6 +80,7 @@ export default function ReviewResultsScreen() {
   const isSuper = useAuthStore((s) => s.isSuper);
   const loggedInEmployeeId = useAuthStore((s) => s.loggedInEmployeeId);
   const savedPhone = useAuthStore((s) => s.savedPhone);
+  const savedEmployeeEmail = useAuthStore((s) => s.savedEmployeeEmail);
   const employees = useEmployeeStore((s) => s.employees);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -88,8 +89,8 @@ export default function ReviewResultsScreen() {
   const [hasAddedToWishlist, setHasAddedToWishlist] = useState(false);
 
   const employee = useMemo(
-    () => resolveCurrentEmployee(employees, loggedInEmployeeId, savedPhone),
-    [employees, loggedInEmployeeId, savedPhone],
+    () => resolveCurrentEmployee(employees, loggedInEmployeeId, savedPhone, savedEmployeeEmail),
+    [employees, loggedInEmployeeId, savedPhone, savedEmployeeEmail],
   );
   const isEmployeeRestricted = userRole === 'employee' && !isSuper;
   const canEditPurityPercent =

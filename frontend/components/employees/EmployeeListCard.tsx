@@ -15,6 +15,7 @@ export function EmployeeListCard({ employee, onPress }: EmployeeListCardProps) {
   const initial = nameParts.length > 1 
     ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
     : employee.fullName.charAt(0).toUpperCase();
+  const badgeText = employee.email || employee.phone || 'No Contact';
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
@@ -26,7 +27,7 @@ export function EmployeeListCard({ employee, onPress }: EmployeeListCardProps) {
         <Text style={styles.role}>{employee.designation}</Text>
       </View>
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>{employee.employeeId}</Text>
+        <Text style={styles.badgeText}>{badgeText}</Text>
       </View>
     </Pressable>
   );

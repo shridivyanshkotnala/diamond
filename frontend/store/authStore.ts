@@ -17,7 +17,7 @@ interface AuthState {
   loginMethod: LoginMethod;
   savedEmail: string;
   savedPhone: string;
-  savedEmployeeId: string;
+  savedEmployeeEmail: string;
   registration: Partial<RegistrationData>;
   _hasHydrated: boolean;
   setAuthenticated: (value: boolean) => void;
@@ -29,7 +29,7 @@ interface AuthState {
   setRememberMe: (value: boolean) => void;
   setLoginMethod: (method: LoginMethod) => void;
   setSavedCredentials: (email: string, phone: string) => void;
-  setSavedEmployeeContact: (employeeId: string, phone: string) => void;
+  setSavedEmployeeCredentials: (email: string, phone: string) => void;
   updateRegistration: (data: Partial<RegistrationData>) => void;
   resetRegistration: () => void;
   logout: () => void;
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
       loginMethod: 'email',
       savedEmail: '',
       savedPhone: '',
-      savedEmployeeId: '',
+      savedEmployeeEmail: '',
       registration: {},
       _hasHydrated: false,
       setAuthenticated: (value) => set({ isAuthenticated: value }),
@@ -61,8 +61,8 @@ export const useAuthStore = create<AuthState>()(
       setRememberMe: (value) => set({ rememberMe: value }),
       setLoginMethod: (method) => set({ loginMethod: method }),
       setSavedCredentials: (email, phone) => set({ savedEmail: email, savedPhone: phone }),
-      setSavedEmployeeContact: (employeeId, phone) =>
-        set({ savedEmployeeId: employeeId, savedPhone: phone }),
+      setSavedEmployeeCredentials: (email, phone) =>
+        set({ savedEmployeeEmail: email, savedPhone: phone }),
       updateRegistration: (data) =>
         set((state) => ({ registration: { ...state.registration, ...data } })),
       resetRegistration: () => set({ registration: {} }),
@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
         rememberMe: state.rememberMe,
         savedEmail: state.savedEmail,
         savedPhone: state.savedPhone,
-        savedEmployeeId: state.savedEmployeeId,
+        savedEmployeeEmail: state.savedEmployeeEmail,
         loginMethod: state.loginMethod,
         registration: state.registration,
       }),

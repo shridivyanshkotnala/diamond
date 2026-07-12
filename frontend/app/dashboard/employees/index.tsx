@@ -52,7 +52,8 @@ export default function EmployeesScreen() {
       (e) =>
         e.fullName.toLowerCase().includes(q) ||
         e.designation.toLowerCase().includes(q) ||
-        e.employeeId.toLowerCase().includes(q)
+        e.email.toLowerCase().includes(q) ||
+        e.phone.toLowerCase().includes(q)
     );
   }, [employees, search]);
 

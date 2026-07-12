@@ -192,9 +192,22 @@ const login = async (email, password) => {
   };
 };
 
-const loginEmployee = async (employeeId, password) => {
+const loginEmployee = async ({ email, phone }, password) => {
   const Employee = require('../models/employee.model');
-  const user = await Employee.findOne({ employeeId });
+  const normalizedEmail = email ? String(email).trim().toLowerCase() : null;
+  const normalizedPhone = phone ? String(phone).replace(/\D/g, '').slice(-10) : null;
+
+  const query = normalizedEmail
+    ? { email: normalizedEmail }
+    : normalizedPhone
+      ? { phone: normalizedPhone }
+      : null;
+
+  if (!query) {
+    throw new Error('INVALID_EMPLOYEE_CREDENTIALS');
+  }
+
+  const user = await Employee.findOne(query);
   if (!user || !user.isActive) {
     throw new Error('INVALID_EMPLOYEE_CREDENTIALS');
   }
@@ -214,7 +227,6 @@ const loginEmployee = async (employeeId, password) => {
     refreshToken: tokens.refreshToken,
     businessId: user.businessId.toString(),
     userId: user._id.toString(),
-    employeeId: user.employeeId,
     role: 'EMP',
     permissions: user.permissions
   };
