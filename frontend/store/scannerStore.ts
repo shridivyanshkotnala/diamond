@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
 import { DEFAULT_SCAN_ITEM } from '@/constants/scannerData';
+import { ScanStage } from '@/types/scanner';
 import type {
   AbbreviationOption,
   ClarificationField,
   JewelleryType,
   ScanLoadingState,
-  ScanStage,
   ScanItemData,
   ScanMode,
   ScanSide,

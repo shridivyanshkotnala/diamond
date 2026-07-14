@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Alert, ImageBackground, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,7 +32,6 @@ export default function ProcessingScreen() {
   const scanLoading = useScannerStore((s) => s.scanLoading);
   const setScanLoading = useScannerStore((s) => s.setScanLoading);
   const resetScanLoading = useScannerStore((s) => s.resetScanLoading);
-  const [targetProgress, setTargetProgress] = useState(0);
   const progressRef = useRef(0);
 
   const applyClientFormulaRules = useMemo(
@@ -65,49 +64,52 @@ export default function ProcessingScreen() {
     progressRef.current = scanLoading.progress;
   }, [scanLoading.progress]);
 
-  useEffect(() => {
-    if (scanLoading.progress >= targetProgress) return;
+  const sleep = useCallback((ms: number) => new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      clearTimeout(timer);
+      resolve();
+    }, ms);
+  }), []);
 
-    const timer = setInterval(() => {
-      const current = useScannerStore.getState().scanLoading.progress;
-      const target = targetProgress;
-      if (current >= target) return;
-      const next = Math.min(current + 1, target);
-      setScanLoading({ progress: next });
-    }, 28);
+  const setProgress = useCallback(
+    (value: number) => {
+      const bounded = Math.max(0, Math.min(100, Math.round(value)));
+      const current = progressRef.current;
+      if (bounded <= current) return;
+      progressRef.current = bounded;
+      setScanLoading({ progress: bounded });
+    },
+    [setScanLoading],
+  );
 
-    return () => clearInterval(timer);
-  }, [targetProgress, scanLoading.progress, setScanLoading]);
-
-  const advanceTo = useCallback((value: number) => {
-    const bounded = Math.max(0, Math.min(100, Math.round(value)));
-    setTargetProgress((current) => (bounded > current ? bounded : current));
-
-    return new Promise<void>((resolve) => {
-      if (progressRef.current >= bounded) {
-        resolve();
-        return;
+  const advanceWithSteps = useCallback(
+    async (steps: number[], delayMs = 110) => {
+      for (const step of steps) {
+        setProgress(step);
+        await sleep(delayMs);
       }
+    },
+    [setProgress, sleep],
+  );
 
-      const watcher = setInterval(() => {
-        if (progressRef.current >= bounded) {
-          clearInterval(watcher);
-          resolve();
+  const startSequenceDrift = useCallback(
+    (steps: number[], intervalMs = 220) => {
+      let index = 0;
+      const timer = setInterval(() => {
+        if (index >= steps.length) {
+          clearInterval(timer);
+          return;
         }
-      }, 20);
-    });
-  }, []);
 
-  const startDrift = useCallback((maxCap: number) => {
-    const drift = setInterval(() => {
-      setTargetProgress((current) => {
-        if (current >= maxCap) return current;
-        return current + 1;
-      });
-    }, 180);
+        const next = steps[index];
+        index += 1;
+        setProgress(next);
+      }, intervalMs);
 
-    return () => clearInterval(drift);
-  }, []);
+      return () => clearInterval(timer);
+    },
+    [setProgress],
+  );
 
   const runAnalysis = useCallback(async () => {
     if (!scanId || !frontImageUri) {
@@ -116,7 +118,7 @@ export default function ProcessingScreen() {
     }
 
     resetScanLoading();
-    setTargetProgress(0);
+    progressRef.current = 0;
     setScanLoading({
       stage: ScanStage.Uploading,
       progress: 0,
@@ -124,7 +126,7 @@ export default function ProcessingScreen() {
     });
 
     try {
-      void advanceTo(10);
+      const stopUploadDrift = startSequenceDrift([1, 9, 17, 25, 33], 170);
 
       if (isDemoScanMode()) {
         await completeDemoCapture(scanId, Boolean(backImageUri));
@@ -135,22 +137,23 @@ export default function ProcessingScreen() {
         ]);
       }
 
-      await advanceTo(35);
+      stopUploadDrift();
+      await advanceWithSteps([9, 17, 25, 33, 35], 70);
 
       setScanLoading({
         stage: ScanStage.AIProcessing,
         message: 'Processing Tag Details...',
       });
-      const stopAiDrift = startDrift(74);
+      const stopAiDrift = startSequenceDrift([40, 45, 50, 55, 60, 65, 70, 74], 220);
       const result = await analyzeScan(scanId);
       stopAiDrift();
-      await advanceTo(75);
+      await advanceWithSteps([75], 70);
 
       setScanLoading({
         stage: ScanStage.PreparingResults,
         message: 'Loading Scanned Results...',
       });
-      const stopPrepareDrift = startDrift(99);
+      const stopPrepareDrift = startSequenceDrift([85, 91, 99], 160);
 
       const flatData = result.structuredData ?? {};
       let adjustedScanData = applyClientFormulaRules(structuredDataToScanItem(flatData));
@@ -200,7 +203,7 @@ export default function ProcessingScreen() {
       updateScanData(adjustedScanData);
 
       stopPrepareDrift();
-      await advanceTo(100);
+      await advanceWithSteps([85, 91, 99, 100], 80);
       setScanLoading({
         stage: ScanStage.Completed,
         message: 'Loading Scanned Results...',
@@ -227,8 +230,8 @@ export default function ProcessingScreen() {
     router,
     resetScanLoading,
     setScanLoading,
-    advanceTo,
-    startDrift,
+    advanceWithSteps,
+    startSequenceDrift,
     applyClientFormulaRules,
     setUnknownFields,
     setStructuredData,
