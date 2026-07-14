@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   ImageBackground,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
@@ -13,10 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomNav } from '@/components/dashboard/BottomNav';
 import { ReviewScannedResultsModal } from '@/components/scanner/ReviewScannedResultsModal';
 import { ScreenBackHeader } from '@/components/scanner/ScreenBackHeader';
-import { MOCK_REVIEW_RESULTS } from '@/constants/scannerData';
 import { isDemoScanMode } from '@/constants/scanMode';
 import { useFinalTabPricing } from '@/hooks/useFinalTabPricing';
-import { useFormulaStore } from '@/store/formulaStore';
 import { useScannerStore } from '@/store/scannerStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuthStore } from '@/store/authStore';
@@ -25,14 +21,8 @@ import { mapApiPermissionsToEmployee } from '@/utils/employeeApi';
 import type { EmployeePermissions } from '@/types/employee';
 import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { ApiError } from '@/utils/apiClient';
-import { syncFormulaStoreFromApi } from '@/utils/formulaSettingsApi';
-import {
-  applyFormula2KaratConstraint,
-  resolveScannedKarat,
-} from '@/utils/formulaUtils';
-import { getReview, submitReview } from '@/utils/scanApi';
-import { fetchLabourRate } from '@/utils/ratesApi';
-import { scanItemToStructuredData, structuredDataToScanItem } from '@/utils/scanMappers';
+import { submitReview } from '@/utils/scanApi';
+import { scanItemToStructuredData } from '@/utils/scanMappers';
 import {
   applyStoneEntriesToScanData,
   parseStoneArraysFromStructuredData,
@@ -42,29 +32,6 @@ import { buildWishlistItem } from '@/utils/wishlistUtils';
 
 const SCANNER_BG =
   'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80';
-
-function applyClientFormulaRules(data: ScanItemData): ScanItemData {
-  const { activeFormula, formula2Rules } = useFormulaStore.getState();
-  const withKarat = {
-    ...data,
-    karat: data.karat || resolveScannedKarat(data.karat, data.tunch),
-  };
-
-  if (activeFormula !== 'F2') {
-    return withKarat;
-  }
-
-  const scannedKarat = resolveScannedKarat(withKarat.karat, withKarat.tunch);
-  const { karat, requiresDropdown } = applyFormula2KaratConstraint(
-    scannedKarat,
-    formula2Rules,
-  );
-
-  return {
-    ...withKarat,
-    karat: requiresDropdown ? '' : karat,
-  };
-}
 
 export default function ReviewResultsScreen() {
   const router = useRouter();
@@ -79,7 +46,6 @@ export default function ReviewResultsScreen() {
   const addWishlistItem = useWishlistStore((s) => s.addItem);
   const userRole = useAuthStore((s) => s.userRole);
   const isSuper = useAuthStore((s) => s.isSuper);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
@@ -144,134 +110,16 @@ export default function ReviewResultsScreen() {
     [structuredData, scanData],
   );
 
-  const loadReview = useCallback(async () => {
+  useEffect(() => {
     if (!scanId) {
       router.replace('/dashboard/scanner/jewellery-type' as Href);
       return;
     }
 
-    setConfirmed(false);
-    setHasAddedToWishlist(false);
-    setAddingToWishlist(false);
-    setLoading(true);
-    try {
-      if (!isDemoScanMode()) {
-        try {
-          await syncFormulaStoreFromApi();
-        } catch {
-          // Keep existing store values when formula settings cannot be loaded.
-        }
-      }
-
-      const data = await getReview(scanId);
-      const baseScanData = applyClientFormulaRules(structuredDataToScanItem(data.structuredData));
-      const extractedKarat = resolveScannedKarat(baseScanData.karat, baseScanData.tunch);
-      const fallbackKarat = extractedKarat || '18K';
-      if (!extractedKarat) {
-        console.debug('Karat not detected from OCR/OpenAI response. Defaulted to 18K.');
-      }
-      let adjustedScanData =
-        calculationRateAccess === 'both'
-          ? baseScanData
-          : {
-              ...baseScanData,
-              calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
-            };
-      adjustedScanData = { ...adjustedScanData, karat: fallbackKarat };
-
-      const hasLabourValues =
-        Boolean(adjustedScanData.labourChargeAmount?.trim()) ||
-        Boolean(adjustedScanData.labourPurityPercent?.trim());
-
-      if (!hasLabourValues) {
-        try {
-          const labourRate = await fetchLabourRate();
-          if (labourRate) {
-            if (labourRate.chargeType === 'AMOUNT') {
-              adjustedScanData = {
-                ...adjustedScanData,
-                labourChargeAmount: String(labourRate.value ?? ''),
-                labourChargeUnit:
-                  labourRate.rupeesUnit ?? adjustedScanData.labourChargeUnit,
-                labourPurityPercent: '',
-              };
-            } else if (labourRate.chargeType === 'PERCENTAGE') {
-              adjustedScanData = {
-                ...adjustedScanData,
-                labourPurityPercent: `${labourRate.value ?? ''}%`,
-                labourChargeAmount: '',
-              };
-            }
-          }
-        } catch {
-          // Ignore labour settings fetch errors and keep scan values.
-        }
-      }
-      setStructuredData({ ...data.structuredData, karat: fallbackKarat });
-      updateScanData(adjustedScanData);
-    } catch (error) {
-      const existing = useScannerStore.getState().structuredData;
-      if (Object.keys(existing).length > 0) {
-        const baseScanData = applyClientFormulaRules(structuredDataToScanItem(existing));
-        updateScanData(
-          calculationRateAccess === 'both'
-            ? baseScanData
-            : {
-                ...baseScanData,
-                calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
-              },
-        );
-        return;
-      }
-      if (isDemoScanMode()) {
-        const base = useScannerStore.getState().scanData;
-        const demoScanData = applyClientFormulaRules({
-          ...base,
-          grossWt: MOCK_REVIEW_RESULTS.grossWt || '42.500',
-          netWt: MOCK_REVIEW_RESULTS.netWt,
-          tunch: MOCK_REVIEW_RESULTS.tunch,
-          karat: resolveScannedKarat('', MOCK_REVIEW_RESULTS.tunch),
-          diamondWeight: MOCK_REVIEW_RESULTS.diamondWeight,
-          diamondColor: MOCK_REVIEW_RESULTS.diamondColor,
-          diamondClarity: MOCK_REVIEW_RESULTS.diamondClarity,
-          diamondPieces: MOCK_REVIEW_RESULTS.diamondPieces,
-          diamondRate: MOCK_REVIEW_RESULTS.diamondRate,
-          diamondQuality: MOCK_REVIEW_RESULTS.diamondQuality,
-          colorstoneWeight: MOCK_REVIEW_RESULTS.colorstoneWeight,
-          colorstoneColor: MOCK_REVIEW_RESULTS.colorstoneColor,
-          colorstoneClarity: MOCK_REVIEW_RESULTS.colorstoneClarity,
-          colorstoneQuality: MOCK_REVIEW_RESULTS.colorstoneQuality,
-          colorstoneRate: MOCK_REVIEW_RESULTS.colorstoneRate,
-          labourPurityPercent: MOCK_REVIEW_RESULTS.labourPurityPercent,
-          labourChargeAmount: MOCK_REVIEW_RESULTS.labourChargeAmount,
-          labourChargeUnit: MOCK_REVIEW_RESULTS.labourChargeUnit,
-          otherChargesAmount: MOCK_REVIEW_RESULTS.otherChargesAmount,
-          otherChargesItems: [],
-          otherChargesRemarks: MOCK_REVIEW_RESULTS.otherChargesRemarks,
-        });
-        updateScanData(
-          calculationRateAccess === 'both'
-            ? demoScanData
-            : {
-                ...demoScanData,
-                calculationRate: calculationRateAccess === 'cash' ? 'cash' : 'rtgs',
-              },
-        );
-        return;
-      }
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to load review data. Please try again.';
-      Alert.alert('Review Error', message, [
-        { text: 'Go Back', onPress: () => router.back() },
-      ]);
-    } finally {
-      setLoading(false);
+    if (!Object.keys(structuredData).length && !isDemoScanMode()) {
+      router.replace('/dashboard/scanner/processing' as Href);
     }
-  }, [scanId, router, setStructuredData, updateScanData, calculationRateAccess]);
-
-  useEffect(() => {
-    loadReview();
-  }, [loadReview]);
+  }, [scanId, structuredData, router]);
 
   const handleFieldChange = useCallback(
     (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => {
@@ -391,41 +239,28 @@ export default function ReviewResultsScreen() {
             contentContainerClassName="flex-grow items-center justify-center px-screen pb-28 pt-2"
             showsVerticalScrollIndicator={false}
           >
-            {loading ? (
-              <ActivityIndicator size="large" color="#D4C19C" />
-            ) : (
-              <View className="w-full">
-                <ReviewScannedResultsModal
-                  scanData={scanData}
-                  structuredData={structuredData}
-                  jewelleryType={selectedType}
-                  pricing={livePricing}
-                  onFieldChange={handleFieldChange}
-                  onStoneEntriesChange={handleStoneEntriesChange}
-                  onReScan={handleReScan}
-                  onConfirm={handleConfirm}
-                  confirmed={confirmed}
-                  onGenerateInvoice={handleGenerateInvoice}
-                  onAddToWishlist={handleAddToWishlist}
-                  addingToWishlist={addingToWishlist}
-                  hasAddedToWishlist={hasAddedToWishlist}
-                  confirming={submitting}
-                  canEditPurityPercent={canEditPurityPercent}
-                  calculationRateAccess={calculationRateAccess}
-                />
-              </View>
-            )}
+            <View className="w-full">
+              <ReviewScannedResultsModal
+                scanData={scanData}
+                structuredData={structuredData}
+                jewelleryType={selectedType}
+                pricing={livePricing}
+                onFieldChange={handleFieldChange}
+                onStoneEntriesChange={handleStoneEntriesChange}
+                onReScan={handleReScan}
+                onConfirm={handleConfirm}
+                confirmed={confirmed}
+                onGenerateInvoice={handleGenerateInvoice}
+                onAddToWishlist={handleAddToWishlist}
+                addingToWishlist={addingToWishlist}
+                hasAddedToWishlist={hasAddedToWishlist}
+                confirming={submitting}
+                canEditPurityPercent={canEditPurityPercent}
+                calculationRateAccess={calculationRateAccess}
+              />
+            </View>
           </ScrollView>
         </SafeAreaView>
-
-        {(loading || submitting) ? (
-          <View className="absolute inset-0 z-50 flex-1 items-center justify-center bg-black/70">
-            <ActivityIndicator size="large" color="#D4C19C" />
-            <Text className="mt-4 text-lg font-bold text-white">
-              {loading ? 'Loading Results...' : 'Processing...'}
-            </Text>
-          </View>
-        ) : null}
       </ImageBackground>
 
       <BottomNav activeRoute="scanner" scanButtonVariant="gold" />

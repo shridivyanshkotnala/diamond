@@ -5,6 +5,8 @@ import type {
   AbbreviationOption,
   ClarificationField,
   JewelleryType,
+  ScanLoadingState,
+  ScanStage,
   ScanItemData,
   ScanMode,
   ScanSide,
@@ -27,6 +29,7 @@ interface ScannerState {
   scanData: ScanItemData;
   isLoading: boolean;
   error: string | null;
+  scanLoading: ScanLoadingState;
   mrpRefreshToken: number;
   bumpMrpRefresh: () => void;
   setSelectedType: (type: JewelleryType) => void;
@@ -41,6 +44,8 @@ interface ScannerState {
   setResolvedAbbreviation: (abbreviation: AbbreviationOption) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setScanLoading: (payload: Partial<ScanLoadingState>) => void;
+  resetScanLoading: () => void;
   updateScanData: (data: Partial<ScanItemData>) => void;
   resetScanSession: () => void;
   resetScanData: () => void;
@@ -55,6 +60,11 @@ const initialSessionState = {
   clarificationFields: [] as ClarificationField[],
   isLoading: false,
   error: null as string | null,
+  scanLoading: {
+    stage: ScanStage.Uploading,
+    progress: 0,
+    message: 'Uploading Tags...',
+  } as ScanLoadingState,
 };
 
 export const useScannerStore = create<ScannerState>((set) => ({
@@ -93,6 +103,21 @@ export const useScannerStore = create<ScannerState>((set) => ({
   setResolvedAbbreviation: (abbreviation) => set({ resolvedAbbreviation: abbreviation }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
+  setScanLoading: (payload) =>
+    set((state) => ({
+      scanLoading: {
+        ...state.scanLoading,
+        ...payload,
+      },
+    })),
+  resetScanLoading: () =>
+    set({
+      scanLoading: {
+        stage: ScanStage.Uploading,
+        progress: 0,
+        message: 'Uploading Tags...',
+      },
+    }),
   updateScanData: (data) =>
     set((state) => ({
       scanData: { ...state.scanData, ...data },

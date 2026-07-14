@@ -7,15 +7,12 @@ import { CapturedSidesStrip, type CaptureSource } from '@/components/scanner/Cap
 import { CapturePreviewOverlay } from '@/components/scanner/CapturePreviewOverlay';
 import { ScannerScreenLayout } from '@/components/scanner/ScannerScreenLayout';
 import type { TagCameraPreviewRef } from '@/components/scanner/TagCameraPreview';
-import { isDemoScanMode } from '@/constants/scanMode';
 import { useScannerStore } from '@/store/scannerStore';
 import type { ScanSide } from '@/types/scanner';
-import { ApiError } from '@/utils/apiClient';
 import {
   captureScanImageFallback,
   pickImageFromGallery,
 } from '@/utils/imagePicker';
-import { completeDemoCapture, uploadBackImage, uploadFrontImage } from '@/utils/scanApi';
 
 type PendingPreview = {
   uri: string;
@@ -37,14 +34,13 @@ export default function BarcodeScannerScreen() {
   const setScanSide = useScannerStore((s) => s.setScanSide);
   const setFrontImageUri = useScannerStore((s) => s.setFrontImageUri);
   const setBackImageUri = useScannerStore((s) => s.setBackImageUri);
+  const resetScanLoading = useScannerStore((s) => s.resetScanLoading);
 
-  const [uploading, setUploading] = useState(false);
   const [isPickingImage, setIsPickingImage] = useState(false);
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
   const [confirmedFront, setConfirmedFront] = useState<ConfirmedCapture | null>(null);
   const [confirmedBack, setConfirmedBack] = useState<ConfirmedCapture | null>(null);
 
-  const isDemo = isDemoScanMode();
   const isBothSides = scanMode === 'both';
   const overlayVisible = isPickingImage || Boolean(pendingPreview);
 
@@ -56,39 +52,8 @@ export default function BarcodeScannerScreen() {
       : 'Now align the back side of the tag and tap capture';
 
   const goToProcessing = () => {
+    resetScanLoading();
     router.push('/dashboard/scanner/processing' as Href);
-  };
-
-  const finishCapture = async (frontUri: string, backUri: string | null) => {
-    if (!scanId) {
-      Alert.alert('Scan Error', 'No active scan session. Please start a new scan.');
-      router.replace('/dashboard/scanner/jewellery-type' as Href);
-      return;
-    }
-
-    setUploading(true);
-    try {
-      if (isDemo) {
-        await completeDemoCapture(scanId, Boolean(backUri));
-      } else {
-        // Upload front and back images in parallel — cuts upload time ~50% for both-sides scans
-        await Promise.all([
-          uploadFrontImage(scanId, frontUri),
-          backUri ? uploadBackImage(scanId, backUri) : Promise.resolve(),
-        ]);
-      }
-      goToProcessing();
-    } catch (error) {
-      const message =
-        error instanceof ApiError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : 'Failed to save scan images. Please try again.';
-      Alert.alert('Scan Error', message);
-    } finally {
-      setUploading(false);
-    }
   };
 
   const openPreview = (uri: string, source: CaptureSource) => {
@@ -115,14 +80,17 @@ export default function BarcodeScannerScreen() {
         return;
       }
 
-      void finishCapture(uri, null);
+      goToProcessing();
       return;
     }
 
     const backCapture = { uri, source };
     setConfirmedBack(backCapture);
     setBackImageUri(uri);
-    void finishCapture(confirmedFront?.uri ?? uri, uri);
+    if (!confirmedFront?.uri) {
+      setFrontImageUri(uri);
+    }
+    goToProcessing();
   };
 
   const handlePreviewRetake = () => {
@@ -140,7 +108,7 @@ export default function BarcodeScannerScreen() {
   };
 
   const handleShutter = async () => {
-    if (uploading || overlayVisible) return;
+    if (overlayVisible) return;
 
     const uri = await resolveCaptureUri();
     if (!uri) {
@@ -155,7 +123,7 @@ export default function BarcodeScannerScreen() {
   };
 
   const handleUpload = async () => {
-    if (uploading || overlayVisible) return;
+    if (overlayVisible) return;
 
     setIsPickingImage(true);
     try {
@@ -187,7 +155,7 @@ export default function BarcodeScannerScreen() {
         instruction={instruction}
         onShutterPress={handleShutter}
         onUploadPress={handleUpload}
-        controlsHidden={overlayVisible || uploading}
+        controlsHidden={overlayVisible}
         cameraRef={cameraRef}
         headerContent={
           <CapturedSidesStrip
@@ -199,11 +167,6 @@ export default function BarcodeScannerScreen() {
         }
       >
         <BarcodeOverlay />
-        {uploading ? (
-          <View className="absolute inset-0 items-center justify-center bg-black/40">
-            <ActivityIndicator size="large" color="#D4C19C" />
-          </View>
-        ) : null}
       </ScannerScreenLayout>
 
       <CapturePreviewOverlay

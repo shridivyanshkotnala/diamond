@@ -79,6 +79,19 @@ export interface SubmitReviewResponse {
   status: ScanStatus;
 }
 
+export enum ScanStage {
+  Uploading = 'uploading',
+  AIProcessing = 'ai_processing',
+  PreparingResults = 'preparing_results',
+  Completed = 'completed',
+}
+
+export interface ScanLoadingState {
+  stage: ScanStage;
+  progress: number;
+  message: string;
+}
+
 export type OcrProcessingState = 'scanning' | 'processing' | 'success' | 'error';
 
 export type BottomNavRoute = 'home' | 'scanner' | 'ai';
