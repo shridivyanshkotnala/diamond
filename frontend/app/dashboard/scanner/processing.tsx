@@ -161,14 +161,13 @@ export default function ProcessingScreen() {
       const fallbackKarat = extractedKarat || '18K';
       adjustedScanData = { ...adjustedScanData, karat: fallbackKarat };
 
-      const hasLabourValues =
-        Boolean(adjustedScanData.labourChargeAmount?.trim()) ||
-        Boolean(adjustedScanData.labourPurityPercent?.trim());
+      const hasLabourValues = Boolean(adjustedScanData.labourChargeAmount?.trim());
 
       if (!hasLabourValues) {
         try {
           const labourRate = await fetchLabourRate();
           if (labourRate) {
+            // Only support AMOUNT type - percentage type removed
             if (labourRate.chargeType === 'AMOUNT') {
               adjustedScanData = {
                 ...adjustedScanData,
@@ -177,13 +176,8 @@ export default function ProcessingScreen() {
                   labourRate.rupeesUnit ?? adjustedScanData.labourChargeUnit,
                 labourPurityPercent: '',
               };
-            } else if (labourRate.chargeType === 'PERCENTAGE') {
-              adjustedScanData = {
-                ...adjustedScanData,
-                labourPurityPercent: `${labourRate.value ?? ''}%`,
-                labourChargeAmount: '',
-              };
             }
+            // Percentage type no longer supported - ignore it
           }
         } catch {
           // Ignore labour settings fetch errors and keep scanned values.

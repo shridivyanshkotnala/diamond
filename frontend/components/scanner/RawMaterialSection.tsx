@@ -223,13 +223,14 @@ export function RawMaterialSection({
           </View>
         </FormFieldGridItem>
         <FormFieldGridItem>
-          <FormInput
-            label="Current Gold Rate"
-            value={currentGoldRateDisplay}
-            editable={false}
-            placeholder="Calculated"
-            containerClassName="mb-2.5"
-          />
+          <View className="mb-2.5">
+            <FieldLabel label="Current Gold Rate" />
+            <View className="min-h-11 justify-center rounded-input border border-border bg-surface-input px-3.5">
+              <Text className="text-sm font-bold text-text-primary">
+                {currentGoldRateDisplay}
+              </Text>
+            </View>
+          </View>
         </FormFieldGridItem>
         <FormFieldGridItem>
           <View className="mb-2.5">

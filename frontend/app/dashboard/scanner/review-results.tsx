@@ -46,8 +46,6 @@ export default function ReviewResultsScreen() {
   const addWishlistItem = useWishlistStore((s) => s.addItem);
   const userRole = useAuthStore((s) => s.userRole);
   const isSuper = useAuthStore((s) => s.isSuper);
-  const [submitting, setSubmitting] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
   const [hasAddedToWishlist, setHasAddedToWishlist] = useState(false);
   const [employeePermissions, setEmployeePermissions] = useState<EmployeePermissions | null>(null);
@@ -176,27 +174,6 @@ export default function ReviewResultsScreen() {
     router.push('/dashboard/scanner/barcode' as Href);
   };
 
-  const handleConfirm = async () => {
-    if (!scanId) return;
-
-    const payload = scanItemToStructuredData(scanData, structuredData);
-    setSubmitting(true);
-    try {
-      await submitReview(scanId, payload);
-      setConfirmed(true);
-    } catch (error) {
-      if (isDemoScanMode()) {
-        setConfirmed(true);
-        return;
-      }
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to approve scan. Please try again.';
-      Alert.alert('Approval Error', message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleGenerateInvoice = () => {
     router.push('/dashboard/scanner/invoice-preview' as Href);
   };
@@ -248,13 +225,10 @@ export default function ReviewResultsScreen() {
                 onFieldChange={handleFieldChange}
                 onStoneEntriesChange={handleStoneEntriesChange}
                 onReScan={handleReScan}
-                onConfirm={handleConfirm}
-                confirmed={confirmed}
                 onGenerateInvoice={handleGenerateInvoice}
                 onAddToWishlist={handleAddToWishlist}
                 addingToWishlist={addingToWishlist}
                 hasAddedToWishlist={hasAddedToWishlist}
-                confirming={submitting}
                 canEditPurityPercent={canEditPurityPercent}
                 calculationRateAccess={calculationRateAccess}
               />

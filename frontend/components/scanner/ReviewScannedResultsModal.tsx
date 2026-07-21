@@ -36,14 +36,11 @@ interface ReviewScannedResultsModalProps {
   onFieldChange: (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => void;
   onStoneEntriesChange: (diamonds: StoneEntry[], colorstones: StoneEntry[]) => void;
   onReScan: () => void;
-  onConfirm: () => void;
   onGenerateInvoice: () => void;
   onAddToWishlist: () => void;
   pricing: FinalTabPricingResult;
-  confirmed: boolean;
   addingToWishlist?: boolean;
   hasAddedToWishlist?: boolean;
-  confirming?: boolean;
   canEditPurityPercent?: boolean;
   calculationRateAccess?: 'rtgs' | 'cash' | 'both';
 }
@@ -55,14 +52,11 @@ export function ReviewScannedResultsModal({
   onFieldChange,
   onStoneEntriesChange,
   onReScan,
-  onConfirm,
   onGenerateInvoice,
   onAddToWishlist,
   pricing,
-  confirmed,
   addingToWishlist = false,
   hasAddedToWishlist = false,
-  confirming = false,
   canEditPurityPercent = true,
   calculationRateAccess = 'both',
 }: ReviewScannedResultsModalProps) {
@@ -249,11 +243,6 @@ export function ReviewScannedResultsModal({
   }, []);
 
   const hasRateError = Object.values(rateErrors).some(Boolean);
-  const otherChargesAmount = computeOtherChargesTotal(scanData);
-  const missingOtherChargesRemarks =
-    otherChargesAmount > 0 && !scanData.otherChargesRemarks.trim();
-  const canConfirm =
-    Boolean(scanData.grossWt.trim()) && !hasRateError && !missingOtherChargesRemarks;
 
   useEffect(() => {
     const scannedKarat = resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
@@ -326,18 +315,28 @@ export function ReviewScannedResultsModal({
     }
   };
 
-  const handleConfirm = () => {
-    onConfirm();
-  };
-
-  const resolvedKarat = resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
-  const requiresKaratSelection = !resolvedKarat;
-
   return (
     <View className="rounded-[20px] bg-white px-screen py-5 shadow-lg">
       <Text className="mb-4 text-lg font-bold text-text-primary">
         Scanner Review Result 
       </Text>
+
+      {/* MRP Card - Moved to Top */}
+      <View className="mb-4">
+        <View className="relative">
+          <PriceCard
+            label="Calculated MRP Of Jewellery"
+            amount={pricing.ultimateMrpDisplay}
+            subtitle="Final Jewellery MRP"
+          />
+          <Pressable
+            onPress={() => useScannerStore.getState().bumpMrpRefresh()}
+            className="absolute right-4 top-4 h-8 w-8 items-center justify-center rounded-full bg-white/10"
+          >
+            <RefreshCw size={16} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      </View>
 
       {!wasNetWtScanned ? (
         <Pressable
@@ -378,74 +377,32 @@ export function ReviewScannedResultsModal({
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}
         onRateErrorChange={handleStoneRateErrorChange}
-        showOtherChargesRemarksError={missingOtherChargesRemarks}
       />
 
-      {confirmed ? (
-        <View className="mb-3">
-          <View className="relative">
-            <PriceCard
-              label="Calculated MRP Of Jewellery"
-              amount={pricing.ultimateMrpDisplay}
-              subtitle="Final Jewellery MRP"
-            />
-            <Pressable
-              onPress={() => useScannerStore.getState().bumpMrpRefresh()}
-              className="absolute right-4 top-4 h-8 w-8 items-center justify-center rounded-full bg-white/10"
-            >
-              <RefreshCw size={16} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
+      {/* Action Buttons - Always visible */}
+      <View className="mt-3 flex-row gap-3">
+        <Pressable
+          onPress={onReScan}
+          className="flex-1 items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-text-secondary">ReScan</Text>
+        </Pressable>
+      </View>
 
-      {!confirmed ? (
-        <View className="mt-2 flex-row gap-3">
-          <Pressable
-            onPress={onReScan}
-            className="flex-1 items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
-          >
-            <Text className="text-sm font-semibold text-text-secondary">ReScan</Text>
-          </Pressable>
-          <Pressable
-            onPress={handleConfirm}
-            disabled={confirming || !canConfirm || requiresKaratSelection}
-            className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
-          >
-            {confirming ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text className="text-sm font-semibold text-white">Confirm</Text>
-            )}
-          </Pressable>
-        </View>
-      ) : (
-        <View className="mt-2 flex-row gap-3">
-          <OutlineButton
-            title={hasAddedToWishlist ? 'Item Added' : addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
-            onPress={onAddToWishlist}
-            disabled={hasAddedToWishlist || addingToWishlist}
-          />
-          <PrimaryGreenButton title="Generate Invoice" onPress={onGenerateInvoice} />
-        </View>
-      )}
+      <View className="mt-3 flex-row gap-3">
+        <OutlineButton
+          title={hasAddedToWishlist ? 'Item Added' : addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
+          onPress={onAddToWishlist}
+          disabled={hasAddedToWishlist || addingToWishlist}
+        />
+        <PrimaryGreenButton title="Generate Invoice" onPress={onGenerateInvoice} />
+      </View>
 
       {hasRateError ? (
         <Text className="mt-3 text-center text-xs leading-5 text-danger-text">
-          Resolve rate errors before saving.
+          Resolve rate errors before generating invoice.
         </Text>
       ) : null}
-
-      {missingOtherChargesRemarks ? (
-        <Text className="mt-2 text-center text-xs leading-5 text-danger-text">
-          Add remarks for other charges before confirming.
-        </Text>
-      ) : null}
-
-      <Text className="mt-4 text-center text-xs leading-5 text-text-secondary">
-        <Text className="text-danger-text">*</Text> Scanner couldn&apos;t scan or find specific value.
-        Manually enter the value or ReScan.
-      </Text>
     </View>
   );
 }

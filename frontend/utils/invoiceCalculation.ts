@@ -30,13 +30,8 @@ export interface InvoiceGoldPriceInput {
 }
 
 export function computeGoldPerGramPrice(input: InvoiceGoldPriceInput): number {
-  if (hasActiveLabourPurity(input.scanData)) {
-    const customPurity = parseNumericLabourValue(input.scanData.labourPurityPercent) ?? 0;
-    if (customPurity > 0 && input.activeBaseRate > 0) {
-      return (input.activeBaseRate * customPurity) / 100 / 10;
-    }
-  }
-
+  // Labour purity override removed - no longer supported
+  
   const normalizedKarat = normalizeKarat(input.selectedKarat);
   const tableMatch = input.goldRates.find(
     (rate) => normalizeKarat(rate.carat) === normalizedKarat,

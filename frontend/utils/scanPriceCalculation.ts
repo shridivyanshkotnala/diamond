@@ -181,13 +181,8 @@ export function resolveEffectivePurityPercent(input: {
   selectedKarat: string;
   goldRates?: GoldRate[];
 }): { percent: number; source: FinalTabPricingResult['puritySource'] } {
-  if (hasActiveLabourPurity(input.scanData)) {
-    const labourPercent = parseNumericLabourValue(input.scanData.labourPurityPercent);
-    if (labourPercent !== null && labourPercent > 0) {
-      return { percent: labourPercent, source: 'labourOverride' };
-    }
-  }
-
+  // Labour purity override removed - no longer supported
+  
   const customPercent = parseNumericLabourValue(input.scanData.customPurityPercent ?? '');
   if (customPercent !== null && customPercent > 0) {
     return { percent: customPercent, source: 'tunchOverride' };
@@ -244,7 +239,7 @@ export function computeGoldAmountWithPurityOverride(input: {
 export function resolveLabourInputMode(
   scanData: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount'>,
 ): LabourInputMode {
-  if (hasActiveLabourPurity(scanData)) return 'percentage';
+  // Labour purity percentage removed - always use fixedAmount or none
   if (hasActiveLabourCharge(scanData)) return 'fixedAmount';
   return 'none';
 }
@@ -259,10 +254,7 @@ export function computeLabourAmount(
 ): { amount: number; display: string; mode: LabourInputMode } {
   const mode = resolveLabourInputMode(scanData);
 
-  if (mode === 'percentage') {
-    return { amount: 0, display: formatIndianCurrency(0), mode };
-  }
-
+  // Percentage mode removed - only fixedAmount is supported
   if (mode === 'fixedAmount') {
     const rate = parseNumericLabourValue(scanData.labourChargeAmount) ?? 0;
     const unit = scanData.labourChargeUnit || DEFAULT_LABOUR_CHARGE_UNIT;

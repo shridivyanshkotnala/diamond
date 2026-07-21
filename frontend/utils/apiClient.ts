@@ -118,10 +118,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     let errorBody: unknown;
+    const responseClone = response.clone();
     try {
       errorBody = await response.json();
     } catch {
-      errorBody = await response.text();
+      try {
+        errorBody = await responseClone.text();
+      } catch {
+        errorBody = null;
+      }
     }
     if (response.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
       const newAccessToken = await handleTokenRefresh();

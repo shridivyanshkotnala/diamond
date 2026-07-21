@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
@@ -102,161 +102,54 @@ export function LaborSection({
   pureWeightDisplay = '—',
   goldAmountDisplay = '—',
 }: LaborSectionProps) {
-  const inferredMethod = values.labourChargeAmount.trim()
-    ? 'rate'
-    : values.labourPurityPercent.trim()
-      ? 'purity'
-      : null;
-  const [method, setMethod] = useState<'rate' | 'purity'>(inferredMethod ?? 'rate');
-
-  useEffect(() => {
-    if (inferredMethod && inferredMethod !== method) {
-      setMethod(inferredMethod);
-    }
-  }, [inferredMethod, method]);
-
   const grossWt = parseWeightValue(grossWeightGrams);
   const netWt = parseWeightValue(netWeightGrams);
   const selectedWeight = values.labourWeightBasis === 'gross' ? grossWt : netWt;
-  const purityPercent = Number.parseFloat(values.labourPurityPercent.replace(/[^0-9.]/g, '')) || 0;
-  const newPureWeight = netWt > 0 && purityPercent > 0 ? (netWt * purityPercent) / 100 : 0;
-  const newPureWeightDisplay = newPureWeight > 0
-    ? `${newPureWeight.toFixed(3).replace(/\.?0+$/, '')} g`
-    : '—';
 
   const computedLaborAmount = useMemo(() => {
-    if (method === 'purity') return 0;
     const rate = Number(values.labourChargeAmount) || 0;
     if (rate <= 0 || selectedWeight <= 0) return 0;
     if (values.labourChargeUnit === 'Per 10 Gram') {
       return selectedWeight * (rate / 10);
     }
     return selectedWeight * rate;
-  }, [method, selectedWeight, values.labourChargeAmount, values.labourChargeUnit]);
-
-  const handlePurityChange = (text: string) => {
-    const next = sanitizePurityInput(text);
-    if (!next) {
-      onChange({ labourPurityPercent: '' });
-      return;
-    }
-    onChange({
-      labourPurityPercent: next,
-      labourChargeAmount: '',
-    });
-  };
+  }, [selectedWeight, values.labourChargeAmount, values.labourChargeUnit]);
 
   const handleChargeChange = (text: string) => {
     const next = sanitizeChargeAmount(text);
-    if (!next) {
-      onChange({ labourChargeAmount: '' });
-      return;
-    }
     onChange({
       labourChargeAmount: next,
-      labourPurityPercent: '',
     });
-  };
-
-  const handleMethodChange = (next: 'rate' | 'purity') => {
-    setMethod(next);
-    if (next === 'rate') {
-      onChange({ labourPurityPercent: '' });
-      return;
-    }
-    onChange({ labourChargeAmount: '' });
   };
 
   return (
     <FormSection title="Labour Charge">
-      <View className="mb-4 rounded-input border border-border bg-white p-3.5">
-        <Text className="mb-3 text-xs font-semibold uppercase text-text-muted">
-          Calculation Method
-        </Text>
-        <View className="flex-row gap-4">
-          <Pressable
-            onPress={() => handleMethodChange('rate')}
-            className="flex-row items-center gap-2"
-          >
-            <View
-              className={`h-4 w-4 items-center justify-center rounded-full border ${
-                method === 'rate' ? 'border-primary bg-primary' : 'border-border bg-white'
-              }`}
-            >
-              {method === 'rate' ? <View className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
-            </View>
-            <Text className="text-sm text-text-primary">Labour Rate</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => handleMethodChange('purity')}
-            className="flex-row items-center gap-2"
-          >
-            <View
-              className={`h-4 w-4 items-center justify-center rounded-full border ${
-                method === 'purity' ? 'border-primary bg-primary' : 'border-border bg-white'
-              }`}
-            >
-              {method === 'purity' ? <View className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
-            </View>
-            <Text className="text-sm text-text-primary">Purity Percentage</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {method === 'rate' ? (
-        <View className="rounded-input border border-border bg-white p-3.5">
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Text className="mb-1 text-xs font-semibold text-text-muted">Labour Rate (₹)</Text>
-              <View className="h-11 min-w-0 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
-                <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
-                <TextInput
-                  value={values.labourChargeAmount}
-                  onChangeText={handleChargeChange}
-                  placeholder="Enter rate"
-                  placeholderTextColor={Colors.placeholder}
-                  keyboardType="number-pad"
-                  className="flex-1 text-sm text-text-primary"
-                />
-              </View>
-            </View>
-            <View className="flex-1">
-              <Text className="mb-1 text-xs font-semibold text-text-muted">Weight Used</Text>
-              <WeightDropdown
-                value={values.labourWeightBasis}
-                onChange={(labourWeightBasis) => onChange({ labourWeightBasis })}
-                disabled={false}
+      <View className="rounded-input border border-border bg-white p-3.5">
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Text className="mb-1 text-xs font-semibold text-text-muted">Labour Rate (₹)</Text>
+            <View className="h-11 min-w-0 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
+              <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
+              <TextInput
+                value={values.labourChargeAmount}
+                onChangeText={handleChargeChange}
+                placeholder="Enter rate"
+                placeholderTextColor={Colors.placeholder}
+                keyboardType="number-pad"
+                className="flex-1 text-sm text-text-primary"
               />
             </View>
           </View>
-        </View>
-      ) : (
-        <View className="rounded-input border border-border bg-white p-3.5">
-          <Text className="mb-1 text-xs font-semibold text-text-muted">Purity Percentage</Text>
-          <TextInput
-            value={values.labourPurityPercent}
-            onChangeText={handlePurityChange}
-            placeholder="Enter %"
-            placeholderTextColor={Colors.placeholder}
-            keyboardType="decimal-pad"
-            className="h-11 rounded-input border border-border bg-surface-input px-3.5 text-sm text-text-primary"
-          />
-
-          <View className="mt-3 flex-row items-center justify-between">
-            <Text className="text-xs text-text-muted">New Pure Weight</Text>
-            <Text className="text-sm font-semibold text-text-primary">
-              {purityPercent > 0 ? newPureWeightDisplay : pureWeightDisplay}
-            </Text>
-          </View>
-          <View className="mt-2 flex-row items-center justify-between">
-            <Text className="text-xs text-text-muted">New Gold Amount</Text>
-            <Text className="text-sm font-semibold text-text-primary">
-              {goldAmountDisplay}
-            </Text>
+          <View className="flex-1">
+            <Text className="mb-1 text-xs font-semibold text-text-muted">Weight Used</Text>
+            <WeightDropdown
+              value={values.labourWeightBasis}
+              onChange={(labourWeightBasis) => onChange({ labourWeightBasis })}
+              disabled={false}
+            />
           </View>
         </View>
-      )}
+      </View>
 
       <View className="mt-4 rounded-input border border-primary/20 bg-primary/5 px-3.5 py-3">
         <Text className="mb-1 text-xs font-semibold text-text-secondary">Final Labour Amount</Text>
