@@ -36,7 +36,20 @@ const diamondRateSchema = new mongoose.Schema({
 });
 
 // Ensure uniqueness for a business based on color, clarity, and shape
-diamondRateSchema.index({ businessId: 1, color: 1, clarity: 1, shape: 1 }, { unique: true });
+// Only enforce this when packetCode is not set (packet-code-only entries are handled by a separate index).
+diamondRateSchema.index(
+  { businessId: 1, color: 1, clarity: 1, shape: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      $or: [
+        { packetCode: { $exists: false } },
+        { packetCode: null },
+        { packetCode: '' }
+      ]
+    }
+  }
+);
 // Ensure uniqueness for packet codes within a business (non-empty only)
 diamondRateSchema.index(
   { businessId: 1, packetCode: 1 },
