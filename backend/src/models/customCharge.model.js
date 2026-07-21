@@ -1,46 +1,29 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const mongoose = require('mongoose');
 
-const CustomCharge = sequelize.define(
-  'CustomCharge',
+const customChargeSchema = new mongoose.Schema(
   {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
     businessId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'businesses',
-        key: 'id',
-      },
-      onDelete: 'CASCADE',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Business',
+      required: true,
+      index: true,
     },
     name: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
     },
     isActive: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
+      type: Boolean,
+      default: true,
     },
   },
   {
-    tableName: 'custom_charges',
     timestamps: true,
-    indexes: [
-      {
-        fields: ['businessId'],
-      },
-      {
-        unique: true,
-        fields: ['businessId', 'name'],
-        name: 'unique_business_charge_name',
-      },
-    ],
   }
 );
 
-module.exports = CustomCharge;
+customChargeSchema.index({ businessId: 1, name: 1 }, { unique: true });
+
+module.exports = mongoose.model('CustomCharge', customChargeSchema);

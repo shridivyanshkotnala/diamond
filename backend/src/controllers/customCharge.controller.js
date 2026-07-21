@@ -1,5 +1,4 @@
 const CustomCharge = require('../models/customCharge.model');
-const { Op } = require('sequelize');
 
 // Default charge names that are always available
 const DEFAULT_CHARGES = [
@@ -19,13 +18,10 @@ const getChargeNames = async (req, res) => {
     const businessId = req.user.businessId;
 
     // Fetch custom charges for this business
-    const customCharges = await CustomCharge.findAll({
-      where: {
-        businessId,
-        isActive: true,
-      },
-      order: [['name', 'ASC']],
-    });
+    const customCharges = await CustomCharge.find({
+      businessId,
+      isActive: true,
+    }).sort({ name: 1 });
 
     const customNames = customCharges.map((charge) => charge.name);
 
@@ -79,10 +75,8 @@ const createCustomCharge = async (req, res) => {
 
     // Check if custom charge already exists
     const existing = await CustomCharge.findOne({
-      where: {
-        businessId,
-        name: trimmedName,
-      },
+      businessId,
+      name: trimmedName,
     });
 
     if (existing) {
@@ -118,7 +112,7 @@ const createCustomCharge = async (req, res) => {
     console.error('Create Custom Charge Error:', error);
     
     // Handle unique constraint violation
-    if (error.name === 'SequelizeUniqueConstraintError') {
+    if (error && error.code === 11000) {
       return res.status(400).json({
         success: false,
         message: 'This custom charge already exists',
@@ -141,10 +135,8 @@ const deleteCustomCharge = async (req, res) => {
     const { id } = req.params;
 
     const customCharge = await CustomCharge.findOne({
-      where: {
-        id,
-        businessId,
-      },
+      _id: id,
+      businessId,
     });
 
     if (!customCharge) {
