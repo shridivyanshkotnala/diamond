@@ -582,10 +582,10 @@ const upsertLabourRate = async (req, res) => {
       });
     }
 
-    if (!['AMOUNT', 'PERCENTAGE'].includes(chargeType)) {
+    if (!['AMOUNT', 'NONE'].includes(chargeType)) {
       return res.status(400).json({
         success: false,
-        message: 'chargeType must be AMOUNT or PERCENTAGE',
+        message: 'chargeType must be AMOUNT or NONE',
       });
     }
 
@@ -601,13 +601,6 @@ const upsertLabourRate = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'value must be a positive number',
-      });
-    }
-
-    if (chargeType === 'PERCENTAGE' && numericValue > 100) {
-      return res.status(400).json({
-        success: false,
-        message: 'Percentage value must be between 0 and 100',
       });
     }
 

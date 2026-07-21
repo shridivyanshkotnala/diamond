@@ -411,7 +411,7 @@ function normalizeLabourRate(raw: Record<string, unknown>): LabourRate | null {
   const chargeType = readString(raw.chargeType ?? raw.charge_type);
   const value = readNumber(raw.value);
 
-  if ((chargeType !== 'AMOUNT' && chargeType !== 'PERCENTAGE') || value == null) {
+  if (chargeType !== 'AMOUNT' || value == null) {
     return null;
   }
 

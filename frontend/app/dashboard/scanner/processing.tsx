@@ -161,9 +161,7 @@ export default function ProcessingScreen() {
       const fallbackKarat = extractedKarat || '18K';
       adjustedScanData = { ...adjustedScanData, karat: fallbackKarat };
 
-      const hasLabourValues =
-        Boolean(adjustedScanData.labourChargeAmount?.trim()) ||
-        Boolean(adjustedScanData.labourPurityPercent?.trim());
+      const hasLabourValues = Boolean(adjustedScanData.labourChargeAmount?.trim());
 
       if (!hasLabourValues) {
         try {
@@ -175,13 +173,6 @@ export default function ProcessingScreen() {
                 labourChargeAmount: String(labourRate.value ?? ''),
                 labourChargeUnit:
                   labourRate.rupeesUnit ?? adjustedScanData.labourChargeUnit,
-                labourPurityPercent: '',
-              };
-            } else if (labourRate.chargeType === 'PERCENTAGE') {
-              adjustedScanData = {
-                ...adjustedScanData,
-                labourPurityPercent: `${labourRate.value ?? ''}%`,
-                labourChargeAmount: '',
               };
             }
           }

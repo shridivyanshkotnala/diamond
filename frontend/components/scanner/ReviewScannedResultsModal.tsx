@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 
 import { ScannerFinalTab } from '@/components/scanner/ScannerFinalTab';
@@ -14,7 +14,6 @@ import { DIAMOND_SHAPE_OPTIONS, type StoneSelectOption } from '@/constants/stone
 import { fetchDiamondRates, fetchGoldRates } from '@/utils/ratesApi';
 import type { GoldRate, TaxSettings } from '@/types/rates';
 import type { FinalTabPricingResult } from '@/utils/scanPriceCalculation';
-import { computeOtherChargesTotal, parseNumericValue } from '@/utils/scanPriceCalculation';
 import {
   applyFormula2KaratConstraint,
   computeNetWeightFallback,
@@ -36,14 +35,11 @@ interface ReviewScannedResultsModalProps {
   onFieldChange: (field: keyof ScanItemData, value: ScanItemData[keyof ScanItemData]) => void;
   onStoneEntriesChange: (diamonds: StoneEntry[], colorstones: StoneEntry[]) => void;
   onReScan: () => void;
-  onConfirm: () => void;
   onGenerateInvoice: () => void;
   onAddToWishlist: () => void;
   pricing: FinalTabPricingResult;
-  confirmed: boolean;
   addingToWishlist?: boolean;
   hasAddedToWishlist?: boolean;
-  confirming?: boolean;
   canEditPurityPercent?: boolean;
   calculationRateAccess?: 'rtgs' | 'cash' | 'both';
 }
@@ -55,14 +51,11 @@ export function ReviewScannedResultsModal({
   onFieldChange,
   onStoneEntriesChange,
   onReScan,
-  onConfirm,
   onGenerateInvoice,
   onAddToWishlist,
   pricing,
-  confirmed,
   addingToWishlist = false,
   hasAddedToWishlist = false,
-  confirming = false,
   canEditPurityPercent = true,
   calculationRateAccess = 'both',
 }: ReviewScannedResultsModalProps) {
@@ -87,7 +80,6 @@ export function ReviewScannedResultsModal({
   const [goldTaxSettings, setGoldTaxSettings] = useState<TaxSettings | undefined>();
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
 
-  const [karatDropdownMode, setKaratDropdownMode] = useState(false);
   const [useNetWtFormula, setUseNetWtFormula] = useState(!scanData.netWt);
   const wasNetWtScanned = useMemo(() => Boolean(scanData.netWt), []);
 
@@ -249,18 +241,12 @@ export function ReviewScannedResultsModal({
   }, []);
 
   const hasRateError = Object.values(rateErrors).some(Boolean);
-  const otherChargesAmount = computeOtherChargesTotal(scanData);
-  const missingOtherChargesRemarks =
-    otherChargesAmount > 0 && !scanData.otherChargesRemarks.trim();
-  const canConfirm =
-    Boolean(scanData.grossWt.trim()) && !hasRateError && !missingOtherChargesRemarks;
 
   useEffect(() => {
     const scannedKarat = resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
     
     if (activeFormula === 'F2') {
       const { karat, requiresDropdown } = applyFormula2KaratConstraint(scannedKarat, formula2Rules);
-      setKaratDropdownMode(requiresDropdown || !scannedKarat);
       if (requiresDropdown) {
         if (!scanData.karat) onFieldChange('karat', scannedKarat);
         return;
@@ -269,7 +255,6 @@ export function ReviewScannedResultsModal({
         onFieldChange('karat', karat);
       }
     } else {
-      setKaratDropdownMode(!scannedKarat);
       if (!scanData.karat) {
         onFieldChange('karat', scannedKarat);
       }
@@ -326,12 +311,7 @@ export function ReviewScannedResultsModal({
     }
   };
 
-  const handleConfirm = () => {
-    onConfirm();
-  };
-
-  const resolvedKarat = resolveScannedKarat(scanData.karat, scanData.tunch) || '18K';
-  const requiresKaratSelection = !resolvedKarat;
+  const requiresKaratSelection = !scanData.karat.trim();
 
   return (
     <View className="rounded-[20px] bg-white px-screen py-5 shadow-lg">
@@ -357,6 +337,22 @@ export function ReviewScannedResultsModal({
         </Pressable>
       ) : null}
 
+      <View className="mb-3">
+        <View className="relative">
+          <PriceCard
+            label="Calculated Final Jewellery MRP"
+            amount={pricing.ultimateMrpDisplay}
+            subtitle="Final Jewellery MRP"
+          />
+          <Pressable
+            onPress={() => useScannerStore.getState().bumpMrpRefresh()}
+            className="absolute right-4 top-4 h-8 w-8 items-center justify-center rounded-full bg-white/10"
+          >
+            <RefreshCw size={16} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      </View>
+
       <ScannerFinalTab
         scanData={scanData}
         structuredData={structuredData}
@@ -378,57 +374,28 @@ export function ReviewScannedResultsModal({
         onFieldChange={onFieldChange}
         onStoneEntryChange={handleStoneEntryChange}
         onRateErrorChange={handleStoneRateErrorChange}
-        showOtherChargesRemarksError={missingOtherChargesRemarks}
       />
 
-      {confirmed ? (
-        <View className="mb-3">
-          <View className="relative">
-            <PriceCard
-              label="Calculated MRP Of Jewellery"
-              amount={pricing.ultimateMrpDisplay}
-              subtitle="Final Jewellery MRP"
-            />
-            <Pressable
-              onPress={() => useScannerStore.getState().bumpMrpRefresh()}
-              className="absolute right-4 top-4 h-8 w-8 items-center justify-center rounded-full bg-white/10"
-            >
-              <RefreshCw size={16} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
+      <View className="mt-2">
+        <Pressable
+          onPress={onReScan}
+          className="items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-text-secondary">ReScan</Text>
+        </Pressable>
+      </View>
 
-      {!confirmed ? (
-        <View className="mt-2 flex-row gap-3">
-          <Pressable
-            onPress={onReScan}
-            className="flex-1 items-center rounded-button border border-border bg-white py-3.5 active:opacity-80"
-          >
-            <Text className="text-sm font-semibold text-text-secondary">ReScan</Text>
-          </Pressable>
-          <Pressable
-            onPress={handleConfirm}
-            disabled={confirming || !canConfirm || requiresKaratSelection}
-            className="flex-1 items-center rounded-button bg-primary py-3.5 active:opacity-90 disabled:opacity-60"
-          >
-            {confirming ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text className="text-sm font-semibold text-white">Confirm</Text>
-            )}
-          </Pressable>
-        </View>
-      ) : (
-        <View className="mt-2 flex-row gap-3">
-          <OutlineButton
-            title={hasAddedToWishlist ? 'Item Added' : addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
-            onPress={onAddToWishlist}
-            disabled={hasAddedToWishlist || addingToWishlist}
-          />
-          <PrimaryGreenButton title="Generate Invoice" onPress={onGenerateInvoice} />
-        </View>
-      )}
+      <View className="mt-3 flex-row gap-3">
+        <OutlineButton
+          title={hasAddedToWishlist ? 'Item Added' : addingToWishlist ? 'Adding...' : 'Add to Wishlist'}
+          onPress={onAddToWishlist}
+          disabled={hasAddedToWishlist || addingToWishlist || requiresKaratSelection}
+        />
+        <PrimaryGreenButton
+          title="Generate Invoice"
+          onPress={onGenerateInvoice}
+        />
+      </View>
 
       {hasRateError ? (
         <Text className="mt-3 text-center text-xs leading-5 text-danger-text">
@@ -436,16 +403,6 @@ export function ReviewScannedResultsModal({
         </Text>
       ) : null}
 
-      {missingOtherChargesRemarks ? (
-        <Text className="mt-2 text-center text-xs leading-5 text-danger-text">
-          Add remarks for other charges before confirming.
-        </Text>
-      ) : null}
-
-      <Text className="mt-4 text-center text-xs leading-5 text-text-secondary">
-        <Text className="text-danger-text">*</Text> Scanner couldn&apos;t scan or find specific value.
-        Manually enter the value or ReScan.
-      </Text>
     </View>
   );
 }

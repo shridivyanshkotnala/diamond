@@ -5,7 +5,6 @@ import {
   deriveActiveBaseRate,
   type ScannerCalculationUse,
 } from '@/utils/goldRateUtils';
-import { hasActiveLabourPurity, parseNumericLabourValue } from '@/utils/labourUtils';
 import { buildQuality } from '@/utils/qualityUtils';
 import { computeStoneAmountWithDiscount, parseNumericValue } from '@/utils/scanPriceCalculation';
 
@@ -30,13 +29,6 @@ export interface InvoiceGoldPriceInput {
 }
 
 export function computeGoldPerGramPrice(input: InvoiceGoldPriceInput): number {
-  if (hasActiveLabourPurity(input.scanData)) {
-    const customPurity = parseNumericLabourValue(input.scanData.labourPurityPercent) ?? 0;
-    if (customPurity > 0 && input.activeBaseRate > 0) {
-      return (input.activeBaseRate * customPurity) / 100 / 10;
-    }
-  }
-
   const normalizedKarat = normalizeKarat(input.selectedKarat);
   const tableMatch = input.goldRates.find(
     (rate) => normalizeKarat(rate.carat) === normalizedKarat,
@@ -100,13 +92,11 @@ export function buildStoneLineItemRows(stones: StoneEntry[]): InvoiceLineItemRow
 
 export function buildOtherChargeLineItemRows(
   items: OtherChargeItem[],
-  remarks?: string,
 ): InvoiceLineItemRow[] {
-  const note = remarks?.trim() ? `Other Charges — ${remarks.trim()}` : 'Other Charges';
   return items.map((item) => ({
     key: `other-charge-${item.id}`,
     description: item.name,
-    note,
+    note: 'Other Charges',
     qty: 1,
     qtyUnit: '',
     price: item.amount,

@@ -20,40 +20,24 @@ const BUTTON_GREEN = '#1B3022';
 interface LabourRateEditModalProps {
   visible: boolean;
   amount: string;
-  percentage: string;
   amountDisabled: boolean;
-  percentageDisabled: boolean;
   errors: LabourRateFormErrors;
   rupeesUnit: 'Per Gram' | 'Per 10 Gram';
   saving?: boolean;
   onAmountChange: (value: string) => void;
-  onPercentageChange: (value: string) => void;
   onRupeesUnitChange: (value: 'Per Gram' | 'Per 10 Gram') => void;
   onClose: () => void;
   onSave: () => void;
 }
 
-function OrDivider() {
-  return (
-    <View style={styles.orRow}>
-      <View style={styles.orLine} />
-      <Text style={styles.orText}>OR</Text>
-      <View style={styles.orLine} />
-    </View>
-  );
-}
-
 export function LabourRateEditModal({
   visible,
   amount,
-  percentage,
   amountDisabled,
-  percentageDisabled,
   errors,
   rupeesUnit,
   saving = false,
   onAmountChange,
-  onPercentageChange,
   onRupeesUnitChange,
   onClose,
   onSave,
@@ -69,30 +53,11 @@ export function LabourRateEditModal({
           </Pressable>
 
           <Text style={styles.modalTitle}>Edit Labour Rates</Text>
-          <Text style={styles.modalHint}>Fill only one field — amount or gold purity %.</Text>
-
-          <View style={[styles.fieldCard, percentageDisabled && styles.fieldDisabled]}>
-            <Text style={styles.caseTitle}>Case I — % Purity Mode</Text>
-            <Text style={styles.caseHint}>Custom % overrides pure wt; labour charge prints as ₹0</Text>
-            <View style={styles.amountRow}>
-              <TextInput
-                value={percentage}
-                onChangeText={(text) => onPercentageChange(text.replace(/[^\d.]/g, ''))}
-                placeholder="Enter %"
-                editable={!percentageDisabled}
-                placeholderTextColor={Colors.placeholder}
-                keyboardType="decimal-pad"
-                style={styles.input}
-              />
-            </View>
-            {errors.percentage ? <Text style={styles.errorText}>{errors.percentage}</Text> : null}
-          </View>
-
-          <OrDivider />
+          <Text style={styles.modalHint}>Set the labour rate per gram or per 10 gram.</Text>
 
           <View style={[styles.fieldCard, amountDisabled && styles.fieldDisabled]}>
-            <Text style={styles.caseTitle}>Case II — Fixed Amount Mode</Text>
-            <Text style={styles.caseHint}>Labour = Net wt (gms) × rate per gram</Text>
+            <Text style={styles.caseTitle}>Labour Rate</Text>
+            <Text style={styles.caseHint}>Labour = weight used (gms) × rate</Text>
             <View style={styles.amountRowWrapper}>
               <View style={[styles.amountRow, { flex: 1.5 }]}>
                 <Text style={styles.currencyPrefix}>₹</Text>
@@ -211,22 +176,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     zIndex: 10, // Ensure dropdown flows over below items
   },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.input,
-    backgroundColor: Colors.inputBg,
-    paddingHorizontal: Spacing.md,
-    height: 44,
-  },
-  unitDropdown: {
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: Radius.input,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.inputBg,

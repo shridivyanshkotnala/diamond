@@ -7,17 +7,10 @@ interface LabourChargeResultSectionProps {
 }
 
 export function LabourChargeResultSection({ pricing }: LabourChargeResultSectionProps) {
-  const modeLabel = pricing.usePercentageMode
-    ? '% Purity Mode'
-    : pricing.useFixedAmountMode
-      ? 'Fixed Amount Mode'
-      : 'Not configured';
-
-  const modeHint = pricing.usePercentageMode
-    ? 'Custom % purity selected — labour charge is ₹0; purity drives pure wt recalculation.'
-    : pricing.useFixedAmountMode
-      ? 'Fixed amount mode active.'
-      : 'Enter % purity or fixed labour amount during review.';
+  const modeLabel = pricing.useFixedAmountMode ? 'Rate Based' : 'Not configured';
+  const modeHint = pricing.useFixedAmountMode
+    ? 'Labour calculated using the configured rate.'
+    : 'Enter a labour rate during review.';
 
   return (
     <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-white">
@@ -28,7 +21,7 @@ export function LabourChargeResultSection({ pricing }: LabourChargeResultSection
 
       <View className="flex-row border-b border-border">
         <View className="flex-1 border-r border-border p-4">
-          <Text className="text-xs text-text-muted">Input Mode</Text>
+          <Text className="text-xs text-text-muted">Mode</Text>
           <Text className="mt-1.5 text-sm text-text-secondary">{modeLabel}</Text>
         </View>
         <View className="flex-1 p-4">

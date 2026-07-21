@@ -76,7 +76,6 @@ export function useFinalTabPricing({
       netWt: parseNumericValue(scanData.netWt) || 0,
       purityKarat: resolvedKarat,
       customPurityPercent: parseNumericValue(scanData.customPurityPercent),
-      labourPurityPercent: scanData.labourPurityPercent,
       labourChargeAmount: scanData.labourChargeAmount,
       labourChargeUnit: scanData.labourChargeUnit,
       calculationMode: scanData.calculationRate,
@@ -125,17 +124,10 @@ export function useFinalTabPricing({
 
         const grossWtGrams = parseWeightValue(scanData.grossWt);
         const netWtGrams = payload.netWt;
-        const labourPurityPercent = parseNumericValue(scanData.labourPurityPercent);
-        const hasLabourPurity = labourPurityPercent > 0 && labourPurityPercent <= 100;
-        const overridePureWt = hasLabourPurity
-          ? (netWtGrams * labourPurityPercent) / 100
-          : res.breakdown.pureWeight;
-        const overrideGoldAmount = hasLabourPurity
-          ? overridePureWt * res.breakdown.goldRateApplied
-          : res.breakdown.goldAmount;
+        const overridePureWt = res.breakdown.pureWeight;
+        const overrideGoldAmount = res.breakdown.goldAmount;
         const labour = computeLabourAmount(
           {
-            labourPurityPercent: scanData.labourPurityPercent,
             labourChargeAmount: scanData.labourChargeAmount,
             labourChargeUnit: scanData.labourChargeUnit,
             labourWeightBasis: scanData.labourWeightBasis,
@@ -168,7 +160,7 @@ export function useFinalTabPricing({
           diamondAmount,
           colorstoneAmount,
           labourInputMode: labour.mode,
-          usePercentageMode: labour.mode === 'percentage',
+          usePercentageMode: false,
           useFixedAmountMode: labour.mode === 'fixedAmount',
           labourAmount: labour.amount,
           labourDisplay: formatIndianCurrency(labour.amount),

@@ -13,6 +13,9 @@ router.post('/formula', requirePermission('manageFormulae'), settingsController.
 router.get('/matrices', settingsController.getDashboardMatrices);
 router.post('/matrices', requirePermission('homeDashboardMetricsControls'), settingsController.updateDashboardMatrices);
 
+router.get('/other-charges', settingsController.getOtherChargeMasters);
+router.post('/other-charges', settingsController.createOtherChargeMaster);
+
 // Supreme rates - only SUPER role can access
 router.get('/supreme-rates', requireRole('SUPER'), settingsController.getSupremeRates);
 router.put('/supreme-rates', requireRole('SUPER'), settingsController.updateSupremeRates);

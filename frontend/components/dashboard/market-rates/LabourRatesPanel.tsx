@@ -36,7 +36,6 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
-  const [percentage, setPercentage] = useState('');
   const [rupeesUnit, setRupeesUnit] = useState<'Per Gram' | 'Per 10 Gram'>('Per Gram');
   const [formErrors, setFormErrors] = useState<LabourRateFormErrors>({});
 
@@ -70,7 +69,6 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
   const openEdit = () => {
     const values = labourRateToFormValues(labourRate);
     setAmount(values.amount);
-    setPercentage(values.percentage);
     setRupeesUnit(values.rupeesUnit);
     setFormErrors({});
     setModalVisible(true);
@@ -83,32 +81,19 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
 
   const handleAmountChange = (value: string) => {
     setAmount(value);
-    if (value.trim()) {
-      setPercentage('');
-    }
-    if (formErrors.amount || formErrors.percentage) {
-      setFormErrors({});
-    }
-  };
-
-  const handlePercentageChange = (value: string) => {
-    setPercentage(value);
-    if (value.trim()) {
-      setAmount('');
-    }
-    if (formErrors.amount || formErrors.percentage) {
+    if (formErrors.amount) {
       setFormErrors({});
     }
   };
 
   const handleSave = async () => {
-    const errors = validateLabourRateForm(amount, percentage);
+    const errors = validateLabourRateForm(amount, '');
     if (errors) {
       setFormErrors(errors);
       return;
     }
 
-    const payload = labourRateFormToPayload(amount, percentage, rupeesUnit);
+    const payload = labourRateFormToPayload(amount, '', rupeesUnit);
     if (!payload) return;
 
     setSaving(true);
@@ -153,7 +138,7 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
         </View>
         {isEmpty ? (
           <Text style={styles.helperText}>
-            No default labour charge set. Tap Edit to configure amount or purity %.
+            No default labour charge set. Tap Edit to configure the rate.
           </Text>
         ) : null}
       </View>
@@ -161,14 +146,11 @@ export function LabourRatesPanel({ onToast }: LabourRatesPanelProps) {
       <LabourRateEditModal
         visible={modalVisible}
         amount={amount}
-        percentage={percentage}
         rupeesUnit={rupeesUnit}
-        amountDisabled={Boolean(percentage.trim())}
-        percentageDisabled={Boolean(amount.trim())}
+        amountDisabled={false}
         errors={formErrors}
         saving={saving}
         onAmountChange={handleAmountChange}
-        onPercentageChange={handlePercentageChange}
         onRupeesUnitChange={setRupeesUnit}
         onClose={closeEdit}
         onSave={() => void handleSave()}

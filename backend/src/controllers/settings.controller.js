@@ -1,28 +1,6 @@
 const FormulaConfig = require('../models/formulaConfig.model');
 const DashboardMetrics = require('../models/dashboardMetrics.model');
-
-const DEFAULT_DASHBOARD_MATRIX_VALUES = {
-  '24k_mcx': true,
-  '24k_rtgs': true,
-  '24k_cash': true,
-  '22k_rtgs': true,
-  '22k_cash': true,
-  '20k_rtgs': true,
-  '20k_cash': true,
-  '18k_rtgs': true,
-  '18k_cash': true,
-  '14k_rtgs': true,
-  '14k_cash': true,
-  '9k_rtgs': true,
-  '9k_cash': true,
-};
-
-const normalizeDashboardMatrices = (values = {}) => ({
-  ...DEFAULT_DASHBOARD_MATRIX_VALUES,
-  ...Object.fromEntries(
-    Object.entries(values).filter(([key]) => Object.prototype.hasOwnProperty.call(DEFAULT_DASHBOARD_MATRIX_VALUES, key))
-  ),
-});
+const OtherChargeMaster = require('../models/otherChargeMaster.model');
 
 const getFormulaConfig = async (req, res) => {
   try {
@@ -80,10 +58,24 @@ const getDashboardMatrices = async (req, res) => {
     let metrics = await DashboardMetrics.findOne({ businessId });
 
     if (!metrics) {
-      metrics = { metricsData: DEFAULT_DASHBOARD_MATRIX_VALUES };
+      metrics = {
+        metricsData: {
+          '22k_rtgs': true,
+          '22k_cash': true,
+          '20k_rtgs': true,
+          '20k_cash': true,
+          '18k_rtgs': true,
+          '18k_cash': true,
+          '14k_rtgs': true,
+          '14k_cash': true,
+          '9k_rtgs': true,
+          '9k_cash': true,
+          'edit_market_prices': true
+        }
+      };
     }
 
-    res.status(200).json({ success: true, data: normalizeDashboardMatrices(metrics.metricsData || {}) });
+    res.status(200).json({ success: true, data: metrics.metricsData || {} });
   } catch (error) {
     console.error('Get Dashboard Matrices Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
@@ -94,15 +86,14 @@ const updateDashboardMatrices = async (req, res) => {
   try {
     const businessId = req.user.businessId;
     const { values } = req.body;
-    const normalizedValues = normalizeDashboardMatrices(values || {});
 
     const metrics = await DashboardMetrics.findOneAndUpdate(
       { businessId },
-      { $set: { metricsData: normalizedValues } },
+      { $set: { metricsData: values } },
       { new: true, upsert: true }
     );
 
-    res.status(200).json({ success: true, data: normalizeDashboardMatrices(metrics.metricsData || {}) });
+    res.status(200).json({ success: true, data: metrics.metricsData });
   } catch (error) {
     console.error('Update Dashboard Matrices Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
@@ -176,10 +167,81 @@ const updateSupremeRates = async (req, res) => {
   }
 };
 
+const normalizeChargeName = (name) => name.trim().replace(/\s+/g, ' ');
+
+const getOtherChargeMasters = async (req, res) => {
+  try {
+    const businessId = req.user.businessId;
+    const charges = await OtherChargeMaster.find({ businessId })
+      .sort({ createdAt: 1 })
+      .select('name')
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: charges.map((item) => ({ id: item._id, name: item.name })),
+    });
+  } catch (error) {
+    console.error('Get Other Charges Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+const createOtherChargeMaster = async (req, res) => {
+  try {
+    const businessId = req.user.businessId;
+    const rawName = typeof req.body?.name === 'string' ? req.body.name : '';
+    const name = normalizeChargeName(rawName);
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Charge name is required' });
+    }
+
+    const normalizedName = name.toLowerCase();
+
+    const existing = await OtherChargeMaster.findOne({ businessId, normalizedName }).lean();
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        data: { id: existing._id, name: existing.name },
+      });
+    }
+
+    const created = await OtherChargeMaster.create({
+      businessId,
+      name,
+      normalizedName,
+      createdBy: req.user?.userId,
+    });
+
+    res.status(201).json({ success: true, data: { id: created._id, name: created.name } });
+  } catch (error) {
+    console.error('Create Other Charge Error:', error);
+    if (error?.code === 11000) {
+      const normalizedName = normalizeChargeName(req.body?.name || '').toLowerCase();
+      const existing = await OtherChargeMaster.findOne({
+        businessId: req.user.businessId,
+        normalizedName,
+      }).lean();
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          data: { id: existing._id, name: existing.name },
+        });
+      }
+      return res.status(200).json({ success: true, data: null });
+    }
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getFormulaConfig,
   updateFormulaConfig,
   getDashboardMatrices,
-  updateDashboardMatrices
-  ,getSupremeRates, updateSupremeRates
+  updateDashboardMatrices,
+  getSupremeRates,
+  updateSupremeRates,
+  getOtherChargeMasters,
+  createOtherChargeMaster,
 };
