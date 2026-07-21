@@ -241,6 +241,7 @@ export function DiamondRatesPanel({ onToast }: DiamondRatesPanelProps) {
     setSaving(true);
     try {
       const payload: UpsertStoneRatePayload = {
+        id: editingRate?.id,
         color: normalizedColor,
         clarity: normalizedClarity,
         rate,

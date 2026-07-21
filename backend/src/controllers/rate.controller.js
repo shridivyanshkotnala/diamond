@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const GoldRate = require('../models/goldRate.model');
 const DiamondRate = require('../models/diamondRate.model');
 const ColorstoneRate = require('../models/colorstoneRate.model');
@@ -243,7 +244,7 @@ const updateGoldTaxSettings = async (req, res) => {
 // === DIAMOND RATES ===
 const addOrUpdateDiamondRate = async (req, res) => {
   try {
-    const { color, clarity, rate, shape, packetCode } = req.body;
+    const { id, color, clarity, rate, shape, packetCode } = req.body;
     const businessId = req.user.businessId;
 
     const trimmedColor = typeof color === 'string' ? color.trim() : '';
@@ -298,6 +299,45 @@ const addOrUpdateDiamondRate = async (req, res) => {
       }
     }
 
+    if (id && mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await DiamondRate.findOneAndUpdate(
+        { _id: id, businessId },
+        {
+          rate,
+          shape: normalizedShape,
+          color: normalizedColor,
+          clarity: normalizedClarity,
+          packetCode: normalizedPacketCode,
+        },
+        { new: true }
+      );
+
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'Diamond rate not found' });
+      }
+
+      if (normalizedPacketCode) {
+        const packetCodes = await DiamondRate.find({ businessId, packetCode: { $ne: '' } })
+          .select('packetCode')
+          .lean();
+        const packetCustomization = {
+          colors: [],
+          clarities: [],
+          shapes: [],
+          packetCodes: packetCodes
+            .map((item) => String(item.packetCode || '').trim())
+            .filter(Boolean),
+        };
+        const snippet = buildCustomPromptSnippet(packetCustomization, 100, 'diamond');
+        if (snippet) {
+          console.log('[PROMPT] Custom packet codes section (100 words):');
+          console.log(snippet);
+        }
+      }
+
+      return res.status(200).json({ success: true, data: updated });
+    }
+
     const baseQuery = normalizedPacketCode
       ? { businessId, packetCode: normalizedPacketCode }
       : {
@@ -348,6 +388,11 @@ const addOrUpdateDiamondRate = async (req, res) => {
 
     res.status(200).json({ success: true, data: diamondRate });
   } catch (error) {
+    if (error && error.code === 11000) {
+      return res
+        .status(409)
+        .json({ success: false, message: 'Duplicate diamond rate entry' });
+    }
     console.error('Add Diamond Rate Error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }

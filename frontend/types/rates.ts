@@ -68,6 +68,7 @@ export interface StoneRate {
 }
 
 export interface UpsertStoneRatePayload {
+  id?: string;
   color: string;
   clarity: string;
   shape?: string;

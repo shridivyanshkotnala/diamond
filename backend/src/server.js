@@ -3,6 +3,7 @@ const app = require('./app');
 const config = require('./config/env');
 const connectDB = require('./config/db');
 const { initMcxScheduler } = require('./services/mcxScheduler.service');
+const DiamondRate = require('./models/diamondRate.model');
 
 const PORT = config.port || 3000;
 const HOST = '0.0.0.0';
@@ -23,6 +24,13 @@ function getLanAddresses() {
 }
 
 connectDB().then(async () => {
+  try {
+    await DiamondRate.syncIndexes();
+    console.log('[DB] DiamondRate indexes synced');
+  } catch (error) {
+    console.warn('[DB] Failed to sync DiamondRate indexes:', error.message);
+  }
+
   // Initialize the background polling scheduler for MCX rates
   await initMcxScheduler();
 
