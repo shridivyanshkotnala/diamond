@@ -95,7 +95,7 @@ export function useStoneRateFetch({
         setIsFetching(false);
       }
     }
-  }, [type, color, clarity, shape]);
+  }, [type, color, clarity, shape, packetCode]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 export const API_V1_PREFIX = '/api/v1';
+const PROD_FALLBACK_API_URL = 'https://diamond-a1an.onrender.com';
 
 function getMetroHost(): string | null {
   const hostUri =
@@ -15,13 +16,26 @@ function getMetroHost(): string | null {
   return hostUri.split(':')[0] ?? null;
 }
 
+function normalizeBaseUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return trimmed;
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
+
+  return withProtocol
+    .replace(/\/+$/, '')
+    .replace(/\/api\/v1$/i, '')
+    .replace(/\/api$/i, '');
+}
+
 export function resolveApiBaseUrl(): string {
   // 1. ALWAYS prioritize explicitly set .env variables first!
   const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   console.log('[API] EXPO_PUBLIC_API_URL:', envUrl ?? 'undefined');
   if (envUrl) {
-    console.log('[API] Using EXPO_PUBLIC_API_URL as base:', envUrl.replace(/\/$/, ''));
-    return envUrl.replace(/\/$/, '');
+    const normalizedEnvUrl = normalizeBaseUrl(envUrl);
+    console.log('[API] Using EXPO_PUBLIC_API_URL as base:', normalizedEnvUrl);
+    return normalizedEnvUrl;
   }
 
   // 2. Fallbacks for local development
@@ -39,8 +53,14 @@ export function resolveApiBaseUrl(): string {
     }
   }
 
-  console.log('[API] Falling back to localhost base:', 'http://localhost:3000');
-  return 'http://localhost:3000';
+  if (!__DEV__) {
+    const fallbackUrl = normalizeBaseUrl(PROD_FALLBACK_API_URL);
+    console.log('[API] Using production fallback base:', fallbackUrl);
+    return fallbackUrl;
+  }
+
+  console.log('[API] Falling back to production base:', 'https://diamond-a1an.onrender.com');
+  return 'https://diamond-a1an.onrender.com';
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();

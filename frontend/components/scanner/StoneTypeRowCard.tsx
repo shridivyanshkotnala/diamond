@@ -190,6 +190,18 @@ export function StoneTypeRowCard({
               containerClassName="mb-2.5"
             />
           </FormFieldGridItem>
+          {stoneType === 'diamond' ? (
+            <FormFieldGridItem>
+              <FormInput
+                label="Packet Code"
+                value={values.packetCode ?? ''}
+                onChangeText={(packetCode) => onChange?.({ packetCode })}
+                editable={editable && !isFetching}
+                placeholder="e.g. PKT-123"
+                containerClassName="mb-2.5"
+              />
+            </FormFieldGridItem>
+          ) : null}
           <FormFieldGridItem>
             <FormInput
               label={labels.rate}

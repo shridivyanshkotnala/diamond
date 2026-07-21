@@ -13,7 +13,7 @@ import type {
   UpsertLabourRatePayload,
   UpsertStoneRatePayload,
 } from '@/types/rates';
-import { apiRequest } from '@/utils/apiClient';
+import { apiRequest, ApiError } from '@/utils/apiClient';
 import { unwrapApiData } from '@/utils/apiResponse';
 
 type ApiEnvelope = Record<string, unknown> & {
@@ -321,6 +321,34 @@ export async function lookupStoneRate(
   const trimmedShape = payload.shape?.trim();
   const trimmedPacketCode = payload.packetCode?.trim() ?? '';
   const quality = `${trimmedColor} ${trimmedClarity}`.trim();
+
+  if (payload.type === 'diamond') {
+    try {
+      const response = await apiRequest<ApiEnvelope>('/rates/diamond/lookup', {
+        method: 'POST',
+        body: {
+          color: trimmedColor,
+          clarity: trimmedClarity,
+          shape: trimmedShape,
+          packetCode: trimmedPacketCode,
+        },
+      });
+      const unwrapped = unwrapApiData(response);
+      const rate = readNumber(
+        (unwrapped as Record<string, unknown>)?.rate ??
+          (unwrapped as Record<string, unknown>)?.data?.rate,
+      );
+      if (rate == null) {
+        throw new Error('Invalid diamond rate lookup response');
+      }
+      return { rate };
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        throw new RateNotFoundError(quality);
+      }
+      throw error;
+    }
+  }
 
   let rates: StoneRate[] = [];
   try {

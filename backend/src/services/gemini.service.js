@@ -84,6 +84,19 @@ const analyzeImages = async (frontImagePath, backImagePath, jewelleryType, scanT
     
     // Add backward compatibility for frontend by flattening the first stone
     if (parsedData.structuredData) {
+      if (parsedData.packetCode && !parsedData.structuredData.packetCode) {
+        parsedData.structuredData.packetCode = parsedData.packetCode;
+      }
+      const packetCodeField = parsedData.structuredData.packetCode;
+      if (Array.isArray(parsedData.structuredData.diamonds)) {
+        parsedData.structuredData.diamonds = parsedData.structuredData.diamonds.map((diamond) => {
+          if (!diamond || typeof diamond !== 'object') return diamond;
+          if (diamond.packetCode) return diamond;
+          if (!packetCodeField) return diamond;
+          return { ...diamond, packetCode: packetCodeField };
+        });
+      }
+
       if (parsedData.structuredData.diamonds && parsedData.structuredData.diamonds.length > 0) {
 
         const firstDia = parsedData.structuredData.diamonds[0];

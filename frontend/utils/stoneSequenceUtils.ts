@@ -149,6 +149,13 @@ export function parseStoneArraysFromStructuredData(
   let diamonds = parseStoneArray(record.diamonds, 'diamond');
   let colorstones = parseStoneArray(record.colorstones, 'colorstone');
 
+  const globalPacketCode = typeof record.packetCode === 'string' ? record.packetCode.trim() : '';
+  if (globalPacketCode && diamonds.length > 0) {
+    diamonds = diamonds.map((entry) =>
+      entry.packetCode ? entry : { ...entry, packetCode: globalPacketCode },
+    );
+  }
+
   if (diamonds.length === 0 && scanData) {
     const fallback = stoneEntryFromScanData(scanData as ScanItemData, 'diamond');
     if (fallback) diamonds = [fallback];

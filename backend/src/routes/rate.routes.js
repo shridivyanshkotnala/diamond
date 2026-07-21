@@ -17,6 +17,7 @@ router.post('/gold/tax-settings', requirePermission('editRateGold'), rateControl
 
 // Diamond
 router.get('/diamond', rateController.getDiamondRates);
+router.post('/diamond/lookup', rateController.lookupDiamondRate);
 router.post('/diamond', requirePermission('editRateDiamond'), rateController.addOrUpdateDiamondRate);
 router.delete('/diamond/:id', requirePermission('editRateDiamond'), rateController.deleteDiamondRate);
 

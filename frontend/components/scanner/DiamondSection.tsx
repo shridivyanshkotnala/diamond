@@ -134,6 +134,16 @@ export function DiamondSection({
               containerClassName="mb-2.5"
             />
           </FormFieldGridItem>
+          <FormFieldGridItem>
+            <FormInput
+              label="Packet Code"
+              value={values.packetCode ?? ''}
+              onChangeText={(packetCode) => onChange({ packetCode })}
+              editable={!inputsDisabled}
+              placeholder="e.g. PKT-123"
+              containerClassName="mb-2.5"
+            />
+          </FormFieldGridItem>
           <QualityField label="Diamond Quality" value={quality} />
         </FormFieldGrid>
         <RateField label="Diamond Rate (₹/ct)" value={values.rate} isFetching={isFetching} />

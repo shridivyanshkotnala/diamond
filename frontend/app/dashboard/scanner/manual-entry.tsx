@@ -153,6 +153,7 @@ export default function ManualEntryScreen() {
               ...(values.clarity !== undefined ? { diamondClarity: values.clarity } : {}),
               ...(values.quality !== undefined ? { diamondQuality: values.quality } : {}),
               ...(values.rate !== undefined ? { diamondRate: values.rate } : {}),
+              ...(values.packetCode !== undefined ? { packetCode: values.packetCode } : {}),
             })
           }
           onRateErrorChange={setDiamondRateError}

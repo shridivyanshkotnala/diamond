@@ -248,7 +248,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:3000"
+			"value": "http://192.168.29.161:3000"
 		}
 	]
 }

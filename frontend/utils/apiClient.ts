@@ -18,7 +18,7 @@ type RequestOptions = Omit<RequestInit, 'body'> & {
 };
 
 function getNetworkErrorMessage(): string {
-  return 'Cannot reach the server. If you are on a phone, set EXPO_PUBLIC_API_URL to your computer IP (e.g. http://192.168.1.3:3000) and make sure the backend is running.';
+  return `Cannot reach the server (${API_BASE_URL}). If you are on a phone, set EXPO_PUBLIC_API_URL to your backend URL and make sure the backend is running.`;
 }
 
 let refreshPromise: Promise<string | null> | null = null;

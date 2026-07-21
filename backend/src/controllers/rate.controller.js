@@ -365,6 +365,53 @@ const getDiamondRates = async (req, res) => {
   }
 };
 
+const lookupDiamondRate = async (req, res) => {
+  try {
+    const businessId = req.user.businessId;
+    const { color, clarity, shape, packetCode } = req.body || {};
+
+    const trimmedColor = typeof color === 'string' ? color.trim() : '';
+    const trimmedClarity = typeof clarity === 'string' ? clarity.trim() : '';
+    const rawShape = typeof shape === 'string' ? shape.trim() : '';
+    const normalizedShape = rawShape && rawShape.toLowerCase() !== 'none' && rawShape !== '0'
+      ? rawShape
+      : '';
+    const normalizedPacketCode = typeof packetCode === 'string' ? packetCode.trim().toUpperCase() : '';
+
+    if (!normalizedPacketCode && !trimmedColor && !trimmedClarity && !normalizedShape) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'At least one of packet code, shape, color or clarity is required' });
+    }
+
+    let query = null;
+
+    if (normalizedPacketCode) {
+      query = { businessId, packetCode: normalizedPacketCode };
+    } else if (trimmedColor && trimmedClarity) {
+      const baseQuery = { businessId, color: trimmedColor, clarity: trimmedClarity };
+      const shapeQuery = !normalizedShape
+        ? { $or: [{ shape: 0 }, { shape: { $exists: false } }, { shape: null }, { shape: '' }] }
+        : { shape: normalizedShape };
+      query = { ...baseQuery, ...shapeQuery };
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Color and clarity are required when packet code is missing' });
+    }
+
+    const rate = await DiamondRate.findOne(query).lean();
+    if (!rate) {
+      return res.status(404).json({ success: false, message: 'Diamond rate not found' });
+    }
+
+    return res.status(200).json({ success: true, data: { rate: rate.rate } });
+  } catch (error) {
+    console.error('Lookup Diamond Rate Error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 const deleteDiamondRate = async (req, res) => {
   try {
     const { id } = req.params;
@@ -547,6 +594,7 @@ module.exports = {
   updateGoldTaxSettings,
   addOrUpdateDiamondRate,
   getDiamondRates,
+  lookupDiamondRate,
   deleteDiamondRate,
   addOrUpdateColorstoneRate,
   getColorstoneRates,

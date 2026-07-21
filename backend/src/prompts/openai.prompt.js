@@ -27,7 +27,8 @@ Note 1: If a standalone number like 14, 18, or 22 appears anywhere on the tag wi
 Note 2: If a Serial Number or Stock Code ends with a space and 14, 18, or 22 (e.g. "GR01453 14"), that number is ALWAYS the Gold Purity. Extract it as purity (e.g. "14K") and remove it from the serialNumber!
 
 --- DIAMOND FIELDS ---
-DR / Dia / D                    = Diamond section marker
+DR / D                          = Diamond section marker
+Dia / DIA / dia / Dia.          = Diamond Weight label (carats). The decimal number immediately following is the weight.
 DiaPcs / Pcs / DR Pcs           = Diamond Pieces (count)
 DiaRate / DR Rate / D.Rate      = Diamond Rate (per carat price in INR)
 DiaQty / Quality / Qlty         = Diamond Quality (colour + clarity combined)
@@ -117,6 +118,13 @@ PATTERN D — Diamond tag with explicit labels:
   "Dia Pcs: 8   Dia Wt: 0.36 ct   Colour: GH   Clarity: VS1"
   → diamondPieces=8, diamondWeight=0.36, diamondQuality="GH VS1"
 
+PATTERN H — Repeated diamond weight labels:
+  "Dia 2.14  Dia 0.56" (case-insensitive, with or without a trailing dot)
+  → Create MULTIPLE diamond objects in the diamonds array:
+     diamonds[0].weight = 2.14
+     diamonds[1].weight = 0.56
+  CRITICAL: Do NOT overwrite previous values. Always append a new diamond entry per Dia occurrence.
+
 PATTERN E — Colour Stone tag:
   CS  ColWt <v>  ColPcs <v>  ColRate <v>
   → coloredStoneWeight, coloredStonePieces, coloredStoneRate
@@ -191,6 +199,9 @@ You MUST:
 - NEVER guess or hallucinate packet codes.
 - If none exists, return an empty string.
 
+If a packet code appears alongside a specific diamond line (e.g., near Dia/Pcs/Rate on the same line or nearest in reading order), assign it to THAT diamond entry.
+If there is a single packet code for the whole tag, apply it to ALL diamond entries.
+
 *** CRITICAL MANDATORY RULE — LABOUR ***
 Identify labour-related fields using keywords such as: Labour, Labour Charge, Making, Making Charge, MC, M.C., Labour %.
 Extract the numeric value associated with the labour field.
@@ -221,6 +232,11 @@ EXAMPLES OF AUTO-CORRECTION:
 - "Lb", "L6", "1ab" → Actually "Lab" (Labour).
 
 Apply common sense: if an abbreviation looks extremely close to a known dictionary abbreviation and sits next to a valid number (e.g. "GWi 5.430"), assume it is that abbreviation and extract it directly.
+
+==============================================================
+SECTION 4B: MULTI-LINE OCR READING ORDER (CRITICAL)
+==============================================================
+When matching labels (e.g., Dia) to values, use reading order and proximity. Values may appear slightly above/below the label on adjacent lines. Do NOT assume everything is on one line. Continue scanning the entire OCR text for additional Dia occurrences.
 
 ==============================================================
 SECTION 5: PURITY NORMALISATION RULES
@@ -280,6 +296,7 @@ SECTION 9: REQUIRED OUTPUT JSON SCHEMA
     "diamonds": [
       {
         "shape": { "value": "", "confidence": 0 },
+        "packetCode": { "value": "", "confidence": 0 },
         "weight": { "value": "", "confidence": 0 },
         "pieces": { "value": "", "confidence": 0 },
         "rate": { "value": "", "confidence": 0 },

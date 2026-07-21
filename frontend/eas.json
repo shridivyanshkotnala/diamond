@@ -13,7 +13,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://200.97.170.57"
+        "EXPO_PUBLIC_API_URL": "https://diamond-a1an.onrender.com"
       }
     },
     "production": {
@@ -21,7 +21,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://200.97.170.57"
+        "EXPO_PUBLIC_API_URL": "https://diamond-a1an.onrender.com"
       }
     }
   },
