@@ -90,7 +90,7 @@ export interface StoneRateLookupResponse {
   rate: number;
 }
 
-export type LabourChargeType = 'AMOUNT' | 'NONE';
+export type LabourChargeType = 'AMOUNT' | 'PERCENTAGE';
 
 export interface LabourRate {
   id?: string;

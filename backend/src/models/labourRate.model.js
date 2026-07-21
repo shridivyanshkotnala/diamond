@@ -12,7 +12,7 @@ const labourRateSchema = new mongoose.Schema(
     chargeType: {
       type: String,
       required: true,
-      enum: ['AMOUNT'],
+      enum: ['AMOUNT', 'PERCENTAGE'],
     },
     value: {
       type: Number,

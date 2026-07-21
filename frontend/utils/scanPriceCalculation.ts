@@ -9,6 +9,7 @@ import type { ScanItemData, StoneEntry } from '@/types/scanner';
 import { ALL_FORMULA_KARATS, normalizeKarat, parseWeightValue, resolveScannedKarat } from '@/utils/formulaUtils';
 import {
   hasActiveLabourCharge,
+  hasActiveLabourPurity,
   parseNumericLabourValue,
 } from '@/utils/labourUtils';
 import { buildQuality } from '@/utils/qualityUtils';
@@ -23,7 +24,7 @@ export const DEFAULT_KARAT_PURITY_PERCENT: Record<string, number> = {
   '9K': 37.5,
 };
 
-export type LabourInputMode = 'fixedAmount' | 'none';
+export type LabourInputMode = 'percentage' | 'fixedAmount' | 'none';
 
 export interface FinalTabPricingInput {
   scanData: ScanItemData;
@@ -49,7 +50,7 @@ export interface FinalTabPricingResult {
   netWtDisplay: string;
   selectedKarat: string;
   effectivePurityPercent: number;
-  puritySource: 'tunchOverride' | 'karatMapping';
+  puritySource: 'labourOverride' | 'tunchOverride' | 'karatMapping';
   pureWtGrams: number;
   pureWtDisplay: string;
   goldRatePerGram: number;
@@ -180,6 +181,13 @@ export function resolveEffectivePurityPercent(input: {
   selectedKarat: string;
   goldRates?: GoldRate[];
 }): { percent: number; source: FinalTabPricingResult['puritySource'] } {
+  if (hasActiveLabourPurity(input.scanData)) {
+    const labourPercent = parseNumericLabourValue(input.scanData.labourPurityPercent);
+    if (labourPercent !== null && labourPercent > 0) {
+      return { percent: labourPercent, source: 'labourOverride' };
+    }
+  }
+
   const customPercent = parseNumericLabourValue(input.scanData.customPurityPercent ?? '');
   if (customPercent !== null && customPercent > 0) {
     return { percent: customPercent, source: 'tunchOverride' };
@@ -228,14 +236,15 @@ export function computeGoldAmountWithPurityOverride(input: {
     pureWtGrams,
     goldAmount,
     purityPercent: percent,
-    usedLaborOverride: false,
+    usedLaborOverride: source === 'labourOverride',
     puritySource: source,
   };
 }
 
 export function resolveLabourInputMode(
-  scanData: Pick<ScanItemData, 'labourChargeAmount'>,
+  scanData: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount'>,
 ): LabourInputMode {
+  if (hasActiveLabourPurity(scanData)) return 'percentage';
   if (hasActiveLabourCharge(scanData)) return 'fixedAmount';
   return 'none';
 }
@@ -243,12 +252,16 @@ export function resolveLabourInputMode(
 export function computeLabourAmount(
   scanData: Pick<
     ScanItemData,
-    'labourChargeAmount' | 'labourChargeUnit' | 'labourWeightBasis'
+    'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit' | 'labourWeightBasis'
   >,
   netWtGrams: number,
   grossWtGrams: number,
 ): { amount: number; display: string; mode: LabourInputMode } {
   const mode = resolveLabourInputMode(scanData);
+
+  if (mode === 'percentage') {
+    return { amount: 0, display: formatIndianCurrency(0), mode };
+  }
 
   if (mode === 'fixedAmount') {
     const rate = parseNumericLabourValue(scanData.labourChargeAmount) ?? 0;
@@ -336,7 +349,7 @@ export function computeFinalTabPricing(input: FinalTabPricingInput): FinalTabPri
   const goldBasePrice = goldMetrics.goldAmount;
 
   const labour = computeLabourAmount(input.scanData, netWtGrams, grossWtGrams);
-  const usePercentageMode = false;
+  const usePercentageMode = labour.mode === 'percentage';
   const useFixedAmountMode = labour.mode === 'fixedAmount';
   const otherChargesAmount = computeOtherChargesTotal(input.scanData);
   const otherChargesDisplay =

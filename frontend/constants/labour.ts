@@ -16,7 +16,7 @@ export const LABOUR_WEIGHT_OPTIONS: Array<{ value: LabourWeightBasis; label: str
 ];
 
 export const LABOUR_VALIDATION_MESSAGE =
-  'Please enter a labour rate amount.';
+  'Please enter % Purity or Labour Amount.';
 
 export const LABOUR_SECTION_HINT =
-  'Scanner fills the labour rate automatically. You can edit the rate if needed.';
+  'Scanner fills one option automatically. You can also enter % Purity or Labour Amount manually.';

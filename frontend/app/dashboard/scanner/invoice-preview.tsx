@@ -99,6 +99,7 @@ export default function InvoicePreviewScreen() {
     const stoneRows = buildStoneLineItemRows(stoneEntries);
     const otherChargeRows = buildOtherChargeLineItemRows(
       scanData.otherChargesItems || [],
+      scanData.otherChargesRemarks,
     );
     return [goldRow, ...stoneRows, ...otherChargeRows];
   }, [

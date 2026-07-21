@@ -1,276 +1,236 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react-native';
 
-import { FormSection } from '@/components/scanner/FormSection';
 import { FieldLabel } from '@/components/scanner/FieldLabel';
-import { SearchableSelectDropdown } from '@/components/scanner/SearchableSelectDropdown';
+import { FormSection } from '@/components/scanner/FormSection';
 import { Colors } from '@/constants/theme';
-import {
-  ADD_CUSTOM_CHARGE_LABEL,
-  ADD_CUSTOM_CHARGE_VALUE,
-  DEFAULT_OTHER_CHARGE_OPTIONS,
-} from '@/constants/otherCharges';
 import type { OtherChargeItem } from '@/types/scanner';
-import {
-  createOtherChargeMaster,
-  fetchOtherChargeMasters,
-  type OtherChargeMaster,
-} from '@/utils/otherChargesApi';
 
 interface OtherChargesSectionProps {
-  charges?: OtherChargeItem[];
+  charges: OtherChargeItem[];
+  remarks: string;
   onChargesChange: (items: OtherChargeItem[]) => void;
+  onRemarksChange: (value: string) => void;
+  showRemarksError?: boolean;
 }
 
-const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ');
-
-function buildChargeId() {
-  return `oc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+function sanitizeAmountInput(text: string): string {
+  return text.replace(/[₹,\s]/g, '');
 }
 
-export function OtherChargesSection({ charges = [], onChargesChange }: OtherChargesSectionProps) {
-  const [customCharges, setCustomCharges] = useState<OtherChargeMaster[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [customModalOpen, setCustomModalOpen] = useState(false);
-  const [customName, setCustomName] = useState('');
-  const [customError, setCustomError] = useState('');
-  const [savingCustom, setSavingCustom] = useState(false);
-  const [pendingRowId, setPendingRowId] = useState<string | null>(null);
+function formatInr(amount: number): string {
+  if (!Number.isFinite(amount)) return '₹0';
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+}
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    fetchOtherChargeMasters()
-      .then((list) => {
-        if (!active) return;
-        setCustomCharges(list);
-      })
-      .catch(() => {
-        if (!active) return;
-        setCustomCharges([]);
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
+export function OtherChargesSection({
+  charges,
+  remarks,
+  onChargesChange,
+  onRemarksChange,
+  showRemarksError = false,
+}: OtherChargesSectionProps) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [nameInput, setNameInput] = useState('');
+  const [amountInput, setAmountInput] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; amount?: string }>({});
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  const total = useMemo(
+    () => charges.reduce((sum, item) => sum + (item.amount || 0), 0),
+    [charges],
+  );
 
-  const optionList = useMemo(() => {
-    const defaults = DEFAULT_OTHER_CHARGE_OPTIONS.map((name) => ({ value: name, label: name }));
-    const existingNames = new Set(defaults.map((option) => option.value.toLowerCase()));
-    const customOptions = customCharges
-      .map((item) => ({ value: item.name, label: item.name }))
-      .filter((option) => {
-        const key = option.value.toLowerCase();
-        if (existingNames.has(key)) return false;
-        existingNames.add(key);
-        return true;
-      });
+  const openAdd = () => {
+    setEditingIndex(null);
+    setNameInput('');
+    setAmountInput('');
+    setErrors({});
+    setModalVisible(true);
+  };
 
-    // Include any currently selected names that might not be in masters yet.
-    charges.forEach((item) => {
-      const key = item.name.trim().toLowerCase();
-      if (!key || existingNames.has(key)) return;
-      customOptions.push({ value: item.name, label: item.name });
-      existingNames.add(key);
-    });
+  const openEdit = (index: number) => {
+    const item = charges[index];
+    if (!item) return;
+    setEditingIndex(index);
+    setNameInput(item.name);
+    setAmountInput(String(item.amount));
+    setErrors({});
+    setModalVisible(true);
+  };
 
-    return [
-      ...defaults,
-      ...customOptions,
-      { value: ADD_CUSTOM_CHARGE_VALUE, label: ADD_CUSTOM_CHARGE_LABEL },
-    ];
-  }, [customCharges, charges]);
+  const closeModal = () => {
+    setModalVisible(false);
+    setEditingIndex(null);
+    setErrors({});
+  };
 
-  const updateCharges = (next: OtherChargeItem[]) => {
+  const handleSave = () => {
+    const trimmedName = nameInput.trim();
+    const numericAmount = Number.parseFloat(amountInput.replace(/[^\d.]/g, '')) || 0;
+    const nextErrors: { name?: string; amount?: string } = {};
+    if (!trimmedName) nextErrors.name = 'Charge name is required.';
+    if (!numericAmount || numericAmount <= 0) nextErrors.amount = 'Enter a valid amount.';
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    if (editingIndex === null) {
+      const next: OtherChargeItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: trimmedName,
+        amount: numericAmount,
+      };
+      onChargesChange([...charges, next]);
+    } else {
+      const next = charges.map((item, index) =>
+        index === editingIndex
+          ? { ...item, name: trimmedName, amount: numericAmount }
+          : item,
+      );
+      onChargesChange(next);
+    }
+
+    closeModal();
+  };
+
+  const handleDelete = (index: number) => {
+    const next = charges.filter((_, i) => i !== index);
     onChargesChange(next);
   };
 
-  const handleAddRow = () => {
-    updateCharges([
-      ...charges,
-      { id: buildChargeId(), name: '', amount: 0 },
-    ]);
-  };
-
-  const handleDeleteRow = (id: string) => {
-    updateCharges(charges.filter((item) => item.id !== id));
-  };
-
-  const handleNameChange = (id: string, value: string) => {
-    if (value === ADD_CUSTOM_CHARGE_VALUE) {
-      setPendingRowId(id);
-      setCustomName('');
-      setCustomError('');
-      setCustomModalOpen(true);
-      return;
-    }
-
-    updateCharges(
-      charges.map((item) => (item.id === id ? { ...item, name: value } : item)),
-    );
-  };
-
-  const handleAmountChange = (id: string, value: string) => {
-    const numeric = Number.parseFloat(value.replace(/[^\d.]/g, ''));
-    updateCharges(
-      charges.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              amount: Number.isFinite(numeric) ? numeric : 0,
-            }
-          : item,
-      ),
-    );
-  };
-
-  const closeCustomModal = () => {
-    setCustomModalOpen(false);
-    setCustomName('');
-    setCustomError('');
-    setPendingRowId(null);
-  };
-
-  const handleSaveCustomCharge = async () => {
-    const normalized = normalizeName(customName);
-    if (!normalized) {
-      setCustomError('Enter a charge name.');
-      return;
-    }
-
-    setSavingCustom(true);
-    try {
-      const created = await createOtherChargeMaster(normalized);
-      setCustomCharges((prev) => {
-        const exists = prev.some((item) => item.name.toLowerCase() === created.name.toLowerCase());
-        return exists ? prev : [...prev, created];
-      });
-
-      if (pendingRowId) {
-        updateCharges(
-          charges.map((item) =>
-            item.id === pendingRowId ? { ...item, name: created.name } : item,
-          ),
-        );
-      }
-      closeCustomModal();
-    } catch {
-      setCustomError('Unable to save custom charge.');
-    } finally {
-      setSavingCustom(false);
-    }
-  };
-
   return (
-    <FormSection title="Other Charges" variant="card">
-      {charges.length === 0 ? (
-        <Text className="mb-3 text-xs text-text-muted">No other charges added yet.</Text>
+    <FormSection variant="card">
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-sm font-bold uppercase text-text-primary">Other Charges</Text>
+        <Pressable onPress={openAdd} className="rounded-full bg-primary/10 px-3 py-1.5">
+          <Text className="text-xs font-semibold text-primary">+ Add Other Charge</Text>
+        </Pressable>
+      </View>
+
+      {charges.length > 0 ? (
+        <View className="mb-3 gap-2">
+          {charges.map((item, index) => (
+            <View
+              key={item.id}
+              className="flex-row items-center justify-between rounded-input border border-border bg-white px-3 py-2"
+            >
+              <View className="flex-1 pr-2">
+                <Text className="text-sm font-medium text-text-primary" numberOfLines={1}>
+                  {item.name}
+                </Text>
+              </View>
+              <Text className="text-sm font-semibold text-text-primary">
+                {formatInr(item.amount)}
+              </Text>
+              <View className="ml-3 flex-row items-center gap-2">
+                <Pressable
+                  onPress={() => openEdit(index)}
+                  className="h-8 w-8 items-center justify-center rounded-full border border-border bg-white"
+                >
+                  <Pencil size={14} color={Colors.textPrimary} />
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDelete(index)}
+                  className="h-8 w-8 items-center justify-center rounded-full border border-danger-text/30 bg-danger-bg"
+                >
+                  <Trash2 size={14} color={Colors.dangerText} />
+                </Pressable>
+              </View>
+            </View>
+          ))}
+
+          <View className="flex-row items-center justify-between rounded-input border border-border bg-surface-muted px-3 py-2">
+            <Text className="text-sm font-semibold text-text-secondary">Total Other Charges</Text>
+            <Text className="text-sm font-bold text-text-primary">{formatInr(total)}</Text>
+          </View>
+        </View>
       ) : null}
 
-      {charges.map((item) => (
-        <View key={item.id} className="mb-3">
-          <View className="flex-row items-end gap-2">
-            <View className="flex-1">
-              <SearchableSelectDropdown
-                label="Charge Name"
-                value={item.name}
-                options={optionList}
-                onChange={(value) => handleNameChange(item.id, value)}
-                placeholder="Select charge"
-                containerClassName="flex-1"
+      <View>
+        <FieldLabel label="Remarks" required={charges.length > 0} />
+        <TextInput
+          value={remarks}
+          onChangeText={onRemarksChange}
+          placeholder="Add remarks"
+          placeholderTextColor={Colors.placeholder}
+          multiline
+          textAlignVertical="top"
+          className={`min-h-[96px] rounded-input border bg-surface-input px-3.5 py-3 text-sm text-text-primary ${
+            showRemarksError ? 'border-danger-text' : 'border-border'
+          }`}
+        />
+        {showRemarksError ? (
+          <Text className="mt-2 text-xs text-danger-text">
+            Remarks are required when other charges are added.
+          </Text>
+        ) : null}
+      </View>
+
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeModal}>
+        <View className="flex-1 items-center justify-center bg-black/40 px-6">
+          <View className="w-full rounded-2xl bg-white p-4">
+            <Text className="mb-3 text-sm font-bold uppercase text-text-primary">Other Charge</Text>
+
+            <View className="mb-3">
+              <FieldLabel label="Charge Name" required />
+              <TextInput
+                value={nameInput}
+                onChangeText={(text) => {
+                  setNameInput(text);
+                  if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+                }}
+                placeholder="Enter name"
+                placeholderTextColor={Colors.placeholder}
+                className={`h-11 rounded-input border px-3.5 text-sm text-text-primary ${
+                  errors.name ? 'border-danger-text bg-danger-bg' : 'border-border bg-surface-input'
+                }`}
               />
+              {errors.name ? <Text className="mt-1 text-xs text-danger-text">{errors.name}</Text> : null}
             </View>
 
-            <View className="w-[34%]">
-              <FieldLabel label="Amount (₹)" />
-              <View className="h-11 flex-row items-center rounded-input border border-border bg-surface-input px-3.5">
+            <View className="mb-3">
+              <FieldLabel label="Amount (₹)" required />
+              <View className={`h-11 flex-row items-center rounded-input border px-3.5 ${
+                errors.amount ? 'border-danger-text bg-danger-bg' : 'border-border bg-surface-input'
+              }`}>
+                <Text className="mr-1.5 text-sm font-medium text-text-muted">₹</Text>
                 <TextInput
-                  value={item.amount ? String(item.amount) : ''}
-                  onChangeText={(value) => handleAmountChange(item.id, value)}
-                  placeholder="0"
+                  value={amountInput}
+                  onChangeText={(text) => {
+                    setAmountInput(sanitizeAmountInput(text));
+                    if (errors.amount) setErrors((prev) => ({ ...prev, amount: undefined }));
+                  }}
+                  placeholder="Enter amount"
                   placeholderTextColor={Colors.placeholder}
-                  keyboardType="decimal-pad"
+                  keyboardType="number-pad"
                   className="flex-1 text-sm text-text-primary"
                 />
               </View>
+              {errors.amount ? (
+                <Text className="mt-1 text-xs text-danger-text">{errors.amount}</Text>
+              ) : null}
             </View>
 
-            <Pressable
-              onPress={() => handleDeleteRow(item.id)}
-              className="mb-[2px] h-11 w-11 items-center justify-center rounded-input border border-border bg-white"
-            >
-              <Trash2 size={16} color="#9E9E9E" />
-            </Pressable>
-          </View>
-        </View>
-      ))}
-
-      <Pressable
-        onPress={handleAddRow}
-        className="flex-row items-center justify-center gap-2 rounded-input border border-dashed border-border bg-white py-3"
-      >
-        <Plus size={16} color="#1B3022" />
-        <Text className="text-sm font-semibold text-text-primary">Add Other Charge</Text>
-      </Pressable>
-
-      <Modal visible={customModalOpen} transparent animationType="fade" onRequestClose={closeCustomModal}>
-        <View className="flex-1 items-center justify-center bg-black/40 px-6">
-          <View className="w-full rounded-2xl bg-white px-5 py-4 shadow-lg">
-            <Text className="text-base font-bold text-text-primary">Add Custom Charge</Text>
-            <Text className="mt-1 text-xs text-text-muted">Charge name</Text>
-            <TextInput
-              value={customName}
-              onChangeText={(value) => {
-                setCustomName(value);
-                if (customError) setCustomError('');
-              }}
-              placeholder="Enter name"
-              placeholderTextColor={Colors.placeholder}
-              className="mt-2 h-11 rounded-input border border-border bg-surface-input px-3.5 text-sm text-text-primary"
-            />
-            {customError ? (
-              <Text className="mt-2 text-xs text-danger-text">{customError}</Text>
-            ) : null}
-
-            <View className="mt-4 flex-row gap-3">
+            <View className="flex-row gap-3">
               <Pressable
-                onPress={closeCustomModal}
+                onPress={closeModal}
                 className="flex-1 items-center rounded-button border border-border bg-white py-3"
               >
                 <Text className="text-sm font-semibold text-text-secondary">Cancel</Text>
               </Pressable>
               <Pressable
-                onPress={handleSaveCustomCharge}
-                disabled={savingCustom}
+                onPress={handleSave}
                 className="flex-1 items-center rounded-button bg-primary py-3"
               >
-                {savingCustom ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text className="text-sm font-semibold text-white">Save</Text>
-                )}
+                <Text className="text-sm font-semibold text-white">OK</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
-
-      {loading ? (
-        <Text className="mt-2 text-xs text-text-muted">Loading custom charges…</Text>
-      ) : null}
     </FormSection>
   );
 }

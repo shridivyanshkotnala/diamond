@@ -139,12 +139,14 @@ export interface ScanItemData {
   colorstoneClarity: string;
   colorstoneQuality: string;
   colorstoneRate: string;
+  labourPurityPercent: string;
   labourChargeAmount: string;
   labourChargeUnit: LabourChargeUnit;
   labourWeightBasis: LabourWeightBasis;
   calculationRate: 'rtgs' | 'cash';
   otherChargesAmount: string;
   otherChargesItems: OtherChargeItem[];
+  otherChargesRemarks: string;
   diamondAmount: string;
   clubDiamonds: boolean;
   clubColorstones: boolean;
@@ -260,6 +262,7 @@ export interface CalculateMrpPayload {
   netWt: number;
   purityKarat: string;
   customPurityPercent?: number;
+  labourPurityPercent?: string;
   labourChargeAmount?: string;
   labourChargeUnit?: string;
   calculationMode?: 'rtgs' | 'cash';

@@ -42,6 +42,7 @@ const API_FIELD_LABELS: Record<string, string> = {
   colorstoneClarity: 'CS Clarity',
   labour: 'Labour',
   otherCharges: 'Other Charges',
+  otherChargesRemarks: 'Other Charges Remarks',
   other: 'Other',
 };
 
@@ -111,11 +112,13 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
   for (const scanKey of Object.values(API_TO_SCAN_ITEM)) {
     result[scanKey] = '';
   }
+  result.labourPurityPercent = '';
   result.labourChargeAmount = '';
   result.labourChargeUnit = DEFAULT_LABOUR_CHARGE_UNIT;
   result.labourWeightBasis = DEFAULT_LABOUR_WEIGHT_BASIS;
   result.otherChargesAmount = '';
   result.otherChargesItems = [];
+  result.otherChargesRemarks = '';
   result.clubDiamonds = false;
   result.clubColorstones = false;
   result.clubbedDiamondsBackup = '';
@@ -142,6 +145,7 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
 
   if (data.labour != null && String(data.labour).trim() !== '') {
     const parsed = parseLabourFromApi(String(data.labour));
+    result.labourPurityPercent = parsed.labourPurityPercent;
     result.labourChargeAmount = parsed.labourChargeAmount;
     result.labourChargeUnit = parsed.labourChargeUnit;
   }
@@ -160,6 +164,9 @@ export function structuredDataToScanItem(data: StructuredScanData): Partial<Scan
     }
   }
 
+  if (data.otherChargesRemarks != null && String(data.otherChargesRemarks).trim() !== '') {
+    result.otherChargesRemarks = String(data.otherChargesRemarks);
+  }
 
   if (result.diamondColor || result.diamondClarity) {
     result.diamondQuality = buildQuality(
@@ -202,6 +209,12 @@ export function scanItemToStructuredData(
     result.otherCharges = String(otherChargesTotal);
   } else {
     delete result.otherCharges;
+  }
+
+  if (scanData.otherChargesRemarks?.trim()) {
+    result.otherChargesRemarks = scanData.otherChargesRemarks.trim();
+  } else {
+    delete result.otherChargesRemarks;
   }
 
   return result;

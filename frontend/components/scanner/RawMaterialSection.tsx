@@ -25,7 +25,7 @@ import type { GoldRate, TaxSettings } from '@/types/rates';
 interface RawMaterialSectionProps {
   scanData: Pick<
     ScanItemData,
-    'grossWt' | 'netWt' | 'karat' | 'tunch' | 'customPurityPercent'
+    'grossWt' | 'netWt' | 'karat' | 'tunch' | 'customPurityPercent' | 'labourPurityPercent'
   >;
   editable?: boolean;
   canEditPurityPercent?: boolean;
@@ -223,14 +223,13 @@ export function RawMaterialSection({
           </View>
         </FormFieldGridItem>
         <FormFieldGridItem>
-          <View className="mb-2.5">
-            <FieldLabel label="Current Gold Rate" />
-            <View className="min-h-11 justify-center rounded-input border border-border bg-surface-input px-3.5">
-              <Text className="text-base font-semibold text-text-primary">
-                {currentGoldRateDisplay}
-              </Text>
-            </View>
-          </View>
+          <FormInput
+            label="Current Gold Rate"
+            value={currentGoldRateDisplay}
+            editable={false}
+            placeholder="Calculated"
+            containerClassName="mb-2.5"
+          />
         </FormFieldGridItem>
         <FormFieldGridItem>
           <View className="mb-2.5">

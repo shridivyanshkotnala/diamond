@@ -53,6 +53,7 @@ const calculateMRP = async (req, res, next) => {
     }
 
     const {
+      labourPurityPercent,
       labourChargeAmount,
       labourChargeUnit,
       otherCharges,
@@ -85,17 +86,27 @@ const calculateMRP = async (req, res, next) => {
     let labourAmount = 0;
 
     if (labourCharge) {
-      pureWeight = numericNetWt * (effectivePurityPercent / 100);
-      const labourRatePerUnit = parseFloat(labourCharge.value) || 0;
-      if (labourCharge.rupeesUnit === 'Per 10 Gram') {
-        labourAmount = numericNetWt * (labourRatePerUnit / 10);
+      if (labourCharge.type === 'PERCENTAGE') {
+        const labourPercent = parseFloat(labourCharge.value) || 0;
+        pureWeight = numericNetWt * (labourPercent / 100);
+        labourAmount = 0; // Labour is included in pure weight markup
       } else {
-        labourAmount = numericNetWt * labourRatePerUnit;
+        pureWeight = numericNetWt * (effectivePurityPercent / 100);
+        const labourRatePerUnit = parseFloat(labourCharge.value) || 0;
+        if (labourCharge.rupeesUnit === 'Per 10 Gram') {
+          labourAmount = numericNetWt * (labourRatePerUnit / 10);
+        } else {
+          labourAmount = numericNetWt * labourRatePerUnit;
+        }
       }
     } else {
       // Fallback to manual entry from review screen
-      pureWeight = numericNetWt * (effectivePurityPercent / 100);
-      if (labourChargeAmount) {
+      if (labourPurityPercent) {
+        const manualPurity = parseFloat(labourPurityPercent.replace(/[^0-9.]/g, '')) || 0;
+        pureWeight = numericNetWt * (manualPurity / 100);
+        labourAmount = 0;
+      } else if (labourChargeAmount) {
+        pureWeight = numericNetWt * (effectivePurityPercent / 100);
         const manualRate = parseFloat(labourChargeAmount) || 0;
         if (labourChargeUnit === 'Per 10 Gram') {
           labourAmount = numericNetWt * (manualRate / 10);
@@ -103,6 +114,7 @@ const calculateMRP = async (req, res, next) => {
           labourAmount = numericNetWt * manualRate;
         }
       } else {
+        pureWeight = numericNetWt * (effectivePurityPercent / 100);
         labourAmount = 0;
       }
     }
@@ -163,7 +175,7 @@ const calculateMRP = async (req, res, next) => {
         goldRateApplied: baseGoldRatePerGram,
         goldAmount,
         labourAmount,
-        labourChargeType: labourCharge ? labourCharge.type : (labourChargeAmount ? 'AMOUNT' : 'NONE'),
+        labourChargeType: labourCharge ? labourCharge.type : (labourPurityPercent ? 'PERCENTAGE' : (labourChargeAmount ? 'AMOUNT' : 'NONE')),
         otherCharges: otherChargesAmount,
       },
       finalMRP

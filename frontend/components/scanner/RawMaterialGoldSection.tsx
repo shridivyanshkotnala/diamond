@@ -19,9 +19,11 @@ export function RawMaterialGoldSection({
   onKaratChange,
 }: RawMaterialGoldSectionProps) {
   const purityNote =
-    pricing.puritySource === 'tunchOverride'
-      ? `${pricing.effectivePurityPercent} (admin override)`
-      : `${pricing.effectivePurityPercent}`;
+    pricing.puritySource === 'labourOverride'
+      ? `${pricing.effectivePurityPercent} (custom purity)`
+      : pricing.puritySource === 'tunchOverride'
+        ? `${pricing.effectivePurityPercent} (admin override)`
+        : `${pricing.effectivePurityPercent}`;
 
   return (
     <DataGridSection
@@ -50,9 +52,11 @@ export function RawMaterialGoldSectionInteractive({
   onKaratChange,
 }: RawMaterialGoldSectionProps) {
   const purityNote =
-    pricing.puritySource === 'tunchOverride'
-      ? `${pricing.effectivePurityPercent} (admin override)`
-      : `${pricing.effectivePurityPercent} from backend`;
+    pricing.puritySource === 'labourOverride'
+      ? `${pricing.effectivePurityPercent} (custom purity)`
+      : pricing.puritySource === 'tunchOverride'
+        ? `${pricing.effectivePurityPercent} (admin override)`
+        : `${pricing.effectivePurityPercent} from backend`;
 
   return (
     <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-white">

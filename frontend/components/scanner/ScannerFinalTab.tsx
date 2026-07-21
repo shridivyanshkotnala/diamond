@@ -38,6 +38,7 @@ interface ScannerFinalTabProps {
   ) => void;
   onRateErrorChange?: (sequenceIndex: number, hasError: boolean) => void;
   showLabourValidation?: boolean;
+  showOtherChargesRemarksError?: boolean;
   gstNote?: string;
   calculationRateAccess?: 'rtgs' | 'cash' | 'both';
   clubDiamonds?: boolean;
@@ -63,6 +64,7 @@ export function ScannerFinalTab({
   onStoneEntryChange,
   onRateErrorChange,
   showLabourValidation = false,
+  showOtherChargesRemarksError = false,
   gstNote = 'MRP = Gold + Stones + Labour + Other Charges (client-side)',
   calculationRateAccess = 'both',
   clubDiamonds = false,
@@ -216,6 +218,9 @@ export function ScannerFinalTab({
         <LaborSection
           values={getLaborValuesFromScanData(scanData)}
           onChange={(values) => {
+            if (values.labourPurityPercent !== undefined) {
+              onFieldChange?.('labourPurityPercent', values.labourPurityPercent);
+            }
             if (values.labourChargeAmount !== undefined) {
               onFieldChange?.('labourChargeAmount', values.labourChargeAmount);
             }
@@ -238,11 +243,17 @@ export function ScannerFinalTab({
       {editable ? (
         <OtherChargesSection
           charges={scanData.otherChargesItems}
+          remarks={scanData.otherChargesRemarks}
           onChargesChange={(items) => {
             const total = items.reduce((sum, item) => sum + (item.amount || 0), 0);
             onFieldChange?.('otherChargesItems', items);
             onFieldChange?.('otherChargesAmount', total ? String(total) : '');
+            if (items.length === 0) {
+              onFieldChange?.('otherChargesRemarks', '');
+            }
           }}
+          onRemarksChange={(value) => onFieldChange?.('otherChargesRemarks', value)}
+          showRemarksError={showOtherChargesRemarksError}
         />
       ) : null}
 
@@ -269,6 +280,14 @@ export function ScannerFinalTab({
               {pricing.otherChargesDisplay}
             </Text>
           </View>
+          {scanData.otherChargesRemarks?.trim() ? (
+            <View className="border-t border-border px-4 py-3.5">
+              <Text className="text-xs font-semibold uppercase text-text-muted">Remarks</Text>
+              <Text className="mt-2 text-sm text-text-secondary">
+                {scanData.otherChargesRemarks.trim()}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 

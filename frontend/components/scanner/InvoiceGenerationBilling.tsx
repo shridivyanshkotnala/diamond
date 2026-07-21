@@ -372,6 +372,7 @@ export function InvoiceGenerationBilling({
     const stoneRows = buildStoneLineItemRows(stoneEntries);
     const otherChargeRows = buildOtherChargeLineItemRows(
       scanData.otherChargesItems || [],
+      scanData.otherChargesRemarks,
     );
     return [goldRow, ...stoneRows, ...otherChargeRows].filter(row => row.price > 0 && row.qty > 0);
   }, [

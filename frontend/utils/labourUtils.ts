@@ -13,6 +13,20 @@ export function parseNumericLabourValue(raw: string): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+/** OCR rule: 0 < value ≤ 100 → purity; value > 100 → labor charge amount. */
+export function classifyOcrLabourValue(raw: string): 'purity' | 'charge' | null {
+  const num = parseNumericLabourValue(raw);
+  if (num === null || num <= 0) return null;
+  if (num <= 100) return 'purity';
+  return 'charge';
+}
+
+export function formatPurityPercent(value: string): string {
+  const num = parseNumericLabourValue(value);
+  if (num === null) return '';
+  return `${num}%`;
+}
+
 function parseChargeUnitFromText(raw: string): LabourChargeUnit {
   if (/per\s*10\s*gram/i.test(raw)) return 'Per 10 Gram';
   if (/per\s*1\s*gram/i.test(raw)) return 'Per 1 Gram';
@@ -22,9 +36,10 @@ function parseChargeUnitFromText(raw: string): LabourChargeUnit {
 
 export function parseLabourFromApi(labourRaw: string): Pick<
   ScanItemData,
-  'labourChargeAmount' | 'labourChargeUnit'
+  'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit'
 > {
   const empty = {
+    labourPurityPercent: '',
     labourChargeAmount: '',
     labourChargeUnit: DEFAULT_LABOUR_CHARGE_UNIT,
   };
@@ -37,14 +52,26 @@ export function parseLabourFromApi(labourRaw: string): Pick<
       ? (pipeParts[1].trim() as LabourChargeUnit)
       : DEFAULT_LABOUR_CHARGE_UNIT;
     return {
+      labourPurityPercent: '',
       labourChargeAmount: String(parseNumericLabourValue(pipeParts[0])),
       labourChargeUnit: unit,
     };
   }
 
-  const numericValue = parseNumericLabourValue(labourRaw);
-  if (numericValue !== null && numericValue > 0 && numericValue <= 100 && /%/.test(labourRaw)) {
-    return empty;
+  const kind = classifyOcrLabourValue(labourRaw);
+  if (kind === 'purity') {
+    return {
+      ...empty,
+      labourPurityPercent: formatPurityPercent(labourRaw),
+    };
+  }
+
+  if (kind === 'charge') {
+    return {
+      ...empty,
+      labourChargeAmount: String(parseNumericLabourValue(labourRaw) ?? ''),
+      labourChargeUnit: parseChargeUnitFromText(labourRaw),
+    };
   }
 
   return {
@@ -54,8 +81,11 @@ export function parseLabourFromApi(labourRaw: string): Pick<
 }
 
 export function serializeLabourForApi(
-  data: Pick<ScanItemData, 'labourChargeAmount' | 'labourChargeUnit'>,
+  data: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit'>,
 ): string {
+  if (data.labourPurityPercent.trim()) {
+    return formatPurityPercent(data.labourPurityPercent);
+  }
   if (data.labourChargeAmount.trim()) {
     const amount = parseNumericLabourValue(data.labourChargeAmount);
     const amountStr = amount !== null ? String(amount) : data.labourChargeAmount.trim();
@@ -65,13 +95,22 @@ export function serializeLabourForApi(
 }
 
 export function formatLabourDisplay(
-  data: Pick<ScanItemData, 'labourChargeAmount' | 'labourChargeUnit'>,
+  data: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount' | 'labourChargeUnit'>,
 ): string {
+  if (data.labourPurityPercent.trim()) {
+    return formatPurityPercent(data.labourPurityPercent);
+  }
   if (data.labourChargeAmount.trim()) {
     const amount = parseNumericLabourValue(data.labourChargeAmount) ?? data.labourChargeAmount;
     return `₹${amount} ${data.labourChargeUnit}`;
   }
   return '';
+}
+
+export function hasActiveLabourPurity(
+  data: Pick<ScanItemData, 'labourPurityPercent'>,
+): boolean {
+  return Boolean(data.labourPurityPercent.trim());
 }
 
 export function hasActiveLabourCharge(
@@ -81,9 +120,12 @@ export function hasActiveLabourCharge(
 }
 
 export function validateLabour(
-  data: Pick<ScanItemData, 'labourChargeAmount'>,
+  data: Pick<ScanItemData, 'labourPurityPercent' | 'labourChargeAmount'>,
 ): string | null {
+  const hasPurity = hasActiveLabourPurity(data);
   const hasCharge = hasActiveLabourCharge(data);
-  if (!hasCharge) return LABOUR_VALIDATION_MESSAGE;
+
+  if (!hasPurity && !hasCharge) return LABOUR_VALIDATION_MESSAGE;
+  if (hasPurity && hasCharge) return LABOUR_VALIDATION_MESSAGE;
   return null;
 }
