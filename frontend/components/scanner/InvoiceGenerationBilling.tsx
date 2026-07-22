@@ -39,6 +39,7 @@ import { fetchGoldRates } from '@/utils/ratesApi';
 import { apiFetchNextInvoiceNumber } from '@/utils/invoiceApi';
 import { formatIndianCurrency } from '@/utils/scanPriceCalculation';
 import { buildDisplayStoneBlocks } from '@/utils/stoneSequenceUtils';
+import { resolveMcxChangeValue } from '@/utils/goldRateUtils';
 
 interface InvoiceGenerationBillingProps {
   scanData: ScanItemData;
@@ -269,6 +270,7 @@ export function InvoiceGenerationBilling({
 
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
   const [mcxLiveRate, setMcxLiveRate] = useState(0);
+  const [mcxFinalRate, setMcxFinalRate] = useState(0);
   const [supremeRtgsChange, setSupremeRtgsChange] = useState(0);
   const [supremeCashChange, setSupremeCashChange] = useState(0);
   const [rtgsChange, setRtgsChange] = useState(0);
@@ -294,6 +296,13 @@ export function InvoiceGenerationBilling({
         if (cancelled) return;
         setGoldRates(response.rates);
         setMcxLiveRate(response.mcxLiveRate);
+        const mcxChangeBy =
+          response.taxSettings?.mcxChangeBy ??
+          resolveMcxChangeValue(response.taxSettings?.mcxChange);
+        setMcxFinalRate(
+          response.taxSettings?.mcxFinalRate ??
+          response.mcxLiveRate + mcxChangeBy,
+        );
         const supremeRtgsBase =
           response.supremeChanges?.supremeRtgs ??
           response.mcxLiveRate + (response.supremeChanges?.rtgsChange ?? 0);
@@ -308,6 +317,7 @@ export function InvoiceGenerationBilling({
         if (!cancelled) {
           setGoldRates([]);
           setMcxLiveRate(0);
+          setMcxFinalRate(0);
           setSupremeRtgsChange(0);
           setSupremeCashChange(0);
           setRtgsChange(0);
@@ -362,6 +372,7 @@ export function InvoiceGenerationBilling({
       supremeRtgsChange + rtgsChange,
       supremeCashChange + cashChange,
       scanData.calculationRate || 'rtgs',
+      mcxFinalRate,
     );
     const goldRow = buildGoldLineItemRow({
       scanData,
@@ -378,6 +389,7 @@ export function InvoiceGenerationBilling({
   }, [
     goldRates,
     mcxLiveRate,
+    mcxFinalRate,
     supremeRtgsChange,
     supremeCashChange,
     rtgsChange,

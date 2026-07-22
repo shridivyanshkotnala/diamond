@@ -13,11 +13,10 @@ import { ChevronDown, ChevronRight, Pencil, Settings2, X } from 'lucide-react-na
 
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { formatMcxLiveRate } from '@/utils/goldRateUtils';
 import { formatInr } from '@/utils/rateMappers';
 
 const BUTTON_GREEN = '#1B3022';
-const GOLD_ACTION_BAR_HEIGHT = 72;
+const GOLD_ACTION_BAR_HEIGHT = 60;
 
 type Sign = '+' | '-';
 export type ScannerCalculationUse = 'rtgs' | 'cash';
@@ -135,13 +134,11 @@ function isSameNumber(a: number, b: number): boolean {
   return Math.abs(a - b) < 0.0001;
 }
 
-function formatFormula(baseLabel: string, changeLabel: string): string {
-  return `${baseLabel} + ${changeLabel}`;
-}
-
 interface RateCardProps {
   title: string;
   subtitle: string;
+  currentLabel?: string;
+  finalLabel?: string;
   icon: React.ReactNode;
   sign: Sign;
   amount: string;
@@ -155,6 +152,8 @@ interface RateCardProps {
 function RateCard({
   title,
   subtitle,
+  currentLabel,
+  finalLabel,
   icon,
   sign,
   amount,
@@ -175,7 +174,7 @@ function RateCard({
       </View>
 
       <View style={styles.currentRatePill}>
-        <Text style={styles.currentRateLabel}>{title}</Text>
+        <Text style={styles.currentRateLabel}>{currentLabel ?? title}</Text>
         <Text style={styles.currentRateValue}>{formatInr(currentRate)}</Text>
       </View>
 
@@ -204,7 +203,7 @@ function RateCard({
       <View style={styles.cardDivider} />
 
       <View style={styles.finalSection}>
-        <Text style={styles.finalLabel}>Final {title}</Text>
+        <Text style={styles.finalLabel}>{finalLabel ?? `Final ${title}`}</Text>
         <Text style={styles.finalValue}>{formatInr(finalRate)}</Text>
         {formula ? <Text style={styles.formulaText}>{formula}</Text> : null}
       </View>
@@ -215,6 +214,7 @@ function RateCard({
 interface GoldRateSettingsModalProps {
   visible: boolean;
   mcxLiveRate: number;
+  mcxChange: number;
   supremeRtgsChange: number;
   supremeCashChange: number;
   rtgsChange: number;
@@ -222,12 +222,13 @@ interface GoldRateSettingsModalProps {
   rtgsFinalRate: number;
   cashFinalRate: number;
   onClose: () => void;
-  onApply: (rtgsChangeBy: number, cashChangeBy: number) => Promise<void>;
+  onApply: (mcxChangeBy: number, rtgsChangeBy: number, cashChangeBy: number) => Promise<void>;
 }
 
 export function GoldRateSettingsModal({
   visible,
   mcxLiveRate,
+  mcxChange,
   supremeRtgsChange,
   supremeCashChange,
   rtgsChange,
@@ -237,10 +238,13 @@ export function GoldRateSettingsModal({
   onClose,
   onApply,
 }: GoldRateSettingsModalProps) {
+  const [mcxSign, setMcxSign] = useState<Sign>('+');
   const [rtgsSign, setRtgsSign] = useState<Sign>('+');
   const [cashSign, setCashSign] = useState<Sign>('+');
+  const [mcxAmount, setMcxAmount] = useState('0');
   const [rtgsAmount, setRtgsAmount] = useState('0');
   const [cashAmount, setCashAmount] = useState('0');
+  const [savedMcxChange, setSavedMcxChange] = useState(0);
   const [savedRtgsChange, setSavedRtgsChange] = useState(0);
   const [savedCashChange, setSavedCashChange] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -249,30 +253,44 @@ export function GoldRateSettingsModal({
   useEffect(() => {
     if (!visible) return;
 
+    const mcx = toSafeNumber(mcxChange, 0);
     const rtgs = toSafeNumber(rtgsChange, 0);
     const cash = toSafeNumber(cashChange, 0);
+    const mcxForm = getSignAndAmount(mcx);
     const rtgsForm = getSignAndAmount(rtgs);
     const cashForm = getSignAndAmount(cash);
 
+    setSavedMcxChange(mcx);
     setSavedRtgsChange(rtgs);
     setSavedCashChange(cash);
+    setMcxSign(mcxForm.sign);
+    setMcxAmount(mcxForm.amount);
     setRtgsSign(rtgsForm.sign);
     setRtgsAmount(rtgsForm.amount);
     setCashSign(cashForm.sign);
     setCashAmount(cashForm.amount);
-  }, [visible, rtgsChange, cashChange]);
+  }, [visible, mcxChange, rtgsChange, cashChange]);
 
+  const mcxDraftChange = useMemo(() => signedValue(mcxSign, mcxAmount), [mcxSign, mcxAmount]);
   const rtgsDraftChange = useMemo(() => signedValue(rtgsSign, rtgsAmount), [rtgsSign, rtgsAmount]);
   const cashDraftChange = useMemo(() => signedValue(cashSign, cashAmount), [cashSign, cashAmount]);
-  const hasChanges = !isSameNumber(rtgsDraftChange, savedRtgsChange) || !isSameNumber(cashDraftChange, savedCashChange);
+  const hasChanges =
+    !isSameNumber(mcxDraftChange, savedMcxChange) ||
+    !isSameNumber(rtgsDraftChange, savedRtgsChange) ||
+    !isSameNumber(cashDraftChange, savedCashChange);
+
+  const mcxLiveFinal = useMemo(
+    () => mcxLiveRate + mcxDraftChange,
+    [mcxLiveRate, mcxDraftChange],
+  );
 
   const rtgsCurrentRate = useMemo(
-    () => mcxLiveRate + supremeRtgsChange,
-    [mcxLiveRate, supremeRtgsChange],
+    () => mcxLiveFinal + supremeRtgsChange,
+    [mcxLiveFinal, supremeRtgsChange],
   );
   const cashCurrentRate = useMemo(
-    () => mcxLiveRate + supremeCashChange,
-    [mcxLiveRate, supremeCashChange],
+    () => mcxLiveFinal + supremeCashChange,
+    [mcxLiveFinal, supremeCashChange],
   );
   const rtgsLiveFinal = useMemo(
     () => rtgsCurrentRate + rtgsDraftChange,
@@ -292,8 +310,11 @@ export function GoldRateSettingsModal({
   }, [hasChanges, barAnim]);
 
   const handleRestore = () => {
+    const mcxForm = getSignAndAmount(savedMcxChange);
     const rtgsForm = getSignAndAmount(savedRtgsChange);
     const cashForm = getSignAndAmount(savedCashChange);
+    setMcxSign(mcxForm.sign);
+    setMcxAmount(mcxForm.amount);
     setRtgsSign(rtgsForm.sign);
     setRtgsAmount(rtgsForm.amount);
     setCashSign(cashForm.sign);
@@ -305,7 +326,8 @@ export function GoldRateSettingsModal({
 
     setSaving(true);
     try {
-      await onApply(rtgsDraftChange, cashDraftChange);
+      await onApply(mcxDraftChange, rtgsDraftChange, cashDraftChange);
+      setSavedMcxChange(mcxDraftChange);
       setSavedRtgsChange(rtgsDraftChange);
       setSavedCashChange(cashDraftChange);
     } finally {
@@ -326,17 +348,20 @@ export function GoldRateSettingsModal({
           <Text style={styles.modalTitle}>Gold Rate Settings</Text>
 
           <View style={styles.modalBody}>
-            <View style={styles.mcxHeroCard}>
-              <View style={styles.mcxHeroTopRow}>
-                <View>
-                  <Text style={styles.mcxHeroLabel}>MCX Live Rate (24K Gold)</Text>
-                </View>
-                <View style={styles.mcxHeroIcon}>
-                  <Text style={styles.mcxHeroIconText}>₹</Text>
-                </View>
-              </View>
-              <Text style={styles.mcxHeroValue}>{formatMcxLiveRate(mcxLiveRate)}</Text>
-            </View>
+            <RateCard
+              title="MCX Rate"
+              subtitle=""
+              icon={null}
+              sign={mcxSign}
+              amount={mcxAmount}
+              currentRate={mcxLiveRate}
+              finalRate={mcxLiveFinal}
+              formula=""
+              currentLabel="Current MCX Rate"
+              finalLabel="Final MCX Rate"
+              onSignChange={setMcxSign}
+              onAmountChange={setMcxAmount}
+            />
 
             <RateCard
               title="RTGS Rate"
@@ -347,6 +372,8 @@ export function GoldRateSettingsModal({
               currentRate={rtgsCurrentRate}
               finalRate={rtgsLiveFinal}
               formula={''}
+              currentLabel="Current RTGS Rate"
+              finalLabel="Final RTGS Rate"
               onSignChange={setRtgsSign}
               onAmountChange={setRtgsAmount}
             />
@@ -360,6 +387,8 @@ export function GoldRateSettingsModal({
               currentRate={cashCurrentRate}
               finalRate={cashLiveFinal}
               formula={''}
+              currentLabel="Current Cash Rate"
+              finalLabel="Final Cash Rate"
               onSignChange={setCashSign}
               onAmountChange={setCashAmount}
             />
@@ -558,7 +587,7 @@ const styles = StyleSheet.create({
   scannerOptionActive: { backgroundColor: '#E8F0EC' },
   scannerOptionText: { fontSize: 14, color: Colors.textPrimary },
   scannerOptionTextActive: { fontWeight: '700', color: BUTTON_GREEN },
-  settingsModalCard: { maxHeight: '92%', paddingBottom: 0 },
+  settingsModalCard: { height: '88%', maxHeight: '88%', paddingBottom: 0 },
   modalClose: { alignSelf: 'flex-end' },
   modalTitle: {
     fontSize: 18,
@@ -567,67 +596,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   modalBody: {
-    gap: Spacing.sm,
-    paddingBottom: GOLD_ACTION_BAR_HEIGHT + 4,
-  },
-  mcxHeroCard: {
-    borderRadius: 24,
-    padding: Spacing.md,
-    backgroundColor: BUTTON_GREEN,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  mcxHeroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  mcxHeroLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.accentGold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  mcxHeroSubLabel: {
-    marginTop: 4,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.78)',
-  },
-  mcxHeroIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(212, 193, 156, 0.16)',
-  },
-  mcxHeroIconText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  mcxHeroValue: {
-    marginTop: Spacing.sm,
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  mcxHeroFooter: {
-    marginTop: 6,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.74)',
+    flexGrow: 1,
+    gap: Spacing.xs,
+    paddingBottom: GOLD_ACTION_BAR_HEIGHT,
   },
   rateCard: {
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 20,
-    padding: Spacing.md,
+    padding: Spacing.sm,
     backgroundColor: Colors.white,
     gap: Spacing.xs,
     shadowColor: '#000',
@@ -635,6 +612,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    flex: 1,
   },
   rateCardHeader: {
     flexDirection: 'row',
@@ -660,7 +638,7 @@ const styles = StyleSheet.create({
   currentRatePill: {
     borderRadius: Radius.input,
     backgroundColor: '#F4F7F5',
-    padding: Spacing.sm,
+    padding: Spacing.xs,
     gap: 4,
   },
   currentRateLabel: {
@@ -671,7 +649,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   currentRateValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: BUTTON_GREEN,
   },
@@ -690,7 +668,7 @@ const styles = StyleSheet.create({
   },
   signToggleWrap: { width: 88 },
   signToggle: {
-    minHeight: 42,
+    minHeight: 38,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
@@ -702,7 +680,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 42,
+    minHeight: 38,
   },
   signToggleBtnActive: { backgroundColor: '#E8F0EC' },
   signToggleText: {
@@ -713,7 +691,7 @@ const styles = StyleSheet.create({
   },
   signToggleTextActive: { color: BUTTON_GREEN, fontWeight: '700' },
   amountInputWrap: {
-    minHeight: 42,
+    minHeight: 38,
     flex: 1,
     minWidth: 120,
     borderWidth: 1,
@@ -726,13 +704,13 @@ const styles = StyleSheet.create({
   },
   amountPrefix: {
     marginRight: 8,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
   amountInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textPrimary,
   },
   cardDivider: {
@@ -750,7 +728,7 @@ const styles = StyleSheet.create({
   },
   finalValue: {
     marginTop: 2,
-    fontSize: 22,
+    fontSize: 20,
     lineHeight: 28,
     fontWeight: '700',
     color: BUTTON_GREEN,

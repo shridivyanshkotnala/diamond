@@ -113,7 +113,7 @@ export default function ProcessingScreen() {
 
   const runAnalysis = useCallback(async () => {
     if (!scanId || !frontImageUri) {
-      router.replace('/dashboard/scanner/jewellery-type' as Href);
+      router.replace('/dashboard/scanner' as Href);
       return;
     }
 

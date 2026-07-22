@@ -2,6 +2,7 @@ import type {
   GoldRate,
   GoldRatesResponse,
   LabourRate,
+  McxChange,
   StoneRate,
   StoneRateLookupPayload,
   StoneRateLookupResponse,
@@ -37,6 +38,14 @@ function readString(value: unknown): string | undefined {
     if (asString.trim() && asString !== '[object Object]') return asString.trim();
   }
   return undefined;
+}
+
+function normalizeMcxChange(raw: Record<string, unknown> | undefined): McxChange | undefined {
+  if (!raw) return undefined;
+  const operation = readString(raw.operation);
+  const amount = readNumber(raw.amount);
+  if (!operation || amount == null) return undefined;
+  return { operation: operation === '-' ? '-' : '+', amount };
 }
 
 function normalizeGoldRate(raw: Record<string, unknown>): GoldRate | null {
@@ -151,7 +160,13 @@ export function normalizeGoldRatesResponse(response: unknown): GoldRatesResponse
   const rawTax = unwrapped.taxSettings as Record<string, unknown> | undefined;
   let taxSettings: TaxSettings | undefined;
   if (rawTax) {
+    const rawMcxChange = rawTax.mcxChange as Record<string, unknown> | undefined;
+    const mcxChangeBy = readNumber(rawTax.mcxChangeBy ?? rawTax.mcx_change_by);
+    const mcxFinalRate = readNumber(rawTax.mcxFinalRate ?? rawTax.mcx_final_rate);
     taxSettings = {
+      mcxChange: normalizeMcxChange(rawMcxChange),
+      mcxChangeBy,
+      mcxFinalRate,
       rtgsChangeBy: readNumber(rawTax.rtgsChangeBy ?? rawTax.rtgs_change_by) ?? 0,
       cashChangeBy: readNumber(rawTax.cashChangeBy ?? rawTax.cash_change_by) ?? 0,
       scannerCalculationUse: (readString(rawTax.scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash',
@@ -240,7 +255,13 @@ export async function updateGoldTaxSettings(payload: UpdateGoldTaxSettingsPayloa
   const rawTax = unwrapped.taxSettings ?? unwrapped;
   
   if (rawTax && typeof rawTax === 'object') {
+    const rawMcxChange = (rawTax as Record<string, unknown>).mcxChange as Record<string, unknown> | undefined;
+    const mcxChangeBy = readNumber((rawTax as Record<string, unknown>).mcxChangeBy ?? (rawTax as Record<string, unknown>).mcx_change_by);
+    const mcxFinalRate = readNumber((rawTax as Record<string, unknown>).mcxFinalRate ?? (rawTax as Record<string, unknown>).mcx_final_rate);
     return {
+      mcxChange: normalizeMcxChange(rawMcxChange),
+      mcxChangeBy,
+      mcxFinalRate,
       rtgsChangeBy: readNumber((rawTax as Record<string, unknown>).rtgsChangeBy) ?? 0,
       cashChangeBy: readNumber((rawTax as Record<string, unknown>).cashChangeBy) ?? 0,
       scannerCalculationUse: (readString((rawTax as Record<string, unknown>).scannerCalculationUse) || 'rtgs') as 'rtgs' | 'cash',

@@ -2,6 +2,13 @@ export type GoldIncreaseByType = 'FLAT' | 'PERCENTAGE';
 
 export type GoldCarat = '22Kt' | '20Kt' | '18Kt' | '14Kt' | '9Kt';
 
+export type McxChangeOperation = '+' | '-';
+
+export interface McxChange {
+  operation: McxChangeOperation;
+  amount: number;
+}
+
 export interface GoldRate {
   id?: string;
   carat: GoldCarat | string;
@@ -17,6 +24,9 @@ export interface GoldRate {
 }
 
 export interface TaxSettings {
+  mcxChange?: McxChange;
+  mcxChangeBy?: number;
+  mcxFinalRate?: number;
   rtgsChangeBy: number;
   cashChangeBy: number;
   scannerCalculationUse: 'rtgs' | 'cash';
@@ -52,6 +62,7 @@ export interface UpdateGoldRateVisibilityPayload {
 }
 
 export interface UpdateGoldTaxSettingsPayload {
+  mcxChange?: McxChange;
   rtgsChangeBy?: number;
   cashChangeBy?: number;
   scannerCalculationUse?: 'rtgs' | 'cash';

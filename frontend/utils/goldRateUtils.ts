@@ -1,4 +1,4 @@
-import type { GoldIncreaseByType, GoldRate } from '@/types/rates';
+import type { GoldIncreaseByType, GoldRate, McxChange } from '@/types/rates';
 
 export type ScannerCalculationUse = 'rtgs' | 'cash';
 
@@ -8,6 +8,12 @@ export function formatKaratLabel(carat: string): string {
 
 export function formatMcxLiveRate(mcxLiveRate: number): string {
   return `₹${mcxLiveRate.toLocaleString('en-IN')} per 10gm`;
+}
+
+export function resolveMcxChangeValue(mcxChange?: McxChange, fallback = 0): number {
+  if (!mcxChange) return fallback;
+  const amount = Number.isFinite(mcxChange.amount) ? mcxChange.amount : 0;
+  return mcxChange.operation === '-' ? -amount : amount;
 }
 
 export function calculateBaseGoldRate(mcxLiveRate: number, purity: number): number {

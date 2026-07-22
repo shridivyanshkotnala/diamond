@@ -23,7 +23,6 @@ import {
 import {
   GoldEditModalFields,
   GoldRatesTable,
-  McxLiveBanner,
 } from '@/components/dashboard/market-rates/GoldRatesTable';
 import { LabourRatesPanel } from '@/components/dashboard/market-rates/LabourRatesPanel';
 import { DiamondRatesPanel } from '@/components/dashboard/market-rates/DiamondRatesPanel';
@@ -44,6 +43,7 @@ import {
 import type { GoldRate } from '@/types/rates';
 import {
   formatKaratLabel,
+  resolveMcxChangeValue,
   validatePurityValue,
 } from '@/utils/goldRateUtils';
 
@@ -129,6 +129,12 @@ export default function MarketRatesScreen() {
   const [hiddenSectionOpen, setHiddenSectionOpen] = useState(false);
 
   const mcxLiveRate = goldData?.mcxLiveRate ?? 0;
+  const mcxChangeBy =
+    goldData?.taxSettings?.mcxChangeBy ??
+    resolveMcxChangeValue(goldData?.taxSettings?.mcxChange);
+  const mcxFinalRate =
+    goldData?.taxSettings?.mcxFinalRate ??
+    mcxLiveRate + mcxChangeBy;
   const goldRates = goldData?.rates ?? [];
   const supremeRtgsBase =
     goldData?.supremeChanges?.supremeRtgs ??
@@ -142,8 +148,8 @@ export default function MarketRatesScreen() {
   const cashChange = goldData?.taxSettings?.cashChangeBy ?? 0;
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
 
-  const rtgsFinalRate = supremeRtgsBase + rtgsChange;
-  const cashFinalRate = supremeCashBase + cashChange;
+  const rtgsFinalRate = mcxFinalRate + supremeRtgsChange + rtgsChange;
+  const cashFinalRate = mcxFinalRate + supremeCashChange + cashChange;
 
   const goldRateKey = (rate: GoldRate) => rate.id ?? rate.carat;
 
@@ -289,9 +295,17 @@ export default function MarketRatesScreen() {
   };
 
 
-  const handleApplyTaxSettings = async (nextRtgsChange: number, nextCashChange: number) => {
+  const handleApplyTaxSettings = async (
+    nextMcxChange: number,
+    nextRtgsChange: number,
+    nextCashChange: number,
+  ) => {
     try {
       await updateGoldTaxSettingsMutation({
+        mcxChange: {
+          operation: nextMcxChange < 0 ? '-' : '+',
+          amount: Math.abs(nextMcxChange),
+        },
         rtgsChangeBy: nextRtgsChange,
         cashChangeBy: nextCashChange,
       }).unwrap();
@@ -318,7 +332,6 @@ export default function MarketRatesScreen() {
         ) : activeTab === 'gold' ? (
           access.canEditGold ? (
             <View style={screenStyles.screenSection}>
-              <McxLiveBanner mcxLiveRate={mcxLiveRate} />
               <GoldRateSettingsRow onPress={() => setTaxSettingsVisible(true)} />
               <Text style={styles.sectionTitle}>Gold Karat Rates</Text>
 
@@ -444,6 +457,7 @@ export default function MarketRatesScreen() {
       <GoldRateSettingsModal
         visible={taxSettingsVisible}
         mcxLiveRate={mcxLiveRate}
+        mcxChange={mcxChangeBy}
         supremeRtgsChange={supremeRtgsChange}
         supremeCashChange={supremeCashChange}
         rtgsChange={rtgsChange}

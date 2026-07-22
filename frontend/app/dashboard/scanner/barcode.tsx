@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 
@@ -8,7 +8,6 @@ import { CapturePreviewOverlay } from '@/components/scanner/CapturePreviewOverla
 import { ScannerScreenLayout } from '@/components/scanner/ScannerScreenLayout';
 import type { TagCameraPreviewRef } from '@/components/scanner/TagCameraPreview';
 import { useScannerStore } from '@/store/scannerStore';
-import type { ScanSide } from '@/types/scanner';
 import {
   captureScanImageFallback,
   pickImageFromGallery,
@@ -16,7 +15,7 @@ import {
 
 type PendingPreview = {
   uri: string;
-  side: ScanSide;
+  step: 'first' | 'second';
   source: CaptureSource;
 };
 
@@ -29,9 +28,6 @@ export default function BarcodeScannerScreen() {
   const router = useRouter();
   const cameraRef = useRef<TagCameraPreviewRef>(null);
   const scanId = useScannerStore((s) => s.scanId);
-  const scanMode = useScannerStore((s) => s.scanMode);
-  const scanSide = useScannerStore((s) => s.scanSide);
-  const setScanSide = useScannerStore((s) => s.setScanSide);
   const setFrontImageUri = useScannerStore((s) => s.setFrontImageUri);
   const setBackImageUri = useScannerStore((s) => s.setBackImageUri);
   const resetScanLoading = useScannerStore((s) => s.resetScanLoading);
@@ -40,16 +36,20 @@ export default function BarcodeScannerScreen() {
   const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
   const [confirmedFront, setConfirmedFront] = useState<ConfirmedCapture | null>(null);
   const [confirmedBack, setConfirmedBack] = useState<ConfirmedCapture | null>(null);
+  const [captureStep, setCaptureStep] = useState<'first' | 'second'>('first');
+  const [allowSecond, setAllowSecond] = useState(false);
 
-  const isBothSides = scanMode === 'both';
   const overlayVisible = isPickingImage || Boolean(pendingPreview);
 
   const instruction =
-    scanSide === 'front'
-      ? isBothSides
-        ? 'Align the front of the tag in the frame and tap capture'
-        : 'Align the tag in the frame and tap capture'
-      : 'Now align the back side of the tag and tap capture';
+    captureStep === 'second'
+      ? 'Now align the back side of the tag and tap capture'
+      : 'Align the tag in the frame and tap capture';
+
+  useEffect(() => {
+    if (scanId) return;
+    router.replace('/dashboard/scanner' as Href);
+  }, [router, scanId]);
 
   const goToProcessing = () => {
     resetScanLoading();
@@ -59,27 +59,21 @@ export default function BarcodeScannerScreen() {
   const openPreview = (uri: string, source: CaptureSource) => {
     setPendingPreview({
       uri,
-      side: scanSide,
+      step: captureStep,
       source,
     });
   };
 
-  const handlePreviewConfirm = () => {
+  const handlePreviewCalculate = () => {
     if (!pendingPreview) return;
 
-    const { uri, side, source } = pendingPreview;
+    const { uri, step, source } = pendingPreview;
     setPendingPreview(null);
 
-    if (side === 'front') {
+    if (step === 'first') {
       const frontCapture = { uri, source };
       setConfirmedFront(frontCapture);
       setFrontImageUri(uri);
-
-      if (isBothSides) {
-        setScanSide('back');
-        return;
-      }
-
       goToProcessing();
       return;
     }
@@ -93,9 +87,25 @@ export default function BarcodeScannerScreen() {
     goToProcessing();
   };
 
-  const handlePreviewRetake = () => {
+  const handlePreviewDelete = () => {
+    if (pendingPreview?.step === 'second') {
+      setConfirmedBack(null);
+      setBackImageUri(null);
+    }
     setPendingPreview(null);
     setIsPickingImage(false);
+  };
+
+  const handleAddMoreImage = () => {
+    if (!pendingPreview) return;
+
+    const { uri, source } = pendingPreview;
+    const frontCapture = { uri, source };
+    setConfirmedFront(frontCapture);
+    setFrontImageUri(uri);
+    setPendingPreview(null);
+    setAllowSecond(true);
+    setCaptureStep('second');
   };
 
   const resolveCaptureUri = async (): Promise<string | null> => {
@@ -159,8 +169,8 @@ export default function BarcodeScannerScreen() {
         cameraRef={cameraRef}
         headerContent={
           <CapturedSidesStrip
-            scanMode={scanMode}
-            scanSide={scanSide}
+            activeSide={captureStep === 'second' ? 'back' : 'front'}
+            showBack={allowSecond || Boolean(confirmedBack)}
             front={confirmedFront}
             back={confirmedBack}
           />
@@ -173,9 +183,11 @@ export default function BarcodeScannerScreen() {
         visible={overlayVisible}
         loading={isPickingImage}
         uri={pendingPreview?.uri}
-        side={pendingPreview?.side ?? scanSide}
-        onRetake={handlePreviewRetake}
-        onConfirm={handlePreviewConfirm}
+        title="Captured Image"
+        showAddMore={pendingPreview?.step === 'first'}
+        onDelete={handlePreviewDelete}
+        onCalculate={handlePreviewCalculate}
+        onAddMore={handleAddMoreImage}
       />
     </View>
   );

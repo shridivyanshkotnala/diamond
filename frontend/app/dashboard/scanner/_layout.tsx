@@ -4,7 +4,6 @@ export default function ScannerLayout() {
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="index" options={{ animation: 'fade' }} />
-      <Stack.Screen name="jewellery-type" />
       <Stack.Screen name="barcode" />
       <Stack.Screen name="processing" />
       <Stack.Screen name="undetected-abbreviation" />

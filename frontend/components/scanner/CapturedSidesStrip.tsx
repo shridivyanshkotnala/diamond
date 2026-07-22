@@ -1,8 +1,6 @@
 import { Image, Text, View } from 'react-native';
 import { Camera, Check, ImageUp } from 'lucide-react-native';
 
-import type { ScanMode, ScanSide } from '@/types/scanner';
-
 export type CaptureSource = 'camera' | 'gallery';
 
 interface SideCapture {
@@ -11,8 +9,8 @@ interface SideCapture {
 }
 
 interface CapturedSidesStripProps {
-  scanMode: ScanMode;
-  scanSide: ScanSide;
+  activeSide: 'front' | 'back';
+  showBack?: boolean;
   front?: SideCapture | null;
   back?: SideCapture | null;
 }
@@ -62,8 +60,8 @@ function SideThumbnail({
 }
 
 export function CapturedSidesStrip({
-  scanMode,
-  scanSide,
+  activeSide,
+  showBack = false,
   front,
   back,
 }: CapturedSidesStripProps) {
@@ -75,9 +73,9 @@ export function CapturedSidesStrip({
     <View className="mx-4 mt-2 rounded-2xl bg-black/50 p-3">
       <Text className="mb-2 text-center text-xs font-medium text-white/80">Captured Images</Text>
       <View className="flex-row gap-2">
-        <SideThumbnail label="Front" capture={front} isActive={scanSide === 'front'} />
-        {scanMode === 'both' ? (
-          <SideThumbnail label="Back" capture={back} isActive={scanSide === 'back'} />
+        <SideThumbnail label="Front" capture={front} isActive={activeSide === 'front'} />
+        {showBack ? (
+          <SideThumbnail label="Back" capture={back} isActive={activeSide === 'back'} />
         ) : null}
       </View>
     </View>

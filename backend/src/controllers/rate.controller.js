@@ -206,7 +206,12 @@ const getGoldTaxSettings = async (req, res) => {
     const businessId = req.user.businessId;
     let taxSettings = await GoldTaxSetting.findOne({ businessId });
     if (!taxSettings) {
-      taxSettings = { rtgsChangeBy: 0, cashChangeBy: 0, scannerCalculationUse: 'rtgs' };
+      taxSettings = {
+        mcxChange: { operation: '+', amount: 0 },
+        rtgsChangeBy: 0,
+        cashChangeBy: 0,
+        scannerCalculationUse: 'rtgs'
+      };
     }
     res.status(200).json({ success: true, data: taxSettings });
   } catch (error) {
@@ -217,10 +222,18 @@ const getGoldTaxSettings = async (req, res) => {
 
 const updateGoldTaxSettings = async (req, res) => {
   try {
-    const { rtgsChangeBy, cashChangeBy, scannerCalculationUse } = req.body;
+    const { rtgsChangeBy, cashChangeBy, scannerCalculationUse, mcxChange } = req.body;
     const businessId = req.user.businessId;
 
     const updateData = {};
+    if (mcxChange && typeof mcxChange === 'object') {
+      const operation = mcxChange.operation === '-' ? '-' : '+';
+      const amount = typeof mcxChange.amount === 'number' ? mcxChange.amount : Number(mcxChange.amount || 0);
+      updateData.mcxChange = {
+        operation,
+        amount: Number.isFinite(amount) && amount > 0 ? amount : 0
+      };
+    }
     if (rtgsChangeBy !== undefined) updateData.rtgsChangeBy = rtgsChangeBy;
     if (cashChangeBy !== undefined) updateData.cashChangeBy = cashChangeBy;
     if (scannerCalculationUse) updateData.scannerCalculationUse = scannerCalculationUse === 'cash' ? 'cash' : 'rtgs';

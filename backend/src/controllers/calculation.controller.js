@@ -151,10 +151,21 @@ const calculateMRP = async (req, res, next) => {
         
     // Fallback if cache is old and doesn't contain pre-calculated final rates
     if (baseGoldRatePer10g === undefined && liveRatesData.mcxLiveRate) {
-      const changeBy = resolvedMode === 'cash'
-         ? (liveRatesData.taxSettings?.cashChangeBy || 0)
-         : (liveRatesData.taxSettings?.rtgsChangeBy || 0);
-        baseGoldRatePer10g = liveRatesData.mcxLiveRate + changeBy;
+      const mcxFinalRate =
+        liveRatesData.taxSettings?.mcxFinalRate ??
+        liveRatesData.mcxFinalRate ??
+        (liveRatesData.mcxLiveRate + (liveRatesData.taxSettings?.mcxChangeBy || 0));
+
+      const supremeChange =
+        resolvedMode === 'cash'
+          ? (liveRatesData.supremeChanges?.cashChange || 0)
+          : (liveRatesData.supremeChanges?.rtgsChange || 0);
+      const businessChange =
+        resolvedMode === 'cash'
+          ? (liveRatesData.taxSettings?.cashChangeBy || 0)
+          : (liveRatesData.taxSettings?.rtgsChangeBy || 0);
+
+      baseGoldRatePer10g = mcxFinalRate + supremeChange + businessChange;
     }
     
     const baseGoldRatePerGram = (baseGoldRatePer10g || 0) / 10;

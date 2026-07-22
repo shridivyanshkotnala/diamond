@@ -151,12 +151,14 @@ export function prepareDisplayGoldRates(
   rtgsChange = 0,
   cashChange = 0,
   scannerCalculationUse: ScannerCalculationUse = 'rtgs',
+  mcxFinalRate?: number,
 ): { displayRates: GoldRate[]; activeBaseRate: number } {
-  const rtgsFinalRate = mcxLiveRate + rtgsChange;
-  const cashFinalRate = mcxLiveRate + cashChange;
+  const baseMcx = mcxFinalRate ?? mcxLiveRate;
+  const rtgsFinalRate = baseMcx + rtgsChange;
+  const cashFinalRate = baseMcx + cashChange;
   const activeBaseRate = deriveActiveBaseRate(
     scannerCalculationUse,
-    mcxLiveRate,
+    baseMcx,
     rtgsFinalRate,
     cashFinalRate,
   );

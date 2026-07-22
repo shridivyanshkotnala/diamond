@@ -110,7 +110,7 @@ export default function ReviewResultsScreen() {
 
   useEffect(() => {
     if (!scanId) {
-      router.replace('/dashboard/scanner/jewellery-type' as Href);
+      router.replace('/dashboard/scanner' as Href);
       return;
     }
 

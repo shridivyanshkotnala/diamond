@@ -3,7 +3,6 @@ import { Dimensions, Pressable, Text, View } from 'react-native';
 import { ImageUp } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ItemSelectedBadge } from './ItemSelectedBadge';
 import { ScannerBottomSheet } from './ScannerBottomSheet';
 import { ScreenBackHeader } from './ScreenBackHeader';
 import { TagCameraPreview, type TagCameraPreviewRef } from './TagCameraPreview';
@@ -62,7 +61,6 @@ export function ScannerScreenLayout({
         <TagCameraPreview ref={cameraRef} />
         <View className="absolute inset-0 bg-black/20" />
         <View className="mt-4">
-          <ItemSelectedBadge />
           {headerContent}
         </View>
 

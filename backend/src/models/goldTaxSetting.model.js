@@ -7,6 +7,17 @@ const goldTaxSettingSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  mcxChange: {
+    operation: {
+      type: String,
+      enum: ['+', '-'],
+      default: '+'
+    },
+    amount: {
+      type: Number,
+      default: 0
+    }
+  },
   rtgsChangeBy: {
     type: Number,
     default: 0

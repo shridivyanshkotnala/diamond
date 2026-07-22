@@ -4,6 +4,25 @@ const GoldRate = require('../models/goldRate.model');
 const redisService = require('./redis.service');
 const SupremeChange = require('../models/supremeChange.model');
 
+const toNumber = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
+
+const normalizeMcxChange = (mcxChange) => {
+  if (!mcxChange || typeof mcxChange !== 'object') {
+    return { operation: '+', amount: 0, signed: 0 };
+  }
+  const operation = mcxChange.operation === '-' ? '-' : '+';
+  const amount = Math.max(0, toNumber(mcxChange.amount));
+  const signed = operation === '-' ? -amount : amount;
+  return { operation, amount, signed };
+};
+
 const getLiveGoldRates = async (businessId) => {
   if (!businessId) throw new Error('Business ID is required');
 
@@ -20,6 +39,7 @@ const getLiveGoldRates = async (businessId) => {
   let taxSettings = await GoldTaxSetting.findOne({ businessId });
   if (!taxSettings) {
     taxSettings = {
+      mcxChange: { operation: '+', amount: 0 },
       rtgsChangeBy: 0,
       cashChangeBy: 0,
       scannerCalculationUse: 'rtgs'
@@ -45,11 +65,14 @@ const getLiveGoldRates = async (businessId) => {
   // Compose final rates: MCX + SupremeChange + Business (taxSettings)
   const supremeRtgsChange = supremeChanges.rtgsChange || 0;
   const supremeCashChange = supremeChanges.cashChange || 0;
+  const mcxChange = normalizeMcxChange(taxSettings.mcxChange);
+  const businessMcxChange = mcxChange.signed;
   const businessRtgsChange = taxSettings.rtgsChangeBy || 0;
   const businessCashChange = taxSettings.cashChangeBy || 0;
 
-  const rtgsFinalRate = mcxLiveRate + supremeRtgsChange + businessRtgsChange;
-  const cashFinalRate = mcxLiveRate + supremeCashChange + businessCashChange;
+  const mcxFinalRate = mcxLiveRate + businessMcxChange;
+  const rtgsFinalRate = mcxFinalRate + supremeRtgsChange + businessRtgsChange;
+  const cashFinalRate = mcxFinalRate + supremeCashChange + businessCashChange;
 
   // 5. Determine Base Rate for Karat Calculations
   const baseRate = taxSettings.scannerCalculationUse === 'cash' ? cashFinalRate : rtgsFinalRate;
@@ -98,7 +121,7 @@ const getLiveGoldRates = async (businessId) => {
     }
 
     // Compute all three rates explicitly for the UI dashboard
-    const mcxRate = Math.round(mcxLiveRate * (row.purity / 99.9));
+    const mcxRate = Math.round(mcxFinalRate * (row.purity / 99.9));
     const cashRate = Math.round(cashFinalRate * (row.purity / 99.9));
     const rtgsRate = Math.round(rtgsFinalRate * (row.purity / 99.9));
 
@@ -123,6 +146,7 @@ const getLiveGoldRates = async (businessId) => {
   // 8. Compile the Final Rich Response
   const responseData = {
     mcxLiveRate,
+    mcxFinalRate,
     supremeChanges: {
       rtgsChange: supremeRtgsChange,
       cashChange: supremeCashChange,
@@ -130,6 +154,9 @@ const getLiveGoldRates = async (businessId) => {
       supremeCash: mcxLiveRate + supremeCashChange
     },
     taxSettings: {
+      mcxChange: { operation: mcxChange.operation, amount: mcxChange.amount },
+      mcxChangeBy: businessMcxChange,
+      mcxFinalRate,
       rtgsChangeBy: businessRtgsChange,
       cashChangeBy: businessCashChange,
       scannerCalculationUse: taxSettings.scannerCalculationUse,

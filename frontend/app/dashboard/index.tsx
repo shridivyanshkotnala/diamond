@@ -16,7 +16,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
 import type { GoldRate, TaxSettings } from '@/types/rates';
 import { ApiError } from '@/utils/apiClient';
-import { formatKaratLabel } from '@/utils/goldRateUtils';
+import { formatKaratLabel, resolveMcxChangeValue } from '@/utils/goldRateUtils';
 import { fetchGoldRates } from '@/utils/ratesApi';
 import { useMatricesStore } from '@/store/matricesStore';
 import { useSettingsAccess } from '@/hooks/useSettingsAccess';
@@ -53,6 +53,13 @@ export default function DashboardScreen() {
     : globalMatrixValues;
   
   const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
+  const mcxFinalRate = useMemo(() => {
+    const live = mcxLiveRate ?? 0;
+    const mcxChangeBy =
+      goldTaxSettings?.mcxChangeBy ??
+      resolveMcxChangeValue(goldTaxSettings?.mcxChange);
+    return goldTaxSettings?.mcxFinalRate ?? live + mcxChangeBy;
+  }, [goldTaxSettings?.mcxChange, goldTaxSettings?.mcxChangeBy, goldTaxSettings?.mcxFinalRate, mcxLiveRate]);
   const twentyFourKRate = useMemo(() => {
     const matched = sortedGoldRates.find((rate) => {
       const carat = rate.carat.toLowerCase();
@@ -62,8 +69,8 @@ export default function DashboardScreen() {
     if (matched) return matched;
     if (mcxLiveRate == null && !goldTaxSettings) return null;
 
-    const cashRate = goldTaxSettings?.cashFinalRate ?? mcxLiveRate ?? 0;
-    const rtgsRate = goldTaxSettings?.rtgsFinalRate ?? mcxLiveRate ?? 0;
+    const cashRate = goldTaxSettings?.cashFinalRate ?? mcxFinalRate ?? 0;
+    const rtgsRate = goldTaxSettings?.rtgsFinalRate ?? mcxFinalRate ?? 0;
 
     return {
       id: '24k-synthetic',
@@ -72,10 +79,10 @@ export default function DashboardScreen() {
       finalRate: rtgsRate,
       cashRate,
       rtgsRate,
-      baseRate: mcxLiveRate ?? rtgsRate,
+      baseRate: mcxFinalRate ?? rtgsRate,
       mcxRate: mcxLiveRate ?? undefined,
     } satisfies GoldRate;
-  }, [goldTaxSettings, mcxLiveRate, sortedGoldRates]);
+  }, [goldTaxSettings, mcxFinalRate, mcxLiveRate, sortedGoldRates]);
   const show24kMcx = matrixValues['24k_mcx' as MatrixKey] !== false;
   const show24kRtgs = matrixValues['24k_rtgs' as MatrixKey] !== false;
   const show24kCash = matrixValues['24k_cash' as MatrixKey] !== false;

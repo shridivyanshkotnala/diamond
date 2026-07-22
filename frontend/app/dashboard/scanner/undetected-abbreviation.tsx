@@ -43,7 +43,7 @@ export default function UndetectedAbbreviationScreen() {
 
   const loadClarification = useCallback(async () => {
     if (!scanId) {
-      router.replace('/dashboard/scanner/jewellery-type' as Href);
+      router.replace('/dashboard/scanner' as Href);
       return;
     }
 

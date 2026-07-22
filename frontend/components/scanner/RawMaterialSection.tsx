@@ -17,6 +17,7 @@ import {
   formatIndianCurrency,
   formatWeightGrams,
 } from '@/utils/scanPriceCalculation';
+import { resolveMcxChangeValue } from '@/utils/goldRateUtils';
 import { parseNumericLabourValue } from '@/utils/labourUtils';
 import { resolveScannedKarat, parseWeightValue, normalizeKarat } from '@/utils/formulaUtils';
 import type { ScanItemData } from '@/types/scanner';
@@ -122,8 +123,14 @@ export function RawMaterialSection({
   const scannerUse = calculationMode ?? 'rtgs';
   const baseFinalRate =
     scannerUse === 'cash' ? goldTaxSettings?.cashFinalRate : goldTaxSettings?.rtgsFinalRate;
-  const fallbackBase = mcxLiveRate
-    ? mcxLiveRate +
+  const mcxChangeBy =
+    goldTaxSettings?.mcxChangeBy ??
+    resolveMcxChangeValue(goldTaxSettings?.mcxChange);
+  const mcxFinalRate =
+    goldTaxSettings?.mcxFinalRate ??
+    (mcxLiveRate ? mcxLiveRate + mcxChangeBy : 0);
+  const fallbackBase = mcxFinalRate
+    ? mcxFinalRate +
       (scannerUse === 'cash'
         ? goldTaxSettings?.cashChangeBy ?? 0
         : goldTaxSettings?.rtgsChangeBy ?? 0)
