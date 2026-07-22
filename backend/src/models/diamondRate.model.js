@@ -42,11 +42,7 @@ diamondRateSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      $or: [
-        { packetCode: { $exists: false } },
-        { packetCode: null },
-        { packetCode: '' }
-      ]
+      packetCode: { $in: [null, ''] }
     }
   }
 );

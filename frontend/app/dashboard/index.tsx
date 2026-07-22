@@ -14,7 +14,7 @@ import { BottomNav } from '@/components/dashboard/BottomNav';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Colors, Spacing } from '@/constants/theme';
 import { useMarketRatesAccess } from '@/hooks/useMarketRatesAccess';
-import type { GoldRate, TaxSettings } from '@/types/rates';
+import type { GoldRate, SupremeChanges, TaxSettings } from '@/types/rates';
 import { ApiError } from '@/utils/apiClient';
 import { formatKaratLabel, resolveMcxChangeValue } from '@/utils/goldRateUtils';
 import { fetchGoldRates } from '@/utils/ratesApi';
@@ -44,6 +44,7 @@ export default function DashboardScreen() {
   const [mcxLiveRate, setMcxLiveRate] = useState<number | null>(null);
   const [goldRates, setGoldRates] = useState<GoldRate[]>([]);
   const [goldTaxSettings, setGoldTaxSettings] = useState<TaxSettings | undefined>();
+  const [supremeChanges, setSupremeChanges] = useState<SupremeChanges | undefined>();
   const { employee, userRole } = useSettingsAccess();
   const globalMatrixValues = useMatricesStore((s) => s.values);
   
@@ -52,7 +53,10 @@ export default function DashboardScreen() {
     ? employee.permissions 
     : globalMatrixValues;
   
-  const sortedGoldRates = useMemo(() => sortGoldRates(goldRates), [goldRates]);
+  const sortedGoldRates = useMemo(
+    () => sortGoldRates(goldRates.filter((rate) => !rate.isHidden)),
+    [goldRates],
+  );
   const mcxFinalRate = useMemo(() => {
     const live = mcxLiveRate ?? 0;
     const mcxChangeBy =
@@ -60,6 +64,24 @@ export default function DashboardScreen() {
       resolveMcxChangeValue(goldTaxSettings?.mcxChange);
     return goldTaxSettings?.mcxFinalRate ?? live + mcxChangeBy;
   }, [goldTaxSettings?.mcxChange, goldTaxSettings?.mcxChangeBy, goldTaxSettings?.mcxFinalRate, mcxLiveRate]);
+  const rtgsFinalRate = useMemo(() => {
+    if (mcxLiveRate == null) return goldTaxSettings?.rtgsFinalRate ?? 0;
+    const supremeRtgsBase =
+      supremeChanges?.supremeRtgs ??
+      mcxLiveRate + (supremeChanges?.rtgsChange ?? 0);
+    const supremeRtgsChange = supremeRtgsBase - mcxLiveRate;
+    const rtgsCurrentRate = (mcxFinalRate ?? 0) + supremeRtgsChange;
+    return rtgsCurrentRate + (goldTaxSettings?.rtgsChangeBy ?? 0);
+  }, [goldTaxSettings?.rtgsChangeBy, goldTaxSettings?.rtgsFinalRate, mcxFinalRate, mcxLiveRate, supremeChanges]);
+  const cashFinalRate = useMemo(() => {
+    if (mcxLiveRate == null) return goldTaxSettings?.cashFinalRate ?? 0;
+    const supremeCashBase =
+      supremeChanges?.supremeCash ??
+      mcxLiveRate + (supremeChanges?.cashChange ?? 0);
+    const supremeCashChange = supremeCashBase - mcxLiveRate;
+    const cashCurrentRate = (mcxFinalRate ?? 0) + supremeCashChange;
+    return cashCurrentRate + (goldTaxSettings?.cashChangeBy ?? 0);
+  }, [goldTaxSettings?.cashChangeBy, goldTaxSettings?.cashFinalRate, mcxFinalRate, mcxLiveRate, supremeChanges]);
   const twentyFourKRate = useMemo(() => {
     const matched = sortedGoldRates.find((rate) => {
       const carat = rate.carat.toLowerCase();
@@ -69,8 +91,8 @@ export default function DashboardScreen() {
     if (matched) return matched;
     if (mcxLiveRate == null && !goldTaxSettings) return null;
 
-    const cashRate = goldTaxSettings?.cashFinalRate ?? mcxFinalRate ?? 0;
-    const rtgsRate = goldTaxSettings?.rtgsFinalRate ?? mcxFinalRate ?? 0;
+    const cashRate = cashFinalRate || mcxFinalRate || 0;
+    const rtgsRate = rtgsFinalRate || mcxFinalRate || 0;
 
     return {
       id: '24k-synthetic',
@@ -82,7 +104,7 @@ export default function DashboardScreen() {
       baseRate: mcxFinalRate ?? rtgsRate,
       mcxRate: mcxLiveRate ?? undefined,
     } satisfies GoldRate;
-  }, [goldTaxSettings, mcxFinalRate, mcxLiveRate, sortedGoldRates]);
+  }, [cashFinalRate, goldTaxSettings, mcxFinalRate, mcxLiveRate, rtgsFinalRate, sortedGoldRates]);
   const show24kMcx = matrixValues['24k_mcx' as MatrixKey] !== false;
   const show24kRtgs = matrixValues['24k_rtgs' as MatrixKey] !== false;
   const show24kCash = matrixValues['24k_cash' as MatrixKey] !== false;
@@ -98,6 +120,7 @@ export default function DashboardScreen() {
       setMcxLiveRate(gold.mcxLiveRate);
       setGoldRates(gold.rates);
       setGoldTaxSettings(gold.taxSettings);
+      setSupremeChanges(gold.supremeChanges);
     } catch (error) {
       if (showLoader) {
         const message =
@@ -156,7 +179,7 @@ export default function DashboardScreen() {
               {mcxLiveRate != null && show24kMcx ? (
                 <View style={styles.mcxTopCard}>
                   <Text style={styles.mcxTopLabel}>MCX Gold Rate (24 Kt)</Text>
-                  <Text style={styles.mcxTopValue}>₹ {mcxLiveRate.toLocaleString('en-IN')}</Text>
+                  <Text style={styles.mcxTopValue}>₹ {(mcxFinalRate ?? mcxLiveRate).toLocaleString('en-IN')}</Text>
                 </View>
               ) : null}
 
@@ -167,14 +190,14 @@ export default function DashboardScreen() {
                     {show24kCash && !show24kRtgs ? (
                       <View style={styles.rateBadge}>
                         <Text style={styles.rateBadgeValue}>
-                          ₹ {(twentyFourKRate.cashRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                          ₹ {(twentyFourKRate.cashRate ?? cashFinalRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
                         </Text>
                         <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
                       </View>
                     ) : show24kRtgs && !show24kCash ? (
                       <View style={styles.rateBadge}>
                         <Text style={styles.rateBadgeValue}>
-                          ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                          ₹ {(twentyFourKRate.rtgsRate ?? rtgsFinalRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
                         </Text>
                         <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
                       </View>
@@ -185,13 +208,13 @@ export default function DashboardScreen() {
                     <View style={styles.rateCardBody}>
                       <View style={styles.rateBadge}>
                         <Text style={styles.rateBadgeValue}>
-                          ₹ {(twentyFourKRate.cashRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                          ₹ {(twentyFourKRate.cashRate ?? cashFinalRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
                         </Text>
                         <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
                       </View>
                       <View style={styles.rateBadge}>
                         <Text style={styles.rateBadgeValue}>
-                          ₹ {(twentyFourKRate.rtgsRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
+                          ₹ {(twentyFourKRate.rtgsRate ?? rtgsFinalRate ?? twentyFourKRate.finalRate).toLocaleString('en-IN')}
                         </Text>
                         <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
                       </View>
@@ -216,7 +239,9 @@ export default function DashboardScreen() {
 
                   const purityLabel = formatPurityLabel(rate.purity);
                   const singleRateLabel = showCash ? 'Cash Rate' : 'RTGS Rate';
-                  const singleRateValue = showCash ? rate.cashRate : rate.rtgsRate;
+                  const singleRateValue = showCash
+                    ? rate.cashRate ?? rate.finalRate
+                    : rate.rtgsRate ?? rate.finalRate;
 
                   return (
                     <View key={rate.carat} style={styles.rateCard}>
@@ -239,14 +264,16 @@ export default function DashboardScreen() {
                           {showCash && (
                             <View style={styles.rateBadge}>
                               <Text style={styles.rateBadgeValue}>
-                                ₹ {rate.cashRate?.toLocaleString('en-IN') || 0}
+                                ₹ {(rate.cashRate ?? rate.finalRate)?.toLocaleString('en-IN') || 0}
                               </Text>
                               <Text style={styles.rateBadgeLabel}>(Cash Rate)</Text>
                             </View>
                           )}
                           {showRtgs && (
                             <View style={styles.rateBadge}>
-                              <Text style={styles.rateBadgeValue}>₹ {rate.rtgsRate?.toLocaleString('en-IN') || 0}</Text>
+                              <Text style={styles.rateBadgeValue}>
+                                ₹ {(rate.rtgsRate ?? rate.finalRate)?.toLocaleString('en-IN') || 0}
+                              </Text>
                               <Text style={styles.rateBadgeLabel}>(RTGS Rate)</Text>
                             </View>
                           )}

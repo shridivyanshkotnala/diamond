@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 export const API_V1_PREFIX = '/api/v1';
-const PROD_FALLBACK_API_URL = 'https://diamond-a1an.onrender.com';
+const PROD_FALLBACK_API_URL = 'https://amitaash.com';
 
 function getMetroHost(): string | null {
   const hostUri =
@@ -59,8 +59,8 @@ export function resolveApiBaseUrl(): string {
     return fallbackUrl;
   }
 
-  console.log('[API] Falling back to production base:', 'https://diamond-a1an.onrender.com');
-  return 'https://diamond-a1an.onrender.com';
+  console.log('[API] Falling back to production base:', 'https://amitaash.com');
+  return 'https://amitaash.com';
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();

@@ -4,7 +4,7 @@
  */
 export const DEFAULT_CHARGE_OPTIONS = [
   'Hall Marking',
-  'HUID',
+  'HUIV',
   'Certificate',
   'Packing',
   'Insurance',

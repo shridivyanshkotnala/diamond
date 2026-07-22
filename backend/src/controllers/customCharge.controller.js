@@ -3,7 +3,7 @@ const CustomCharge = require('../models/customCharge.model');
 // Default charge names that are always available
 const DEFAULT_CHARGES = [
   'Hall Marking',
-  'HUID',
+  'HUIV',
   'Certificate',
   'Packing',
   'Insurance',
