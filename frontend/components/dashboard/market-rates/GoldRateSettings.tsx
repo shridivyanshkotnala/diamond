@@ -9,14 +9,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { ChevronDown, ChevronRight, Pencil, Settings2, X } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Settings2, X } from 'lucide-react-native';
 
 import { screenStyles } from '@/constants/screenLayout';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { formatInr } from '@/utils/rateMappers';
 
 const BUTTON_GREEN = '#1B3022';
-const GOLD_ACTION_BAR_HEIGHT = 60;
+const GOLD_ACTION_BAR_HEIGHT = 52;
 
 type Sign = '+' | '-';
 export type ScannerCalculationUse = 'rtgs' | 'cash';
@@ -211,7 +211,7 @@ function RateCard({
   );
 }
 
-interface GoldRateSettingsModalProps {
+interface GoldRateSettingsPanelProps {
   visible: boolean;
   mcxLiveRate: number;
   mcxChange: number;
@@ -219,13 +219,13 @@ interface GoldRateSettingsModalProps {
   supremeCashChange: number;
   rtgsChange: number;
   cashChange: number;
-  rtgsFinalRate: number;
-  cashFinalRate: number;
-  onClose: () => void;
+  showTitle?: boolean;
+  showClose?: boolean;
+  onClose?: () => void;
   onApply: (mcxChangeBy: number, rtgsChangeBy: number, cashChangeBy: number) => Promise<void>;
 }
 
-export function GoldRateSettingsModal({
+export function GoldRateSettingsPanel({
   visible,
   mcxLiveRate,
   mcxChange,
@@ -233,11 +233,11 @@ export function GoldRateSettingsModal({
   supremeCashChange,
   rtgsChange,
   cashChange,
-  rtgsFinalRate,
-  cashFinalRate,
+  showTitle = true,
+  showClose = false,
   onClose,
   onApply,
-}: GoldRateSettingsModalProps) {
+}: GoldRateSettingsPanelProps) {
   const [mcxSign, setMcxSign] = useState<Sign>('+');
   const [rtgsSign, setRtgsSign] = useState<Sign>('+');
   const [cashSign, setCashSign] = useState<Sign>('+');
@@ -335,99 +335,143 @@ export function GoldRateSettingsModal({
     }
   };
 
+  return (
+    <>
+      {showClose && onClose ? (
+        <Pressable onPress={onClose} hitSlop={8} style={styles.modalClose}>
+          <X size={20} color={Colors.textSecondary} />
+        </Pressable>
+      ) : null}
+
+      {showTitle ? <Text style={styles.modalTitle}>Gold Rate Settings</Text> : null}
+
+      <View style={styles.modalBody}>
+        <RateCard
+          title="MCX Rate"
+          subtitle=""
+          icon={null}
+          sign={mcxSign}
+          amount={mcxAmount}
+          currentRate={mcxLiveRate}
+          finalRate={mcxLiveFinal}
+          formula=""
+          currentLabel="Current MCX Rate"
+          finalLabel="Final MCX Rate"
+          onSignChange={setMcxSign}
+          onAmountChange={setMcxAmount}
+        />
+
+        <RateCard
+          title="RTGS Rate"
+          subtitle=""
+          icon={null}
+          sign={rtgsSign}
+          amount={rtgsAmount}
+          currentRate={rtgsCurrentRate}
+          finalRate={rtgsLiveFinal}
+          formula={''}
+          currentLabel="Current RTGS Rate"
+          finalLabel="Final RTGS Rate"
+          onSignChange={setRtgsSign}
+          onAmountChange={setRtgsAmount}
+        />
+
+        <RateCard
+          title="Cash Rate"
+          subtitle=""
+          icon={null}
+          sign={cashSign}
+          amount={cashAmount}
+          currentRate={cashCurrentRate}
+          finalRate={cashLiveFinal}
+          formula={''}
+          currentLabel="Current Cash Rate"
+          finalLabel="Final Cash Rate"
+          onSignChange={setCashSign}
+          onAmountChange={setCashAmount}
+        />
+      </View>
+
+      <Animated.View
+        pointerEvents={hasChanges ? 'auto' : 'none'}
+        style={[
+          styles.bottomActionBar,
+          {
+            opacity: barAnim,
+            transform: [
+              {
+                translateY: barAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Pressable
+          onPress={handleRestore}
+          disabled={saving}
+          style={[styles.restoreBtn, saving && styles.actionBtnDisabled]}
+        >
+          <Text style={styles.restoreBtnText}>Restore</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => void handleApply()}
+          disabled={saving}
+          style={[styles.applyBtn, saving && styles.actionBtnDisabled]}
+        >
+          {saving ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <Text style={styles.applyBtnText}>Apply</Text>
+          )}
+        </Pressable>
+      </Animated.View>
+    </>
+  );
+}
+
+interface GoldRateSettingsModalProps {
+  visible: boolean;
+  mcxLiveRate: number;
+  mcxChange: number;
+  supremeRtgsChange: number;
+  supremeCashChange: number;
+  rtgsChange: number;
+  cashChange: number;
+  onClose: () => void;
+  onApply: (mcxChangeBy: number, rtgsChangeBy: number, cashChangeBy: number) => Promise<void>;
+}
+
+export function GoldRateSettingsModal({
+  visible,
+  mcxLiveRate,
+  mcxChange,
+  supremeRtgsChange,
+  supremeCashChange,
+  rtgsChange,
+  cashChange,
+  onClose,
+  onApply,
+}: GoldRateSettingsModalProps) {
   if (!visible) return null;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={screenStyles.modalOverlay}>
         <View style={[screenStyles.modalCard, styles.settingsModalCard]}>
-          <Pressable onPress={onClose} hitSlop={8} style={styles.modalClose}>
-            <X size={20} color={Colors.textSecondary} />
-          </Pressable>
-
-          <Text style={styles.modalTitle}>Gold Rate Settings</Text>
-
-          <View style={styles.modalBody}>
-            <RateCard
-              title="MCX Rate"
-              subtitle=""
-              icon={null}
-              sign={mcxSign}
-              amount={mcxAmount}
-              currentRate={mcxLiveRate}
-              finalRate={mcxLiveFinal}
-              formula=""
-              currentLabel="Current MCX Rate"
-              finalLabel="Final MCX Rate"
-              onSignChange={setMcxSign}
-              onAmountChange={setMcxAmount}
-            />
-
-            <RateCard
-              title="RTGS Rate"
-              subtitle=""
-              icon={null}
-              sign={rtgsSign}
-              amount={rtgsAmount}
-              currentRate={rtgsCurrentRate}
-              finalRate={rtgsLiveFinal}
-              formula={''}
-              currentLabel="Current RTGS Rate"
-              finalLabel="Final RTGS Rate"
-              onSignChange={setRtgsSign}
-              onAmountChange={setRtgsAmount}
-            />
-
-            <RateCard
-              title="Cash Rate"
-              subtitle=""
-              icon={null}
-              sign={cashSign}
-              amount={cashAmount}
-              currentRate={cashCurrentRate}
-              finalRate={cashLiveFinal}
-              formula={''}
-              currentLabel="Current Cash Rate"
-              finalLabel="Final Cash Rate"
-              onSignChange={setCashSign}
-              onAmountChange={setCashAmount}
-            />
-          </View>
-
-          <Animated.View
-            pointerEvents={hasChanges ? 'auto' : 'none'}
-            style={[
-              styles.bottomActionBar,
-              {
-                opacity: barAnim,
-                transform: [
-                  {
-                    translateY: barAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <Pressable
-              onPress={handleRestore}
-              disabled={saving}
-              style={[styles.restoreBtn, saving && styles.actionBtnDisabled]}
-            >
-              <Text style={styles.restoreBtnText}>Restore</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => void handleApply()}
-              disabled={saving}
-              style={[styles.applyBtn, saving && styles.actionBtnDisabled]}
-            >
-              {saving ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.applyBtnText}>Apply</Text>
-              )}
-            </Pressable>
-          </Animated.View>
+          <GoldRateSettingsPanel
+            visible={visible}
+            mcxLiveRate={mcxLiveRate}
+            mcxChange={mcxChange}
+            supremeRtgsChange={supremeRtgsChange}
+            supremeCashChange={supremeCashChange}
+            rtgsChange={rtgsChange}
+            cashChange={cashChange}
+            onClose={onClose}
+            onApply={onApply}
+            showClose
+            showTitle
+          />
         </View>
       </View>
     </Modal>
@@ -587,32 +631,31 @@ const styles = StyleSheet.create({
   scannerOptionActive: { backgroundColor: '#E8F0EC' },
   scannerOptionText: { fontSize: 14, color: Colors.textPrimary },
   scannerOptionTextActive: { fontWeight: '700', color: BUTTON_GREEN },
-  settingsModalCard: { height: '88%', maxHeight: '88%', paddingBottom: 0 },
+  settingsModalCard: { height: '86%', maxHeight: '86%', paddingBottom: 0 },
   modalClose: { alignSelf: 'flex-end' },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   modalBody: {
     flexGrow: 1,
-    gap: Spacing.xs,
+    gap: 6,
     paddingBottom: GOLD_ACTION_BAR_HEIGHT,
   },
   rateCard: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 20,
-    padding: Spacing.sm,
+    borderRadius: 16,
+    padding: Spacing.xs,
     backgroundColor: Colors.white,
-    gap: Spacing.xs,
+    gap: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
-    flex: 1,
   },
   rateCardHeader: {
     flexDirection: 'row',
@@ -633,29 +676,29 @@ const styles = StyleSheet.create({
     color: BUTTON_GREEN,
   },
   rateCardHeaderTextWrap: { flex: 1 },
-  rateCardTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  rateCardSubtitle: { marginTop: 4, fontSize: 13, color: Colors.textSecondary },
+  rateCardTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  rateCardSubtitle: { marginTop: 2, fontSize: 12, color: Colors.textSecondary },
   currentRatePill: {
     borderRadius: Radius.input,
     backgroundColor: '#F4F7F5',
-    padding: Spacing.xs,
-    gap: 4,
+    padding: 6,
+    gap: 2,
   },
   currentRateLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   currentRateValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: BUTTON_GREEN,
   },
-  changeSection: { gap: Spacing.sm },
+  changeSection: { gap: 6 },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: Colors.textMuted,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -664,11 +707,11 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 8,
   },
-  signToggleWrap: { width: 88 },
+  signToggleWrap: { width: 74 },
   signToggle: {
-    minHeight: 38,
+    minHeight: 32,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
@@ -680,37 +723,37 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 38,
+    minHeight: 32,
   },
   signToggleBtnActive: { backgroundColor: '#E8F0EC' },
   signToggleText: {
-    fontSize: 18,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 18,
     color: Colors.textSecondary,
     fontWeight: '600',
   },
   signToggleTextActive: { color: BUTTON_GREEN, fontWeight: '700' },
   amountInputWrap: {
-    minHeight: 38,
+    minHeight: 32,
     flex: 1,
-    minWidth: 120,
+    minWidth: 96,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.input,
     backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   amountPrefix: {
-    marginRight: 8,
-    fontSize: 14,
+    marginRight: 6,
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
   amountInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textPrimary,
   },
   cardDivider: {
@@ -720,21 +763,21 @@ const styles = StyleSheet.create({
   },
   finalSection: { gap: 4 },
   finalLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: Colors.textMuted,
   },
   finalValue: {
-    marginTop: 2,
-    fontSize: 20,
-    lineHeight: 28,
+    marginTop: 0,
+    fontSize: 16,
+    lineHeight: 20,
     fontWeight: '700',
     color: BUTTON_GREEN,
   },
   formulaText: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
   },
   bottomActionBar: {
@@ -745,8 +788,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: Spacing.md,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
@@ -759,7 +802,7 @@ const styles = StyleSheet.create({
   },
   restoreBtn: {
     flex: 1,
-    height: 44,
+    height: 40,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 12,
@@ -768,20 +811,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   restoreBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
   },
   applyBtn: {
     flex: 1,
-    height: 44,
+    height: 40,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: BUTTON_GREEN,
   },
   applyBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: Colors.white,
   },
